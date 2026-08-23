@@ -30,7 +30,7 @@ export default {
   // ─── AI Agent ───
   // Key Gemini: https://aistudio.google.com/apikey
   aiAgentEnabled: false,
-  geminiKey: 'AQ.Ab8RN6IYzvvwH2ii65vMlCP-YVUoT5aC-I6LmDynxgvOeluSdg',
+  geminiKey: '',
   geminiModel: 'gemini-3.6-flash',
   agentMaxToolCalls: 5,
   agentRateLimitMax: 10,
