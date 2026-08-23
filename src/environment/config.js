@@ -24,7 +24,7 @@ export default {
   openaiModel: 'gpt-4o-mini',
   anthropicKey: '',
   anthropicModel: 'claude-haiku-4-5',
-  groqKey: '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',
+  groqKey: '',
   groqModel: 'llama-3.1-8b-instant',
 
   // ─── AI Agent ───
