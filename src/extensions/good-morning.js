@@ -21,7 +21,7 @@ function wibParts() {
 async function sendGoodMorning() {
   const sock = getSocket()
   if (!sock) return
-  const groups = db.prepare('SELECT jid FROM groups').all()
+  const groups = db.prepare('SELECT jid FROM groups WHERE greeting = 1').all()
   for (const { jid } of groups) {
     try {
       const meta = await sock.groupMetadata(jid)

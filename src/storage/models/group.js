@@ -16,7 +16,7 @@ class GroupModel {
   }
 
   update(jid, fields) {
-    const allowed = ['name', 'prefix', 'welcome', 'welcome_msg', 'antilink', 'nsfw', 'mute', 'antitoxic']
+    const allowed = ['name', 'prefix', 'welcome', 'welcome_msg', 'antilink', 'nsfw', 'mute', 'antitoxic', 'greeting']
     const updates = Object.entries(fields)
       .filter(([k]) => allowed.includes(k))
       .map(([k]) => `${k} = @${k}`)

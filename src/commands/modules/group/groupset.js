@@ -18,9 +18,9 @@ export default {
       return ctx.reply(`Kamu di chat pribadi. Sertakan ID grup:\n\`${SETTINGS.prefix}groupset <sub> <on/off> <id grup>@g.us\``)
     }
 
-    if (!sub || !['antilink', 'antiflood', 'mute', 'nsfw', 'antitoxic'].includes(sub) || !['on', 'off'].includes(value)) {
+    if (!sub || !['antilink', 'mute', 'nsfw', 'antitoxic', 'greeting'].includes(sub) || !['on', 'off'].includes(value)) {
       const g = groupModel.find(jid)
-      return ctx.reply(`*Pengaturan Grup*\n\n📎 Antilink: ${g?.antilink ? '✅' : '❌'}\n🌊 Antiflood: ${g?.antiflood ? '✅' : '❌'}\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🔞 NSFW: ${g?.nsfw ? '✅' : '❌'}\n🚫 Anti-Toxic: ${g?.antitoxic ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <antilink/antiflood/mute/nsfw/antitoxic> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`)
+      return ctx.reply(`*Pengaturan Grup*\n\n📎 Antilink: ${g?.antilink ? '✅' : '❌'}\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🔞 NSFW: ${g?.nsfw ? '✅' : '❌'}\n🚫 Anti-Toxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <antilink/mute/nsfw/antitoxic/greeting> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`)
     }
 
     const updates = {}

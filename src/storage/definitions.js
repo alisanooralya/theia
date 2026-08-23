@@ -95,10 +95,10 @@ export function createSchema() {
       welcome     INTEGER NOT NULL DEFAULT 0,
       welcome_msg TEXT    NOT NULL DEFAULT '',
       antilink    INTEGER NOT NULL DEFAULT 0,
-      antiflood   INTEGER NOT NULL DEFAULT 0,
       nsfw        INTEGER NOT NULL DEFAULT 0,
       mute        INTEGER NOT NULL DEFAULT 0,
       antitoxic   INTEGER NOT NULL DEFAULT 0,
+      greeting    INTEGER NOT NULL DEFAULT 1,
       created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
@@ -161,6 +161,7 @@ export function createSchema() {
   try { db.exec('ALTER TABLE stats ADD COLUMN buff_expire INTEGER NOT NULL DEFAULT 0') } catch {}
   try { db.exec('ALTER TABLE stats ADD COLUMN buff_exp_mult INTEGER NOT NULL DEFAULT 1') } catch {}
   try { db.exec('ALTER TABLE groups ADD COLUMN antitoxic INTEGER NOT NULL DEFAULT 0') } catch {}
+  try { db.exec('ALTER TABLE groups ADD COLUMN greeting INTEGER NOT NULL DEFAULT 1') } catch {}
   try { db.exec('ALTER TABLE warns ADD COLUMN damage INTEGER NOT NULL DEFAULT 0') } catch {}
 
   logger.info('Schema ready')
