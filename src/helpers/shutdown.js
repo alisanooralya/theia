@@ -8,6 +8,10 @@ export function setSocket(sock) {
   sockRef = sock
 }
 
+export function getSocket() {
+  return sockRef
+}
+
 const FORCE_KILL_TIMEOUT = 8_000
 
 export function setupShutdown() {
