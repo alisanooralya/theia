@@ -6,13 +6,25 @@ import { logger } from '#helpers/logger.js'
 const TOXIC_DAMAGE = 10
 
 const TOXIC_WORDS = [
-  'anjing', 'anjg', 'bajingan', 'babu', 'kampret', 'kontol', 'memek', 'titit',
-  'ngentot', 'gentot', 'jembut', 'pepek', 'puki', 'pukimak', 'kimak', 'pantek', 'pantat',
-  'tolol', 'goblok', 'goblog', 'bego', 'bodoh', 'idiot', 'bangsat', 'sinting', 'brengsek',
-  'tai', 't4i', 'taik', 'sialan', 'bacot', 'ngaca', 'ajg', 'anj',
-  'fuck', 'fck', 'shit', 'bitch', 'asshole', 'bastard', 'dick', 'pussy', 'cunt',
-  'whore', 'slut', 'retard', 'stupid', 'motherfucker', 'mf', 'wtf',
-  'monyet', 'setan',
+  'anjing', 'anjg', 'ajg', 'anj', 'asshole',
+  'bajingan', 'babu', 'bego', 'bodoh', 'bangsat', 'brengsek', 'bacot', 'bitch', 'bastard',
+  'badjingan', 'bjngn', 'bdoh', 'bdh', 'bngst', 'brngsk', 'brngsek', 'bct', 'bcot', 'bact',
+  'kampret', 'kontol', 'kimak', 'kntl', 'kontl', 'kntol',
+  'memek', 'motherfucker', 'nyet', 'monyet', 'mmk', 'memk', 'mmek',
+  'titit', 'tai', 't4i', 'taik', 'tolol', 'tlol', 'tytyd',
+  'ngentot', 'ngentod', 'ngntt', 'ngntd', 'ngentd', 'ngentt', 'ngntod', 'ngntot', 'nigga', 'nigger', 'nigg',
+  'goblok', 'goblog', 'gblk', 'gblg', 'goblk', 'goblg', 'gblok', 'gblog',
+  'jembut', 'jmbt', 'mbut', 'jing', 'jink',
+  'pepek', 'puki', 'pukimak', 'pantek', 'pantat', 'ppk', 'pepk', 'ppek', 'pntk',
+  'idiot',
+  'sinting', 'sialan', 'shit', 'slut', 'stupid', 'setan', 'stpd', 'sht'
+  'fuck', 'fck',
+  'dick',
+  'pussy',
+  'cunt',
+  'whore',
+  'retard',
+  'wtf',
 ]
 
 const TOXIC_RE = new RegExp(`\\b(?:${TOXIC_WORDS.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'i')
