@@ -11,6 +11,7 @@ const TOXIC_WORDS = [
   'ajg',
   'anj',
   'asshole',
+  'ewe',
   'bajingan',
   'babu',
   'bego',
