@@ -3,16 +3,17 @@ export default {
   aliases: ['ginfo', 'infogrup'],
   category: 'group',
   description: 'Lihat informasi grup',
-  cooldown: 5_000, groupOnly: true,
+  cooldown: 5_000,
+  groupOnly: true,
 
   async execute(ctx) {
-    let meta
+    let meta;
     try {
-      meta = await ctx.sock.groupMetadata(ctx.jid)
+      meta = await ctx.sock.groupMetadata(ctx.jid);
     } catch {
-      return ctx.reply('Gagal mengambil data grup.')
+      return ctx.reply('Gagal mengambil data grup.');
     }
-    const admins = meta.participants.filter(p => p.admin).length
+    const admins = meta.participants.filter((p) => p.admin).length;
     const text = [
       `👥 *${meta.subject}*`,
       '',
@@ -21,8 +22,8 @@ export default {
       `👑 Admin: ${admins}`,
       `📅 Dibuat: ${new Date(meta.creation * 1000).toLocaleDateString('id-ID')}`,
       `📝 ${meta.desc || 'Tidak ada deskripsi'}`,
-    ].join('\n')
+    ].join('\n');
 
-    await ctx.reply(text)
+    await ctx.reply(text);
   },
-}
+};

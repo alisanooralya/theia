@@ -3,26 +3,28 @@ export default {
   aliases: ['everyone', 'tag', 'all'],
   category: 'group',
   description: 'Tag semua member grup',
-  cooldown: 5_000, groupOnly: true, adminOnly: true,
+  cooldown: 5_000,
+  groupOnly: true,
+  adminOnly: true,
 
   async execute(ctx) {
-    let meta
+    let meta;
     try {
-      meta = await ctx.sock.groupMetadata(ctx.jid)
+      meta = await ctx.sock.groupMetadata(ctx.jid);
     } catch {
-      return ctx.reply('Gagal mengambil data grup.')
+      return ctx.reply('Gagal mengambil data grup.');
     }
-    const participants = meta.participants
-    const mentions = participants.map(p => p.id)
-    const text = ctx.rawArgs || '📢 @all'
+    const participants = meta.participants;
+    const mentions = participants.map((p) => p.id);
+    const text = ctx.rawArgs || '📢 @all';
 
-    const chunked = []
+    const chunked = [];
     for (let i = 0; i < mentions.length; i += 30) {
-      chunked.push(mentions.slice(i, i + 30))
+      chunked.push(mentions.slice(i, i + 30));
     }
 
     for (const chunk of chunked) {
-      await ctx.reply(text, { mentions: chunk })
+      await ctx.reply(text, { mentions: chunk });
     }
   },
-}
+};

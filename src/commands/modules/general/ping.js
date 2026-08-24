@@ -1,4 +1,4 @@
-import axios from "axios"
+import axios from 'axios';
 
 export default {
   name: 'ping',
@@ -8,11 +8,11 @@ export default {
   cooldown: 5_000,
 
   async execute(ctx) {
-    let perf = Date.now()
-    await axios.request("https://google.com")
+    let perf = Date.now();
+    await axios.request('https://google.com');
 
-    let perfm = Date.now()
-    let speed = ((perfm - perf) / 1000).toFixed(2)
-    ctx.reply(`🏓 *Pong!* ${speed} ms`)
+    let perfm = Date.now();
+    let speed = ((perfm - perf) / 1000).toFixed(2);
+    ctx.reply(`🏓 *Pong!* ${speed} ms`);
   },
-}
+};

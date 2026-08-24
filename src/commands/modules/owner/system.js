@@ -1,22 +1,23 @@
-import { F } from '#helpers/index.js'
+import { F } from '#helpers/index.js';
 
-const startTime = Date.now()
+const startTime = Date.now();
 
 export default {
   name: 'system',
   aliases: ['sys', 'host'],
   category: 'owner',
   description: 'Lihat info sistem bot',
-  cooldown: 0, ownerOnly: true,
+  cooldown: 0,
+  ownerOnly: true,
 
   async execute(ctx) {
-    const uptime = F.formatDuration(Date.now() - startTime)
-    const mem = process.memoryUsage()
-    const cpu = process.cpuUsage()
-    const nodeVer = process.version
-    const platform = process.platform
-    const arch = process.arch
-    const pid = process.pid
+    const uptime = F.formatDuration(Date.now() - startTime);
+    const mem = process.memoryUsage();
+    const cpu = process.cpuUsage();
+    const nodeVer = process.version;
+    const platform = process.platform;
+    const arch = process.arch;
+    const pid = process.pid;
 
     const text = [
       `💻 *System Info*`,
@@ -28,8 +29,8 @@ export default {
       `📦 Node: ${nodeVer}`,
       `🖥️ Platform: ${platform} ${arch}`,
       `🆔 PID: ${pid}`,
-    ].join('\n')
+    ].join('\n');
 
-    await ctx.reply(text)
+    await ctx.reply(text);
   },
-}
+};

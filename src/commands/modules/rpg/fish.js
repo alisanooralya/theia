@@ -1,5 +1,5 @@
-import { userModel, walletModel } from '#storage/models/index.js'
-import { F } from '#helpers/index.js'
+import { userModel, walletModel } from '#storage/models/index.js';
+import { F } from '#helpers/index.js';
 
 const FISH = [
   { name: 'Botol Plastik', reward: [5, 20], exp: 1, emoji: '🧴', rate: 18 },
@@ -13,19 +13,25 @@ const FISH = [
   { name: 'Ikan Arwana', reward: [2000, 5000], exp: 40, emoji: '🐉', rate: 4 },
   { name: 'Ikan Hiu', reward: [3000, 7000], exp: 60, emoji: '🦈', rate: 2 },
   { name: 'Ikan Koi', reward: [4000, 9000], exp: 75, emoji: '🎏', rate: 1 },
-  { name: 'Harta Karam', reward: [8000, 15000], exp: 100, emoji: '💰', rate: 1 },
-]
+  {
+    name: 'Harta Karam',
+    reward: [8000, 15000],
+    exp: 100,
+    emoji: '💰',
+    rate: 1,
+  },
+];
 
 function pickFish() {
-  const total = FISH.reduce((s, m) => s + m.rate, 0)
-  let roll = Math.random() * total
+  const total = FISH.reduce((s, m) => s + m.rate, 0);
+  let roll = Math.random() * total;
   for (const m of FISH) {
-    if ((roll -= m.rate) < 0) return m
+    if ((roll -= m.rate) < 0) return m;
   }
-  return FISH[FISH.length - 1]
+  return FISH[FISH.length - 1];
 }
 
-const fishingUsers = new Set()
+const fishingUsers = new Set();
 
 export default {
   name: 'fish',
@@ -35,30 +41,37 @@ export default {
   cooldown: 120_000,
 
   async execute(ctx) {
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName })
+    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
     if (fishingUsers.has(ctx.sender)) {
-      return ctx.fail('🎣 Kamu masih memancing, tunggu sampai selesai dulu!')
+      return ctx.fail('🎣 Kamu masih memancing, tunggu sampai selesai dulu!');
     }
 
-    fishingUsers.add(ctx.sender)
+    fishingUsers.add(ctx.sender);
     try {
-      await ctx.reply('🎣 Kamu mulai memancing... sabar ya, tunggu sebentar~')
+      await ctx.reply('🎣 Kamu mulai memancing... sabar ya, tunggu sebentar~');
 
-      const delay = 60_000 + Math.floor(Math.random() * 45_000)
-      await new Promise(r => setTimeout(r, delay))
+      const delay = 60_000 + Math.floor(Math.random() * 45_000);
+      await new Promise((r) => setTimeout(r, delay));
 
-      const catchResult = pickFish()
-      const reward = Math.floor(catchResult.reward[0] + Math.random() * (catchResult.reward[1] - catchResult.reward[0]))
+      const catchResult = pickFish();
+      const reward = Math.floor(
+        catchResult.reward[0] +
+          Math.random() * (catchResult.reward[1] - catchResult.reward[0])
+      );
 
-      walletModel.reward(ctx.sender, reward, `fish: ${catchResult.name}`)
-      const { leveledUp, newLevel } = userModel.addExp(ctx.sender, catchResult.exp)
+      walletModel.reward(ctx.sender, reward, `fish: ${catchResult.name}`);
+      const { leveledUp, newLevel } = userModel.addExp(
+        ctx.sender,
+        catchResult.exp
+      );
 
-      let text = `🎣 *Fishing!*\n\n${catchResult.emoji} Kamu dapat: *${catchResult.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${catchResult.exp} EXP`
-      if (leveledUp) text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`
-      await ctx.reply(text)
+      let text = `🎣 *Fishing!*\n\n${catchResult.emoji} Kamu dapat: *${catchResult.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${catchResult.exp} EXP`;
+      if (leveledUp)
+        text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
+      await ctx.reply(text);
     } finally {
-      fishingUsers.delete(ctx.sender)
+      fishingUsers.delete(ctx.sender);
     }
   },
-}
+};

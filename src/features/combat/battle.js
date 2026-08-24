@@ -41,7 +41,7 @@ class BattleService {
     const winnerStreakBefore = statsModel.find(winner)?.win_streak ?? 0;
     let rewardCash;
     if (winnerStreakBefore === 0) rewardCash = REWARD_CASH;
-    else rewardCash = Math.floor(REWARD_CASH * (0.5 + Math.random() * 0.2));
+    else rewardCash = Math.floor(REWARD_CASH * (1.5 + Math.random() * 0.2));
     const loserLoss = Math.floor(rewardCash / 2);
 
     db.transaction(() => {

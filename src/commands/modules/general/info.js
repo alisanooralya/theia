@@ -1,8 +1,8 @@
-import { F } from '#helpers/index.js'
-import { commandRegistry } from '#commands/registry.js'
-import SETTINGS from '#environment/settings.js'
+import { F } from '#helpers/index.js';
+import { commandRegistry } from '#commands/registry.js';
+import SETTINGS from '#environment/settings.js';
 
-const startTime = Date.now()
+const startTime = Date.now();
 
 export default {
   name: 'info',
@@ -12,9 +12,9 @@ export default {
   cooldown: 10_000,
 
   async execute(ctx) {
-    const uptime = F.formatDuration(Date.now() - startTime)
-    const mem = process.memoryUsage()
-    const memMB = (mem.heapUsed / 1024 / 1024).toFixed(1)
+    const uptime = F.formatDuration(Date.now() - startTime);
+    const mem = process.memoryUsage();
+    const memMB = (mem.heapUsed / 1024 / 1024).toFixed(1);
 
     const text = [
       `*🤖 ${SETTINGS.botName}*`,
@@ -23,8 +23,8 @@ export default {
       `💾 Memory: *${memMB} MB*`,
       `📦 Commands: *${commandRegistry.count()}*`,
       `🟢 Status: *Online*`,
-    ].join('\n')
+    ].join('\n');
 
-    await ctx.reply(text)
+    await ctx.reply(text);
   },
-}
+};
