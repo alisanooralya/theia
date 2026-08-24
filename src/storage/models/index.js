@@ -8,3 +8,4 @@ export { inventoryModel } from './inventory.js';
 export { statsModel } from './stats.js';
 export { questModel } from './quest.js';
 export { groupActivityModel } from './group-activity.js';
+export { redeemCodeModel } from './redeem-code.js';

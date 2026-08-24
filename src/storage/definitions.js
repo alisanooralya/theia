@@ -124,6 +124,14 @@ export function createSchema() {
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS redeem_codes (
+      code        TEXT    PRIMARY KEY,
+      amount      INTEGER NOT NULL,
+      expires_at  INTEGER NOT NULL,
+      used_by     TEXT,
+      used_at     INTEGER
+    );
+
     CREATE TABLE IF NOT EXISTS warns (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       jid         TEXT    NOT NULL,
@@ -149,6 +157,7 @@ export function createSchema() {
     CREATE INDEX IF NOT EXISTS idx_cooldowns_expires    ON cooldowns(expires_at);
     CREATE INDEX IF NOT EXISTS idx_user_quests_jid      ON user_quests(jid);
     CREATE INDEX IF NOT EXISTS idx_users_level          ON users(level DESC);
+    CREATE INDEX IF NOT EXISTS idx_redeem_codes_expiry  ON redeem_codes(expires_at);
 
     CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid);
     CREATE INDEX IF NOT EXISTS idx_group_activity_jid  ON group_activity(jid, xp DESC);
