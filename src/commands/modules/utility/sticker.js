@@ -17,14 +17,7 @@ export default {
 
     try {
       let buffer;
-      if (ctx.quoted?.isMedia && ctx.quoted.raw) {
-        buffer = await ctx.downloadMediaMessage(
-          ctx.quoted.raw,
-          'buffer',
-          {},
-          { logger: undefined }
-        );
-      }
+      if (ctx.quoted?.isMedia) buffer = await ctx.quoted.download();
       if (!buffer) buffer = await ctx.downloadMedia();
       if (!buffer) return ctx.reply('Gagal download media.');
 
