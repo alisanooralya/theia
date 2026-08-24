@@ -20,7 +20,7 @@ export default {
 
     if (!sub || !['antilink', 'mute', 'nsfw', 'antitoxic', 'greeting'].includes(sub) || !['on', 'off'].includes(value)) {
       const g = groupModel.find(jid)
-      return ctx.reply(`*Pengaturan Grup*\n\n📎 Antilink: ${g?.antilink ? '✅' : '❌'}\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🔞 NSFW: ${g?.nsfw ? '✅' : '❌'}\n🚫 Anti-Toxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <antilink/mute/nsfw/antitoxic/greeting> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`)
+      return ctx.reply(`*Pengaturan Grup*\n\n📎 Antilink: ${g?.antilink ? '✅' : '❌'}\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🔞 NSFW: ${g?.nsfw ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <antilink/mute/nsfw/antitoxic/greeting> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`)
     }
 
     const updates = {}

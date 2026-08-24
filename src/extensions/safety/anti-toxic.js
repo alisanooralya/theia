@@ -6,13 +6,13 @@ import { logger } from '#helpers/logger.js'
 const TOXIC_DAMAGE = 10
 
 const TOXIC_WORDS = [
-  'anjing', 'anjg', 'ajg', 'anj', 'asshole', 'anjai',
+  'anjing', 'anjg', 'ajg', 'anj', 'asshole',
   'bajingan', 'babu', 'bego', 'bodoh', 'bangsat', 'brengsek', 'bacot', 'bitch', 'bastard',
   'badjingan', 'bjngn', 'bdoh', 'bdh', 'bngst', 'brngsk', 'brngsek', 'bct', 'bcot', 'bact',
   'kampret', 'kontol', 'kimak', 'kntl', 'kontl', 'kntol',
   'memek', 'motherfucker', 'nyet', 'monyet', 'mmk', 'memk', 'mmek',
   'titit', 'tai', 't4i', 'taik', 'tolol', 'tlol', 'tytyd',
-  'ngentot', 'ngentod', 'ngntt', 'ngntd', 'ngentd', 'ngentt', 'ngntod', 'ngntot', 'nigga', 'nigger', 'nigg', 'njai',
+  'ngentot', 'ngentod', 'ngntt', 'ngntd', 'ngentd', 'ngentt', 'ngntod', 'ngntot', 'nigga', 'nigger', 'nigg',
   'goblok', 'goblog', 'gblk', 'gblg', 'goblk', 'goblg', 'gblok', 'gblog',
   'jembut', 'jmbt', 'mbut', 'jing', 'jink',
   'pepek', 'puki', 'pukimak', 'pantek', 'pantat', 'ppk', 'pepk', 'ppek', 'pntk',
