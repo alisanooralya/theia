@@ -99,6 +99,7 @@ export function createSchema() {
       mute        INTEGER NOT NULL DEFAULT 0,
       antitoxic   INTEGER NOT NULL DEFAULT 0,
       greeting    INTEGER NOT NULL DEFAULT 1,
+      openclose   INTEGER NOT NULL DEFAULT 0,
       created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
@@ -193,6 +194,11 @@ export function createSchema() {
   try {
     db.exec(
       'ALTER TABLE groups ADD COLUMN greeting INTEGER NOT NULL DEFAULT 1'
+    );
+  } catch {}
+  try {
+    db.exec(
+      'ALTER TABLE groups ADD COLUMN openclose INTEGER NOT NULL DEFAULT 0'
     );
   } catch {}
   try {

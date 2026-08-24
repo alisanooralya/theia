@@ -28,6 +28,7 @@ class GroupModel {
       'mute',
       'antitoxic',
       'greeting',
+      'openclose',
     ];
     const updates = Object.entries(fields)
       .filter(([k]) => allowed.includes(k))

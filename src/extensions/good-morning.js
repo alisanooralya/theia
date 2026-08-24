@@ -28,13 +28,7 @@ async function sendGoodMorning() {
       const mentions = meta.participants.map((p) => p.id);
       if (!mentions.length) continue;
       const text = '🌅 *Selamat pagi semua!* Semoga harinya menyenangkan. ☀️';
-      const chunked = [];
-      for (let i = 0; i < mentions.length; i += 30) {
-        chunked.push(mentions.slice(i, i + 30));
-      }
-      for (const chunk of chunked) {
-        await sock.sendMessage(jid, { text, mentions: chunk }).catch(() => {});
-      }
+      await sock.sendMessage(jid, { text, mentions }).catch(() => {});
     } catch (err) {
       logger.warn({ err: err.message, jid }, '[GoodMorning] group failed');
     }
