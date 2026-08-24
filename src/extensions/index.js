@@ -1,1 +1,1 @@
-export { orchestrator } from './lifecycle/orchestrator.js'
+export { orchestrator } from './lifecycle/orchestrator.js';

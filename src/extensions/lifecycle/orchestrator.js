@@ -1,32 +1,40 @@
-import { logger } from '#helpers/logger.js'
+import { logger } from '#helpers/logger.js';
 
 class Orchestrator {
-  constructor() { this._extensions = [] }
+  constructor() {
+    this._extensions = [];
+  }
 
-  register(ext) { this._extensions.push(ext) }
-  count() { return this._extensions.length }
+  register(ext) {
+    this._extensions.push(ext);
+  }
+  count() {
+    return this._extensions.length;
+  }
 
   destroyAll() {
     for (const ext of this._extensions) {
       if (typeof ext.destroy === 'function') {
-        try { ext.destroy() } catch {}
+        try {
+          ext.destroy();
+        } catch {}
       }
     }
-    this._extensions = []
+    this._extensions = [];
   }
 
   async runProcessors(parsed, sock) {
     for (const ext of this._extensions) {
-      if (typeof ext.processMessage !== 'function') continue
+      if (typeof ext.processMessage !== 'function') continue;
       try {
-        const ok = await ext.processMessage(parsed, sock)
-        if (ok === false) return false
+        const ok = await ext.processMessage(parsed, sock);
+        if (ok === false) return false;
       } catch (err) {
-        logger.error({ err, name: ext.name }, 'Extension processor error')
+        logger.error({ err, name: ext.name }, 'Extension processor error');
       }
     }
-    return true
+    return true;
   }
 }
 
-export const orchestrator = new Orchestrator()
+export const orchestrator = new Orchestrator();

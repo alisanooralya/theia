@@ -1,1 +1,1 @@
-export { runPipeline } from './pipeline.js'
+export { runPipeline } from './pipeline.js';

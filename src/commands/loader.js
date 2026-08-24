@@ -22,8 +22,7 @@ function findJsFiles(dir) {
 function registerCmd(cmd) {
   if (!cmd?.name || typeof cmd.execute !== 'function') return false
   commandRegistry.register(cmd)
-  return true
-}
+  return true }
 
 function bustUrl(file) {
   return `${pathToFileURL(file).href}?t=${Date.now()}`

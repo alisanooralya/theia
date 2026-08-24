@@ -48,4 +48,4 @@ export default {
   respondToSelf: false,
   ignoreBots: true,
   autoread: true,
-}
+};

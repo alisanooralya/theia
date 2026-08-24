@@ -1,7 +1,7 @@
-import { resolve } from 'path'
-import config from './config.js'
+import { resolve } from 'path';
+import config from './config.js';
 
-const root = process.cwd()
+const root = process.cwd();
 
 const SETTINGS = Object.freeze({
   botName: config.botName,
@@ -16,10 +16,13 @@ const SETTINGS = Object.freeze({
 
   pairingNumber: String(config.pairingNumber || '').replace(/\D/g, '') || null,
 
-  ownerNumber: (Array.isArray(config.ownerNumber) ? config.ownerNumber : String(config.ownerNumber || '').split(','))
-    .map(n => String(n).trim())
+  ownerNumber: (Array.isArray(config.ownerNumber)
+    ? config.ownerNumber
+    : String(config.ownerNumber || '').split(',')
+  )
+    .map((n) => String(n).trim())
     .filter(Boolean)
-    .map(n => `${n.replace(/\D/g, '')}@s.whatsapp.net`),
+    .map((n) => `${n.replace(/\D/g, '')}@s.whatsapp.net`),
 
   authBackend: config.authBackend === 'sqlite' ? 'sqlite' : 'file',
   sessionId: config.sessionId ?? 'default',
@@ -41,6 +44,6 @@ const SETTINGS = Object.freeze({
   agentCooldownMs: parseInt(config.agentCooldownMs, 10),
   agentTimeoutMs: parseInt(config.agentTimeoutMs, 10),
   agentMaxHistory: parseInt(config.agentMaxHistory, 10),
-})
+});
 
-export default SETTINGS
+export default SETTINGS;

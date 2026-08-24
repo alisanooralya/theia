@@ -1,5 +1,5 @@
-import { initializeDatabase } from './initializer.js'
-import { logger } from '#helpers/logger.js'
+import { initializeDatabase } from './initializer.js';
+import { logger } from '#helpers/logger.js';
 
-await initializeDatabase()
-logger.info('Migration complete')
+await initializeDatabase();
+logger.info('Migration complete');

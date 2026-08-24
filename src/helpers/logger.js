@@ -1,19 +1,28 @@
-import pino from 'pino'
-import pretty from 'pino-pretty'
-import SETTINGS from '#environment/settings.js'
+import pino from 'pino';
+import pretty from 'pino-pretty';
+import SETTINGS from '#environment/settings.js';
 
 const pinoOptions = {
   level: SETTINGS.logLevel,
   base: { name: 'theia' },
   redact: {
     paths: [
-      'key', '*.key', 'apiKey', '*.apiKey',
-      'secret', '*.secret', 'password', '*.password',
-      'token', '*.token', 'authorization', '*.authorization',
+      'key',
+      '*.key',
+      'apiKey',
+      '*.apiKey',
+      'secret',
+      '*.secret',
+      'password',
+      '*.password',
+      'token',
+      '*.token',
+      'authorization',
+      '*.authorization',
     ],
     censor: '***REDACTED***',
   },
-}
+};
 
 function plainLogger() {
   if (process.stdout.isTTY) {
@@ -22,11 +31,11 @@ function plainLogger() {
       translateTime: 'SYS:HH:MM:ss',
       ignore: 'pid,hostname',
       messageFormat: '[{name}] {msg}',
-    })
-    return pino(pinoOptions, stream)
+    });
+    return pino(pinoOptions, stream);
   }
 
-  return pino(pinoOptions, pino.destination({ dest: 1, sync: true }))
+  return pino(pinoOptions, pino.destination({ dest: 1, sync: true }));
 }
 
-export const logger = plainLogger()
+export const logger = plainLogger();

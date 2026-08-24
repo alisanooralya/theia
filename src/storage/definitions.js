@@ -1,5 +1,5 @@
-import { db } from './connection.js'
-import { logger } from '#helpers/logger.js'
+import { db } from './connection.js';
+import { logger } from '#helpers/logger.js';
 
 export function createSchema() {
   db.exec(`
@@ -153,16 +153,42 @@ export function createSchema() {
     CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid);
     CREATE INDEX IF NOT EXISTS idx_group_activity_jid  ON group_activity(jid, xp DESC);
     CREATE INDEX IF NOT EXISTS idx_group_activity_user ON group_activity(user_jid);
-  `)
+  `);
 
-  try { db.exec('ALTER TABLE stats ADD COLUMN win_streak INTEGER NOT NULL DEFAULT 0') } catch {}
-  try { db.exec('ALTER TABLE stats ADD COLUMN buff_atk INTEGER NOT NULL DEFAULT 0') } catch {}
-  try { db.exec('ALTER TABLE stats ADD COLUMN buff_def INTEGER NOT NULL DEFAULT 0') } catch {}
-  try { db.exec('ALTER TABLE stats ADD COLUMN buff_expire INTEGER NOT NULL DEFAULT 0') } catch {}
-  try { db.exec('ALTER TABLE stats ADD COLUMN buff_exp_mult INTEGER NOT NULL DEFAULT 1') } catch {}
-  try { db.exec('ALTER TABLE groups ADD COLUMN antitoxic INTEGER NOT NULL DEFAULT 0') } catch {}
-  try { db.exec('ALTER TABLE groups ADD COLUMN greeting INTEGER NOT NULL DEFAULT 1') } catch {}
-  try { db.exec('ALTER TABLE warns ADD COLUMN damage INTEGER NOT NULL DEFAULT 0') } catch {}
+  try {
+    db.exec(
+      'ALTER TABLE stats ADD COLUMN win_streak INTEGER NOT NULL DEFAULT 0'
+    );
+  } catch {}
+  try {
+    db.exec('ALTER TABLE stats ADD COLUMN buff_atk INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE stats ADD COLUMN buff_def INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec(
+      'ALTER TABLE stats ADD COLUMN buff_expire INTEGER NOT NULL DEFAULT 0'
+    );
+  } catch {}
+  try {
+    db.exec(
+      'ALTER TABLE stats ADD COLUMN buff_exp_mult INTEGER NOT NULL DEFAULT 1'
+    );
+  } catch {}
+  try {
+    db.exec(
+      'ALTER TABLE groups ADD COLUMN antitoxic INTEGER NOT NULL DEFAULT 0'
+    );
+  } catch {}
+  try {
+    db.exec(
+      'ALTER TABLE groups ADD COLUMN greeting INTEGER NOT NULL DEFAULT 1'
+    );
+  } catch {}
+  try {
+    db.exec('ALTER TABLE warns ADD COLUMN damage INTEGER NOT NULL DEFAULT 0');
+  } catch {}
 
-  logger.info('Schema ready')
+  logger.info('Schema ready');
 }

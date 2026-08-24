@@ -11,7 +11,7 @@ export const LEVELS = Object.freeze({
   user: 0,
   premium: 1,
   owner: 2,
-})
+});
 
 /**
  * Resolve the caller's permission level from their authenticated context.
@@ -19,23 +19,25 @@ export const LEVELS = Object.freeze({
  * @returns {'user'|'premium'|'owner'}
  */
 export function resolveLevel(caller) {
-  if (caller?.isOwner) return 'owner'
-  if (caller?.isPremium) return 'premium'
-  return 'user'
+  if (caller?.isOwner) return 'owner';
+  if (caller?.isPremium) return 'premium';
+  return 'user';
 }
 
 /**
  * Can a caller with `level` invoke a tool that requires `tool.permission`?
  */
 export function canUseTool(level, tool) {
-  const required = tool?.permission ?? 'user'
-  return (LEVELS[level] ?? 0) >= (LEVELS[required] ?? 0)
+  const required = tool?.permission ?? 'user';
+  return (LEVELS[level] ?? 0) >= (LEVELS[required] ?? 0);
 }
 
 export class PermissionDeniedError extends Error {
   constructor(toolName) {
-    super(`Akses ditolak: tool '${toolName}' memerlukan permission lebih tinggi.`)
-    this.name = 'PermissionDeniedError'
-    this.toolName = toolName
+    super(
+      `Akses ditolak: tool '${toolName}' memerlukan permission lebih tinggi.`
+    );
+    this.name = 'PermissionDeniedError';
+    this.toolName = toolName;
   }
 }

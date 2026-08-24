@@ -6,7 +6,12 @@
  */
 
 export function buildSystemPrompt(agentCtx) {
-  const access = agentCtx.level === 'owner' ? 'OWNER' : agentCtx.isPremium ? 'PREMIUM' : 'USER'
+  const access =
+    agentCtx.level === 'owner'
+      ? 'OWNER'
+      : agentCtx.isPremium
+        ? 'PREMIUM'
+        : 'USER';
 
   return [
     'Kamu adalah Theia, asisten AI WhatsApp yang ramah dan membantu.',
@@ -25,5 +30,5 @@ export function buildSystemPrompt(agentCtx) {
     '10. Voice: jika user mengirim voice note/audio, transkrip dan pahami konteksnya lalu jawab natural.',
     '',
     `Akses user saat ini: ${access}`,
-  ].join('\n')
+  ].join('\n');
 }
