@@ -2,6 +2,17 @@ import { isOwnerJid } from '#helpers/owner.js';
 import { CommandError } from '#helpers/command-error.js';
 
 export function buildContext(s, sock) {
+  const isOwnerUser =
+    isOwnerJid(s.sender) ||
+    (s.senderAlt && isOwnerJid(s.senderAlt)) ||
+    (s.jidAlt && isOwnerJid(s.jidAlt));
+
+  const bypassMeta = (meta = {}) => {
+    const m = { ...meta };
+    if (isOwnerUser) m.bypass = true;
+    return m;
+  };
+
   return {
     sock,
     msg: s,
@@ -27,13 +38,6 @@ export function buildContext(s, sock) {
       return false;
     },
 
-    _bypassMeta: (meta = {}) => {
-      const m = { ...meta };
-      if (isOwnerJid(s.sender) || (s.senderAlt && isOwnerJid(s.senderAlt)) || (s.jidAlt && isOwnerJid(s.jidAlt)))
-        m.bypass = true;
-      return m;
-    },
-
     fail: (message) => {
       throw new CommandError(message);
     },
@@ -44,18 +48,18 @@ export function buildContext(s, sock) {
         s.jid,
         { ...body, ...options },
         { quoted: s.raw },
-        s._bypassMeta(meta)
+        bypassMeta(meta)
       );
     },
 
     send: (content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.enqueueSend(s.jid, { ...body, ...options }, {}, s._bypassMeta(meta));
+      return sock.enqueueSend(s.jid, { ...body, ...options }, {}, bypassMeta(meta));
     },
 
     sendTo: (targetJid, content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.enqueueSend(targetJid, { ...body, ...options }, {}, s._bypassMeta(meta));
+      return sock.enqueueSend(targetJid, { ...body, ...options }, {}, bypassMeta(meta));
     },
 
     react: (emoji, meta = {}) =>
@@ -63,7 +67,7 @@ export function buildContext(s, sock) {
         s.jid,
         { react: { text: emoji, key: s.key } },
         {},
-        s._bypassMeta(meta)
+        bypassMeta(meta)
       ),
 
     sendMedia: (type, data, caption = '', options = {}, meta = {}) =>
@@ -75,7 +79,7 @@ export function buildContext(s, sock) {
           ...options,
         },
         { quoted: s.raw },
-        s._bypassMeta(meta)
+        bypassMeta(meta)
       ),
 
     sendLinkPreview: async (
@@ -122,7 +126,7 @@ export function buildContext(s, sock) {
     },
 
     deleteMessage: (msgKey = s.key, meta = {}) =>
-      sock.enqueueSend(s.jid, { delete: msgKey }, {}, s._bypassMeta(meta)),
+      sock.enqueueSend(s.jid, { delete: msgKey }, {}, bypassMeta(meta)),
     downloadMedia: () =>
       s.isMedia ? sock.downloadMediaMessage(s.raw) : Promise.resolve(null),
     typing: () => sock.sendPresenceUpdate('composing', s.jid),
