@@ -8,6 +8,15 @@ const bar = (cur, max) => {
   return '█'.repeat(f) + '░'.repeat(HP_LEN - f);
 };
 
+function nodeProgress(run) {
+  if (!run) return '';
+  const filled = Math.max(
+    0,
+    Math.min(run.total_nodes, Math.round((run.current_node / run.total_nodes) * 10))
+  );
+  return `🗺️ *Node ${run.current_node}/${run.total_nodes}* [${'█'.repeat(filled)}${'░'.repeat(10 - filled)}]`;
+}
+
 function renderBlessingOptions(optionIds) {
   let text = '✨ *Pilih Blessing:*\n\n';
   optionIds.forEach((id, i) => {
@@ -21,23 +30,18 @@ function renderBlessingOptions(optionIds) {
 function renderCombat(result) {
   const { monster, rounds, won, finalHp, rewardCash, rewardExp, drop, revived, cleared, nodeType, pendingChoice, run } = result;
 
-  const roundLog = rounds
-    .slice(0, 4)
-    .map((r) => {
+  const shown = rounds.slice(0, 2);
+  const roundLog = shown
+    .map((r, i) => {
       const p = r.events.find((e) => e.by === 'player');
       const m = r.events.find((e) => e.by === 'monster');
-      return [
-        p && `  ⚔️ Kamu hit *${F.formatNumber(p.dmg)}*${p.crit ? ' 💥CRIT!' : ''}`,
-        m && `  💢 ${monster.emoji} hit *${F.formatNumber(m.dmg)}*`,
-        `  ❤️ ${r.pHp} vs 👾 ${r.mHp}`,
-      ]
-        .filter(Boolean)
-        .join('\n');
+      return `  R${i + 1}: ⚔️${F.formatNumber(p?.dmg ?? 0)}${p?.crit ? '💥' : ''} 💢${F.formatNumber(m?.dmg ?? 0)} ❤️${r.pHp}👾${r.mHp}`;
     })
-    .join('\n\n');
+    .join('\n');
+  const moreRounds = rounds.length - shown.length;
 
   const label = nodeType === 'boss' ? 'BOSS' : nodeType === 'elite' ? 'ELITE' : 'COMBAT';
-  let text = `${monster.emoji} *${label} — ${monster.name}*\n\n${roundLog}${rounds.length > 4 ? `\n  _...${rounds.length - 4} ronde lagi..._` : ''}\n\n`;
+  let text = `${nodeProgress(run)}\n\n${monster.emoji} *${label} — ${monster.name}*\n${roundLog}${moreRounds > 0 ? `\n  _...${moreRounds} ronde lagi..._` : ''}\n\n`;
 
   if (won) {
     text += cleared ? '🏆🎉 *BOSS TUMBANG! DUNGEON CLEAR!*' : '🏆 *MENANG!*';
@@ -60,8 +64,8 @@ function renderCombat(result) {
 }
 
 function renderTreasure(result) {
-  const { cash, curioId } = result;
-  let text = `📦 *Treasure!*\n\n🪙 +${F.formatNumber(cash)}`;
+  const { cash, curioId, run } = result;
+  let text = `${nodeProgress(run)}\n\n📦 *Treasure!*\n\n🪙 +${F.formatNumber(cash)}`;
   if (curioId) {
     const c = dungeonService.getCurioInfo(curioId);
     text += `\n🔮 Curio baru: *${c.name}* — ${c.desc}`;
@@ -71,11 +75,11 @@ function renderTreasure(result) {
 }
 
 function renderAwaitingChoice(result) {
-  const { pendingChoice } = result;
+  const { pendingChoice, run } = result;
 
-  if (pendingChoice.kind === 'blessing') return renderBlessingOptions(pendingChoice.optionIds);
+  if (pendingChoice.kind === 'blessing') return `${nodeProgress(run)}\n\n${renderBlessingOptions(pendingChoice.optionIds)}`;
 
-  let text = `${pendingChoice.text}\n\n`;
+  let text = `${nodeProgress(run)}\n\n${pendingChoice.text}\n\n`;
   pendingChoice.options.forEach((label, i) => {
     text += `${i + 1}. ${label}\n`;
   });
@@ -84,22 +88,22 @@ function renderAwaitingChoice(result) {
 }
 
 function renderBlessingPicked(result) {
-  const { picked } = result;
-  return `${picked.emoji} Kamu memilih *${picked.name}*!\n_${picked.desc}_\n\nKetik \`!dungeon\` untuk lanjut ke node berikutnya.`;
+  const { picked, run } = result;
+  return `${nodeProgress(run)}\n\n${picked.emoji} Kamu memilih *${picked.name}*!\n_${picked.desc}_\n\nKetik \`!dungeon\` untuk lanjut ke node berikutnya.`;
 }
 
 function renderRestPicked(result) {
-  const { picked, grantedBlessingId } = result;
+  const { picked, grantedBlessingId, run } = result;
   if (picked.type === 'heal') {
-    return '💤 Kamu beristirahat, HP kamu pulih!\n\nKetik `!dungeon` untuk lanjut ke node berikutnya.';
+    return `${nodeProgress(run)}\n\n💤 Kamu beristirahat, HP kamu pulih!\n\nKetik \`!dungeon\` untuk lanjut ke node berikutnya.`;
   }
   const b = dungeonService.getBlessingInfo(grantedBlessingId);
-  return `🧘 Meditasi selesai. Kamu mendapat blessing ${b.emoji} *${b.name}* — ${b.desc}\n\nKetik \`!dungeon\` untuk lanjut ke node berikutnya.`;
+  return `${nodeProgress(run)}\n\n🧘 Meditasi selesai. Kamu mendapat blessing ${b.emoji} *${b.name}* — ${b.desc}\n\nKetik \`!dungeon\` untuk lanjut ke node berikutnya.`;
 }
 
 function renderEventResolved(result) {
-  const { outcome, fightResult, defeated } = result;
-  let text = outcome.text ?? '';
+  const { outcome, fightResult, defeated, run } = result;
+  let text = `${nodeProgress(run)}\n\n${outcome.text ?? ''}`;
 
   if (outcome.cashDelta) text += `\n🪙 +${F.formatNumber(outcome.cashDelta)}`;
   if (outcome.expDelta) text += `\n⭐ +${outcome.expDelta} EXP`;

@@ -159,7 +159,7 @@ export function createSchema() {
       jid           TEXT    PRIMARY KEY,
       status        TEXT    NOT NULL DEFAULT 'active',
       current_node  INTEGER NOT NULL DEFAULT 1,
-      total_nodes   INTEGER NOT NULL DEFAULT 6,
+      total_nodes   INTEGER NOT NULL DEFAULT 12,
       node_types    TEXT    NOT NULL,
       blessings     TEXT    NOT NULL DEFAULT '[]',
       curios        TEXT    NOT NULL DEFAULT '[]',

@@ -588,7 +588,7 @@ class DungeonService {
 
   _generateNodeTypes() {
     const mid = [];
-    for (let i = 0; i < 4; i++) mid.push(this._weightedNodeType());
+    for (let i = 0; i < 10; i++) mid.push(this._weightedNodeType());
     return ['combat', ...mid, 'boss'];
   }
 

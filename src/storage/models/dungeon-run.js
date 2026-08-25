@@ -6,7 +6,7 @@ db.exec(`
     jid TEXT PRIMARY KEY,
     status TEXT NOT NULL DEFAULT 'active',      -- active | cleared | defeated | abandoned
     current_node INTEGER NOT NULL DEFAULT 1,     -- 1-based, node yang sedang dihadapi
-    total_nodes INTEGER NOT NULL DEFAULT 6,
+    total_nodes INTEGER NOT NULL DEFAULT 12,
     node_types TEXT NOT NULL,                    -- JSON array, e.g. ["combat","event","elite","treasure","rest","boss"]
     blessings TEXT NOT NULL DEFAULT '[]',         -- JSON array of blessing id yang sudah dikoleksi (stacking)
     curios TEXT NOT NULL DEFAULT '[]',            -- JSON array of curio id yang sudah dikoleksi
