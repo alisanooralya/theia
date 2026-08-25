@@ -2,6 +2,7 @@ import { robService } from '#features/combat/rob.js';
 import { userModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import { phoneToJid } from '#helpers/identifier.js';
+import { isOwnerJid } from '#helpers/owner.js';
 
 export default {
   name: 'rob',
@@ -21,6 +22,10 @@ export default {
       ctx.fail('Usage: `.rob @tag`, reply pesan target, atau `.rob <nomor>`');
     if (targetJid === ctx.sender)
       ctx.fail('❌ Tidak bisa merampok diri sendiri.');
+    if (isOwnerJid(targetJid)) {
+      await ctx.reply('🛡️ Tidak bisa merampok owner!');
+      return;
+    }
 
     userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     const target = userModel.findById(targetJid);

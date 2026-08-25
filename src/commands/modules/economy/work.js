@@ -15,7 +15,7 @@ export default {
   aliases: ['kerja', 'bekerja'],
   category: 'economy',
   description: 'Cari uang dengan bekerja',
-  cooldown: 30 * 60 * 1000,
+  cooldown: 3 * 60 * 60 * 1000,
 
   async execute(ctx) {
     userModel.ensure(ctx.sender, { pushName: ctx.pushName });
