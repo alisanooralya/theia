@@ -137,6 +137,7 @@ export default {
   category: 'rpg',
   description: 'Masuki dungeon run (mini roguelike) dan lawan monster PvE',
   cooldown: 5_000,
+  isProblem: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();

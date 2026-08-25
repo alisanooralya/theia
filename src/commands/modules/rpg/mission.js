@@ -36,13 +36,21 @@ export default {
     if (!allProgress.length) return ctx.reply('📋 Belum ada quest.');
 
     let text = '📋 *Quest Progress*\n\n';
+    let shown = 0;
     for (const q of allProgress) {
-      const badge = q.claimed ? '✅' : q.completed ? '⭐' : '📌';
+      if (q.claimed) continue;
+      shown++;
+      const badge = q.completed ? '⭐' : '📌';
       const progressBar =
         '█'.repeat(Math.round((q.progress / q.goal) * 10)) +
         '░'.repeat(10 - Math.round((q.progress / q.goal) * 10));
       text += `${badge} *${q.name}*\n  ${progressBar} ${q.progress}/${q.goal}\n  _${q.description}_\n\n`;
     }
+
+    if (!shown)
+      return ctx.reply(
+        '🎉 Semua quest sudah diklaim! Cek lagi setelah reset harian/mingguan.'
+      );
 
     await ctx.reply(
       `${text.trimEnd()}\n\nKetik \`!mission claim <id>\` untuk klaim reward.`

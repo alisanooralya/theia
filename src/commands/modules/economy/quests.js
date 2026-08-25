@@ -16,12 +16,19 @@ export default {
     const progress = questModel.getAllProgress(ctx.sender);
     const progMap = new Map(progress.map((p) => [p.quest_id, p]));
     const typeLabel = { daily: 'Harian', weekly: 'Mingguan', story: 'Story' };
-    const lines = quests.slice(0, 5).map((q) => {
-      const p = progMap.get(q.id);
-      const cur = p ? `${p.progress}/${q.goal}` : `0/${q.goal}`;
-      const done = p?.completed ? '✅' : '⏳';
-      return `${done} *${q.name}* \`${q.id}\`\n  ${q.description} (${cur}) · ${typeLabel[q.type] ?? q.type} · 🎁 ${F.formatNumber(q.reward_cash)}`;
-    });
+    const lines = quests
+      .filter((q) => !progMap.get(q.id)?.claimed)
+      .slice(0, 5)
+      .map((q) => {
+        const p = progMap.get(q.id);
+        const cur = p ? `${p.progress}/${q.goal}` : `0/${q.goal}`;
+        const done = p?.completed ? '✅' : '⏳';
+        return `${done} *${q.name}* \`${q.id}\`\n  ${q.description} (${cur}) · ${typeLabel[q.type] ?? q.type} · 🎁 ${F.formatNumber(q.reward_cash)}`;
+      });
+    if (!lines.length)
+      return ctx.reply(
+        '🎉 Semua quest sudah diklaim! Cek lagi setelah reset harian/mingguan.'
+      );
     await ctx.reply(
       `*Daftar Quest*\n\n${lines.join('\n\n')}\n\n` +
         `Ketik \`${SETTINGS.prefix}mission claim <id>\` untuk klaim reward.`
