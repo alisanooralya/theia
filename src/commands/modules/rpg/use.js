@@ -2,6 +2,7 @@ import {
   statsModel,
   inventoryModel,
   itemModel,
+  walletModel,
 } from '#storage/models/index.js';
 
 const BUFF_DURATION = 3_600_000;
@@ -29,11 +30,23 @@ export default {
     );
     if (!item) ctx.fail('❌ Item tidak ditemukan di inventory kamu.');
 
-    if (item.category !== 'consumable')
-      ctx.fail('❌ Hanya item consumable yang bisa dipakai.');
-
     const def = itemModel.findById(item.item_id);
     const data = JSON.parse(def?.data ?? '{}');
+
+    if (item.item_id === 'bank_upgrade') {
+      const amount = Number(data.bankLimit) || 50000;
+      walletModel.upgradeBankLimit(ctx.sender, amount);
+      userModel.incrementBankUpgrade(ctx.sender);
+      const w = walletModel.find(ctx.sender);
+      inventoryModel.remove(ctx.sender, item.item_id, 1);
+      await ctx.reply(
+        `✅ Kamu menggunakan *${item.name}*!\n🏦 Limit bank +${amount} (sekarang ${w.bank_limit})`
+      );
+      return;
+    }
+
+    if (item.category !== 'consumable')
+      ctx.fail('❌ Hanya item consumable yang bisa dipakai.');
 
     statsModel.ensure(ctx.sender);
     let msg;

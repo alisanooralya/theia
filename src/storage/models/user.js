@@ -62,6 +62,31 @@ class UserModel {
     return level * level * 100;
   }
 
+  recordDaily(jid) {
+    const user = this._findById().get(jid);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const last = user?.last_daily ?? 0;
+    let streak = 1;
+    if (last > 0) {
+      const gapSec = nowSec - last;
+      if (gapSec < 48 * 3600) streak = (user.daily_streak ?? 0) + 1;
+    }
+    db.prepare(
+      'UPDATE users SET daily_streak = @streak, last_daily = @last, updated_at = unixepoch() WHERE jid = @jid'
+    ).run({ jid, streak, last: nowSec });
+    return streak;
+  }
+
+  incrementBankUpgrade(jid) {
+    db.prepare(
+      'UPDATE users SET bank_upgrade_count = bank_upgrade_count + 1, updated_at = unixepoch() WHERE jid = @jid'
+    ).run({ jid });
+  }
+
+  getBankUpgradeCount(jid) {
+    return this._findById().get(jid)?.bank_upgrade_count ?? 0;
+  }
+
   setPremium(jid, durationMs) {
     const expiresAt = Math.floor((Date.now() + durationMs) / 1000);
     this._setPremium().run({ jid, premium: 1, premiumExp: expiresAt });

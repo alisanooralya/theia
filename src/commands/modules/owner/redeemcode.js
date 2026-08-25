@@ -1,6 +1,6 @@
 import { redeemCodeModel } from '#storage/models/index.js';
 import { broadcastService } from '#features/broadcast.js';
-import { getOwnerJids } from '#helpers/owner.js';
+import { getOwnerPhoneJids } from '#helpers/owner.js';
 import { F } from '#helpers/index.js';
 
 export default {
@@ -27,7 +27,7 @@ export default {
         amount,
         Date.now() + durationMs
       );
-      const ownerJids = getOwnerJids();
+      const ownerJids = getOwnerPhoneJids();
       const ownerText = ownerJids
         .map((jid) => `@${jid.split('@')[0]}`)
         .join(', ');

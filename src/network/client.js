@@ -9,6 +9,7 @@ import { registerEvents } from '#events/registry.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 import { GROUP_CACHE_TTL } from '#environment/limits.js';
+import { createSendQueue } from '#network/send-queue.js';
 
 const groupCache = new NodeCache({
   stdTTL: GROUP_CACHE_TTL / 1000,
@@ -76,6 +77,11 @@ export async function createClient() {
   });
 
   sock._saveCreds = saveCreds;
+
+  const originalSend = sock.sendMessage.bind(sock);
+  const sendQueue = createSendQueue(originalSend, { rateLimitMs: 3_000 });
+  sock.sendMessage = (jid, content, options) => sendQueue.enqueue(jid, content, options);
+  sock.enqueueSend = sendQueue.enqueue;
 
   if (SETTINGS.pairingNumber && !sock.authState.creds.registered) {
     requestPairingCode(sock).catch((err) =>

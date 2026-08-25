@@ -17,6 +17,12 @@ class WalletModel {
     return this._find().get(jid) ?? null;
   }
 
+  upgradeBankLimit(jid, amount) {
+    db.prepare(
+      'UPDATE wallets SET bank_limit = bank_limit + @amount, updated_at = unixepoch() WHERE jid = @jid'
+    ).run({ jid, amount });
+  }
+
   addCash(jid, amount) {
     const w = this._find().get(jid);
     if (amount < 0 && w && w.cash < Math.abs(amount))

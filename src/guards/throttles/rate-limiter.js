@@ -18,7 +18,7 @@ export async function checkRateLimit(ctx, _command) {
   if (count > RATE_LIMIT_MAX) {
     if (count === RATE_LIMIT_MAX + 1) {
       await ctx
-        .reply('Terlalu banyak command! Tunggu sebentar.')
+        .reply('Terlalu banyak command! Tunggu sebentar.', {}, { priority: 10 })
         .catch(() => {});
     }
     return false;

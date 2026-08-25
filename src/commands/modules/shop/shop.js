@@ -49,9 +49,11 @@ export default {
 
     for (const [cat, items] of Object.entries(grouped)) {
       text += `*[ ${cat.toUpperCase()} ]*\n`;
-      items.forEach((item) => {
+       items.forEach((item) => {
         const emoji = RARITY_EMOJI[item.rarity] ?? '⬜';
-        text += `${emoji} \`${item.id}\`\n  *${item.name}* — 🪙${F.formatNumber(item.price)}\n  _${item.description}_\n`;
+        const price = shopService.priceForBuy(ctx.sender, item);
+        const priceNote = item.id === 'bank_upgrade' ? ` (naik tiap pakai, sudah ${userModel.getBankUpgradeCount(ctx.sender)}x)` : '';
+        text += `${emoji} \`${item.id}\`\n  *${item.name}* — 🪙${F.formatNumber(price)}${priceNote}\n  _${item.description}_\n`;
       });
       text += '\n';
     }

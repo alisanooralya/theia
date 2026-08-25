@@ -14,6 +14,11 @@ class RedeemCodeModel {
 
   redeem(code, jid) {
     return db.transaction(() => {
+      const already = db
+        .prepare('SELECT 1 FROM redeem_codes WHERE used_by = @jid LIMIT 1')
+        .get({ jid });
+      if (already) throw new Error('Kamu sudah pernah me-redeem code.');
+
       const redeemCode = this._find().get(code);
       if (!redeemCode) throw new Error('Redeem code tidak ditemukan.');
       if (redeemCode.used_by) throw new Error('Redeem code sudah digunakan.');

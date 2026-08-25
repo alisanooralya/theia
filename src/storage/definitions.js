@@ -12,6 +12,9 @@ export function createSchema() {
       premium     INTEGER NOT NULL DEFAULT 0,
       premium_exp INTEGER NOT NULL DEFAULT 0,
       banned      INTEGER NOT NULL DEFAULT 0,
+      daily_streak INTEGER NOT NULL DEFAULT 0,
+      last_daily  INTEGER NOT NULL DEFAULT 0,
+      bank_upgrade_count INTEGER NOT NULL DEFAULT 0,
       created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
@@ -200,6 +203,15 @@ export function createSchema() {
     db.exec(
       'ALTER TABLE groups ADD COLUMN openclose INTEGER NOT NULL DEFAULT 0'
     );
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN daily_streak INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN last_daily INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN bank_upgrade_count INTEGER NOT NULL DEFAULT 0');
   } catch {}
   try {
     db.exec('ALTER TABLE warns ADD COLUMN damage INTEGER NOT NULL DEFAULT 0');

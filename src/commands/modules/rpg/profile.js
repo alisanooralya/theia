@@ -54,6 +54,7 @@ export default {
       `║  📦 Total : *${F.formatNumber(total)}*`,
       '║',
       `║  🏆 W/L   : *${stats.win}W* / ${stats.loss}L (${winrate}%)`,
+      `║  🔥 Streak: *${user.daily_streak || 0} hari*`,
       '╚══════════════════',
     ].join('\n');
 

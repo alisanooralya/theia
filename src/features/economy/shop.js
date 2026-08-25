@@ -4,17 +4,27 @@ import {
   inventoryModel,
   itemModel,
   statsModel,
+  userModel,
 } from '#storage/models/index.js';
 
 const SELL_RATE = 0.6;
 
 class ShopService {
+  priceForBuy(jid, item) {
+    if (item.id === 'bank_upgrade') {
+      const used = userModel.getBankUpgradeCount(jid);
+      return item.price * (used + 1);
+    }
+    return item.price;
+  }
+
   buy(jid, itemId, qty = 1) {
     const item = itemModel.findById(itemId);
     if (!item) throw new Error(`Item \`${itemId}\` tidak ditemukan.`);
-    if (item.price <= 0) throw new Error('Item ini tidak dijual di toko.');
+    const price = this.priceForBuy(jid, item);
+    if (price <= 0) throw new Error('Item ini tidak dijual di toko.');
 
-    const total = item.price * qty;
+    const total = price * qty;
     const wallet = walletModel.find(jid);
     if (!wallet || wallet.cash < total)
       throw new Error(
@@ -25,7 +35,7 @@ class ShopService {
       walletModel.addCash(jid, -total);
       inventoryModel.add(jid, itemId, qty);
     })();
-    return { item, qty, total };
+    return { item, qty, total, unitPrice: price };
   }
 
   sell(jid, itemId, qty = 1) {

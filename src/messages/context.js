@@ -31,37 +31,44 @@ export function buildContext(s, sock) {
       throw new CommandError(message);
     },
 
-    reply: (content, options = {}) => {
+    reply: (content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.sendMessage(
+      return sock.enqueueSend(
         s.jid,
         { ...body, ...options },
-        { quoted: s.raw }
+        { quoted: s.raw },
+        meta
       );
     },
 
-    send: (content, options = {}) => {
+    send: (content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.sendMessage(s.jid, { ...body, ...options });
+      return sock.enqueueSend(s.jid, { ...body, ...options }, {}, meta);
     },
 
-    sendTo: (targetJid, content, options = {}) => {
+    sendTo: (targetJid, content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.sendMessage(targetJid, { ...body, ...options });
+      return sock.enqueueSend(targetJid, { ...body, ...options }, {}, meta);
     },
 
-    react: (emoji) =>
-      sock.sendMessage(s.jid, { react: { text: emoji, key: s.key } }),
+    react: (emoji, meta = {}) =>
+      sock.enqueueSend(
+        s.jid,
+        { react: { text: emoji, key: s.key } },
+        {},
+        meta
+      ),
 
-    sendMedia: (type, data, caption = '', options = {}) =>
-      sock.sendMessage(
+    sendMedia: (type, data, caption = '', options = {}, meta = {}) =>
+      sock.enqueueSend(
         s.jid,
         {
           [type]: typeof data === 'string' ? { url: data } : data,
           caption,
           ...options,
         },
-        { quoted: s.raw }
+        { quoted: s.raw },
+        meta
       ),
 
     sendLinkPreview: async (
@@ -107,8 +114,8 @@ export function buildContext(s, sock) {
       });
     },
 
-    deleteMessage: (msgKey = s.key) =>
-      sock.sendMessage(s.jid, { delete: msgKey }),
+    deleteMessage: (msgKey = s.key, meta = {}) =>
+      sock.enqueueSend(s.jid, { delete: msgKey }, {}, meta),
     downloadMedia: () =>
       s.isMedia ? sock.downloadMediaMessage(s.raw) : Promise.resolve(null),
     typing: () => sock.sendPresenceUpdate('composing', s.jid),

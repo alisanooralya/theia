@@ -19,6 +19,10 @@ export function getOwnerJids() {
   return [...ownerJids];
 }
 
+export function getOwnerPhoneJids() {
+  return [...new Set(SETTINGS.ownerNumber)];
+}
+
 export async function resolveOwnerLids(sock) {
   if (!sock?.signalRepository?.lidMapping) return;
   let resolved = 0;

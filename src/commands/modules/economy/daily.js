@@ -22,8 +22,9 @@ export default {
     const exp = randInt(DAILY_EXP_MIN, DAILY_EXP_MAX);
     walletModel.reward(ctx.sender, cash, 'daily reward');
     const { leveledUp, newLevel } = userModel.addExp(ctx.sender, exp);
+    const streak = userModel.recordDaily(ctx.sender);
 
-    let text = `🎁 *Daily Reward!*\n\n🪙 +${F.formatNumber(cash)} cash\n⭐ +${exp} EXP`;
+    let text = `🎁 *Daily Reward!*\n\n🪙 +${F.formatNumber(cash)} cash\n⭐ +${exp} EXP\n🔥 Streak: *${streak} hari*`;
     if (leveledUp)
       text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
     await ctx.reply(text);
