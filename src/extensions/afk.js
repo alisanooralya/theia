@@ -64,13 +64,13 @@ export default {
         const a = afkModel.get(m);
         if (a) {
           const durMs = Date.now() - a.started_at * 1000;
+          const name = userModel.findById(m)?.push_name || m.split('@')[0];
           await sock
             .sendMessage(parsed.jid, {
               text:
-                `📴 @${m.split('@')[0]} sedang AFK` +
+                `📴 @${name} sedang AFK` +
                 (a.reason ? `: ${a.reason}` : '') +
                 ` (sejak ${F.formatDuration(durMs)}).`,
-              mentions: [m],
             })
             .catch(() => {});
         }
