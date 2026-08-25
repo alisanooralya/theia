@@ -128,6 +128,12 @@ export function createSchema() {
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS afk (
+      jid         TEXT    PRIMARY KEY,
+      reason      TEXT    NOT NULL DEFAULT '',
+      started_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
     CREATE TABLE IF NOT EXISTS redeem_codes (
       code        TEXT    PRIMARY KEY,
       amount      INTEGER NOT NULL,
@@ -230,6 +236,9 @@ export function createSchema() {
   } catch {}
   try {
     db.exec('ALTER TABLE warns ADD COLUMN damage INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec('CREATE TABLE IF NOT EXISTS afk (jid TEXT PRIMARY KEY, reason TEXT NOT NULL DEFAULT \'\', started_at INTEGER NOT NULL DEFAULT (unixepoch()))');
   } catch {}
 
   logger.info('Schema ready');

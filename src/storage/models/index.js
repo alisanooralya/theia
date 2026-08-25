@@ -10,3 +10,4 @@ export { questModel } from './quest.js';
 export { groupActivityModel } from './group-activity.js';
 export { redeemCodeModel } from './redeem-code.js';
 export { dungeonRunModel } from './dungeon-run.js';
+export { afkModel } from './afk.js';
