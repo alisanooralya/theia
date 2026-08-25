@@ -27,6 +27,13 @@ export function buildContext(s, sock) {
       return false;
     },
 
+    _bypassMeta: (meta = {}) => {
+      const m = { ...meta };
+      if (isOwnerJid(s.sender) || (s.senderAlt && isOwnerJid(s.senderAlt)) || (s.jidAlt && isOwnerJid(s.jidAlt)))
+        m.bypass = true;
+      return m;
+    },
+
     fail: (message) => {
       throw new CommandError(message);
     },
@@ -37,18 +44,18 @@ export function buildContext(s, sock) {
         s.jid,
         { ...body, ...options },
         { quoted: s.raw },
-        meta
+        s._bypassMeta(meta)
       );
     },
 
     send: (content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.enqueueSend(s.jid, { ...body, ...options }, {}, meta);
+      return sock.enqueueSend(s.jid, { ...body, ...options }, {}, s._bypassMeta(meta));
     },
 
     sendTo: (targetJid, content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.enqueueSend(targetJid, { ...body, ...options }, {}, meta);
+      return sock.enqueueSend(targetJid, { ...body, ...options }, {}, s._bypassMeta(meta));
     },
 
     react: (emoji, meta = {}) =>
@@ -56,7 +63,7 @@ export function buildContext(s, sock) {
         s.jid,
         { react: { text: emoji, key: s.key } },
         {},
-        meta
+        s._bypassMeta(meta)
       ),
 
     sendMedia: (type, data, caption = '', options = {}, meta = {}) =>
@@ -68,7 +75,7 @@ export function buildContext(s, sock) {
           ...options,
         },
         { quoted: s.raw },
-        meta
+        s._bypassMeta(meta)
       ),
 
     sendLinkPreview: async (
@@ -115,7 +122,7 @@ export function buildContext(s, sock) {
     },
 
     deleteMessage: (msgKey = s.key, meta = {}) =>
-      sock.enqueueSend(s.jid, { delete: msgKey }, {}, meta),
+      sock.enqueueSend(s.jid, { delete: msgKey }, {}, s._bypassMeta(meta)),
     downloadMedia: () =>
       s.isMedia ? sock.downloadMediaMessage(s.raw) : Promise.resolve(null),
     typing: () => sock.sendPresenceUpdate('composing', s.jid),

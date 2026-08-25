@@ -3,6 +3,7 @@ import {
   inventoryModel,
   itemModel,
   walletModel,
+  userModel
 } from '#storage/models/index.js';
 
 const BUFF_DURATION = 3_600_000;

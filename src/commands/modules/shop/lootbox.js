@@ -21,7 +21,10 @@ export default {
       const emoji = RARITY_EMOJI[result.rarity] ?? '🎁';
       const newBadge = result.isNew ? ' 🆕' : '';
       await ctx.reply(
-        `🎉 *Lootbox Opened!*\n\n${emoji} *${result.item.name}* (${result.rarity})${newBadge}`
+        `🎉 *Lootbox Opened!*\n\n` +
+          `${emoji} *${result.item.name}* (${result.rarity})${newBadge}\n` +
+          `🪙 +${result.coin} cash\n` +
+          `⭐ +${result.exp} EXP`
       );
     } catch (err) {
       await ctx.reply(`❌ ${err.message}`);

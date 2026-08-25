@@ -133,6 +133,10 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
   }
 
   function enqueue(jid, content, options, meta = {}) {
+    if (meta.bypass) {
+      return sendFn(jid, content, options);
+    }
+
     const priority = Number(meta.priority) || 0;
     const useDedup = !!meta.dedup;
 

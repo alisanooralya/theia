@@ -1,5 +1,10 @@
 import { db } from '#storage/connection.js';
-import { inventoryModel, itemModel } from '#storage/models/index.js';
+import {
+  inventoryModel,
+  itemModel,
+  walletModel,
+  userModel,
+} from '#storage/models/index.js';
 
 const RARITY_WEIGHTS = [
   { rarity: 'legendary', weight: 1 },
@@ -10,10 +15,28 @@ const RARITY_WEIGHTS = [
 ];
 const TOTAL_WEIGHT = RARITY_WEIGHTS.reduce((s, r) => s + r.weight, 0);
 
+const COIN_REWARD = {
+  common: 500,
+  uncommon: 1_200,
+  rare: 3_000,
+  epic: 6_000,
+  legendary: 15_000,
+};
+const EXP_REWARD = {
+  common: 20,
+  uncommon: 50,
+  rare: 120,
+  epic: 250,
+  legendary: 600,
+};
+
 class LootboxService {
   open(jid, lootboxId = 'lootbox_std') {
     if (!inventoryModel.hasItem(jid, lootboxId))
       throw new Error('Kamu tidak punya *Lootbox*. Beli dulu di toko!');
+
+    const box = itemModel.findById(lootboxId);
+    const mult = JSON.parse(box?.data ?? '{}').mult ?? 1;
 
     const rarity = this._rollRarity();
     const pool = itemModel
@@ -23,13 +46,17 @@ class LootboxService {
 
     const item = pool[Math.floor(Math.random() * pool.length)];
     const hadBefore = inventoryModel.hasItem(jid, item.id);
+    const coin = Math.floor((COIN_REWARD[rarity] ?? 0) * mult);
+    const exp = Math.floor((EXP_REWARD[rarity] ?? 0) * mult);
 
     db.transaction(() => {
       inventoryModel.remove(jid, lootboxId, 1);
       inventoryModel.add(jid, item.id, 1);
+      if (coin) walletModel.addCash(jid, coin);
+      if (exp) userModel.addExp(jid, exp);
     })();
 
-    return { item, rarity, isNew: !hadBefore };
+    return { item, rarity, isNew: !hadBefore, coin, exp, mult };
   }
 
   _rollRarity() {
