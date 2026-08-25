@@ -23,7 +23,7 @@ export default {
     if (targetJid === ctx.sender)
       ctx.fail('❌ Tidak bisa merampok diri sendiri.');
     if (isOwnerJid(targetJid)) {
-      await ctx.reply('🛡️ Tidak bisa merampok owner!');
+      await ctx.reply('Serius mau rampok owner? makan tuh cooldown yahaha!');
       return;
     }
 
