@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { logger } from '#helpers/logger.js';
 
-const YT_API_KEY = process.env.YT_API_KEY || 'AIzaSyA8eiZmM1FaDVjRy-df2KTyQ-vrgitc';
+const YT_API_KEY = process.env.YT_API_KEY || 'AIzaSyBoGKjHSmOqzMPpWHRYXmMGdRqYTplIRoU';
 const YT_PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player';
 
 if (!YT_API_KEY?.startsWith('AIza')) {
