@@ -304,8 +304,10 @@ class DivergentUniverseService {
     return RUN_LIMIT;
   }
 
-  getRun(jid) {
-    return divergentRunModel.find(jid);
+  getRun(jid, chatJid = null) {
+    const run = divergentRunModel.find(jid);
+    if (!run || !chatJid) return run;
+    return this._assertRunChat(run, chatJid);
   }
 
   getUsage(jid) {
@@ -317,16 +319,23 @@ class DivergentUniverseService {
     };
   }
 
-  start(jid, metadata = {}) {
-    return db.transaction(() => this._start(jid, metadata))();
+  start(jid, chatJid, metadata = {}) {
+    return db.transaction(() => this._start(jid, chatJid, metadata))();
   }
 
-  _start(jid, metadata = {}) {
+  _start(jid, chatJid, metadata = {}) {
+    if (!chatJid) throw new Error('Chat asal DU tidak valid.');
     userModel.ensure(jid, metadata);
     statsModel.ensure(jid);
     const current = divergentRunModel.find(jid);
     if (current?.status === 'active') {
       throw new Error('Masih ada run aktif. Gunakan `.du status` atau `.du abandon`.');
+    }
+    const chatRun = divergentRunModel.findActiveByChat(chatJid);
+    if (chatRun && chatRun.jid !== jid) {
+      throw new Error(
+        `Grup ini sedang dipakai oleh ${chatRun.push_name || 'pemain lain'} untuk menjalankan DU. Tunggu run tersebut selesai, gagal, atau ditinggalkan.`
+      );
     }
     const usage = normalizedUsage(divergentUsageModel.ensure(jid));
     if (usage.dailyCount >= RUN_LIMIT.daily) {
@@ -352,7 +361,7 @@ class DivergentUniverseService {
       revived: false,
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
     };
-    const run = divergentRunModel.create(jid, state);
+    const run = divergentRunModel.create(jid, chatJid, state);
     divergentUsageModel.save(jid, {
       ...usage,
       dailyCount: usage.dailyCount + 1,
@@ -361,8 +370,8 @@ class DivergentUniverseService {
     return run;
   }
 
-  choosePath(jid, pathId) {
-    const run = this._activeRun(jid);
+  choosePath(jid, chatJid, pathId) {
+    const run = this._activeRun(jid, chatJid);
     if (run.state.path) throw new Error('Path run ini sudah dipilih.');
     const path = String(pathId || '').toLowerCase();
     if (!PATHS[path]) throw new Error('Path tidak tersedia. Lihat daftar dengan `.du paths`.');
@@ -376,8 +385,8 @@ class DivergentUniverseService {
     return divergentRunModel.save(run);
   }
 
-  explore(jid) {
-    const run = this._activeRun(jid);
+  explore(jid, chatJid) {
+    const run = this._activeRun(jid, chatJid);
     const state = run.state;
     if (!state.path) throw new Error('Pilih Path dahulu dengan `.du path <nama>`.');
     if (state.pending) throw new Error('Selesaikan pilihan yang tertunda dengan `.du choose <nomor>`.');
@@ -393,12 +402,12 @@ class DivergentUniverseService {
     return divergentRunModel.save(run);
   }
 
-  choose(jid, rawChoice) {
-    return db.transaction(() => this._choose(jid, rawChoice))();
+  choose(jid, chatJid, rawChoice) {
+    return db.transaction(() => this._choose(jid, chatJid, rawChoice))();
   }
 
-  _choose(jid, rawChoice) {
-    const run = this._activeRun(jid);
+  _choose(jid, chatJid, rawChoice) {
+    const run = this._activeRun(jid, chatJid);
     const state = run.state;
     const pending = state.pending;
     if (!pending || pending.type === 'path') {
@@ -433,9 +442,10 @@ class DivergentUniverseService {
     return divergentRunModel.save(run);
   }
 
-  abandon(jid) {
-    const run = divergentRunModel.find(jid);
+  abandon(jid, chatJid) {
+    let run = divergentRunModel.find(jid);
     if (!run || run.status !== 'active') return false;
+    run = this._assertRunChat(run, chatJid);
     run.status = 'abandoned';
     run.state.pending = null;
     run.state.lastResult = 'Run dihentikan tanpa reward akhir.';
@@ -443,10 +453,25 @@ class DivergentUniverseService {
     return true;
   }
 
-  _activeRun(jid) {
+  _activeRun(jid, chatJid) {
     const run = divergentRunModel.find(jid);
     if (!run || run.status !== 'active') {
       throw new Error('Tidak ada run aktif. Mulai dengan `.du start`.');
+    }
+    return this._assertRunChat(run, chatJid);
+  }
+
+  _assertRunChat(run, chatJid) {
+    if (!chatJid) throw new Error('Chat asal DU tidak valid.');
+    if (!run.chat_jid) {
+      const chatRun = divergentRunModel.findActiveByChat(chatJid);
+      if (chatRun && chatRun.jid !== run.jid) {
+        throw new Error('Grup ini sudah memiliki run DU aktif milik pemain lain.');
+      }
+      return divergentRunModel.bindChat(run.jid, chatJid);
+    }
+    if (run.chat_jid !== chatJid) {
+      throw new Error('Run DU ini hanya dapat dimainkan di chat tempat run dimulai.');
     }
     return run;
   }

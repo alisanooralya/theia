@@ -126,6 +126,11 @@ export default {
   cooldown: 2_000,
 
   async execute(ctx) {
+    if (ctx.isPrivate && !ctx.isOwner()) {
+      return ctx.fail(
+        'Divergent Universe tidak dapat dimainkan melalui private chat. Gunakan command ini di grup. Private chat hanya tersedia untuk owner.'
+      );
+    }
     const sub = ctx.args[0]?.toLowerCase() || 'status';
 
     try {
@@ -148,6 +153,8 @@ export default {
           'Run memiliki 16 node: 6 battle, 3 event, 3 treasure, 2 elite, dan 2 boss.',
           'Cash/koin dan EXP hanya diberikan setelah semua 16 node clear.',
           `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
+          'Setiap grup hanya dapat memiliki satu pemain dengan run DU aktif.',
+          'DU tidak tersedia di private chat, kecuali untuk owner.',
         ].join('\n'));
       }
 
@@ -168,34 +175,34 @@ export default {
       }
 
       if (sub === 'start' || sub === 'mulai') {
-        const run = du.start(ctx.sender, { pushName: ctx.pushName });
+        const run = du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName });
         return ctx.reply(runText(run));
       }
 
       if (sub === 'path') {
         if (!ctx.args[1]) return ctx.reply(pathsText());
-        const run = du.choosePath(ctx.sender, ctx.args[1]);
+        const run = du.choosePath(ctx.sender, ctx.jid, ctx.args[1]);
         return ctx.reply(runText(run));
       }
 
       if (sub === 'explore' || sub === 'jelajah' || sub === 'next') {
-        const run = du.explore(ctx.sender);
+        const run = du.explore(ctx.sender, ctx.jid);
         return ctx.reply(runText(run));
       }
 
       if (sub === 'choose' || sub === 'pilih') {
-        const run = du.choose(ctx.sender, ctx.args[1]);
+        const run = du.choose(ctx.sender, ctx.jid, ctx.args[1]);
         return ctx.reply(runText(run));
       }
 
       if (sub === 'abandon' || sub === 'keluar') {
-        const abandoned = du.abandon(ctx.sender);
+        const abandoned = du.abandon(ctx.sender, ctx.jid);
         return ctx.reply(abandoned
           ? 'Run Divergent Universe dihentikan. Reward akhir hangus.'
           : 'Tidak ada run aktif untuk dihentikan.');
       }
 
-      const run = du.getRun(ctx.sender);
+      const run = du.getRun(ctx.sender, ctx.jid);
       if (!run) {
         return ctx.reply('Belum ada run Divergent Universe. Ketik `.du start` untuk memulai.');
       }

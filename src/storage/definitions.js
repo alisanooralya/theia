@@ -163,6 +163,7 @@ export function createSchema() {
 
     CREATE TABLE IF NOT EXISTS divergent_runs (
       jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+      chat_jid    TEXT,
       status      TEXT    NOT NULL DEFAULT 'active',
       state       TEXT    NOT NULL DEFAULT '{}',
       revision    INTEGER NOT NULL DEFAULT 0,
@@ -244,6 +245,14 @@ export function createSchema() {
   try {
     db.exec('CREATE TABLE IF NOT EXISTS afk (jid TEXT PRIMARY KEY, reason TEXT NOT NULL DEFAULT \'\', started_at INTEGER NOT NULL DEFAULT (unixepoch()))');
   } catch {}
+  try {
+    db.exec('ALTER TABLE divergent_runs ADD COLUMN chat_jid TEXT');
+  } catch {}
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_divergent_runs_active_chat
+    ON divergent_runs(chat_jid)
+    WHERE status = 'active' AND chat_jid IS NOT NULL
+  `);
 
   logger.info('Schema ready');
 }
