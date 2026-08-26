@@ -6,7 +6,7 @@ export default {
   aliases: ['cf', 'flip', 'toss'],
   category: 'economy',
   description: 'Main tebak koin',
-  cooldown: 5_000,
+  cooldown: 1_800_000,
 
   async execute(ctx) {
     const side = ctx.args[0]?.toLowerCase();
