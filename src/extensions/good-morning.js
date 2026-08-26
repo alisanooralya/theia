@@ -10,13 +10,12 @@ let lastSentKey = null;
 
 function wibParts() {
   const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000;
-  const wib = new Date(utcMs + WIB_OFFSET * 3_600_000);
-  const hhmm = `${String(wib.getUTCHours()).padStart(2, '0')}:${String(wib.getUTCMinutes()).padStart(2, '0')}`;
-  return {
-    hhmm,
-    dayKey: wib.toISOString().slice(0, 10),
-  };
+  const hour = (now.getUTCHours() + WIB_OFFSET) % 24;
+  const hhmm = `${String(hour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
+  const dayKey = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
+    .toISOString()
+    .slice(0, 10);
+  return { hhmm, dayKey };
 }
 
 async function sendGoodMorning() {

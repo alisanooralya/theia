@@ -4,20 +4,19 @@ import { logger } from '#helpers/logger.js'
 
 const WIB_OFFSET = 7
 const TICK_MS = 30_000
-const CLOSE_TIME = '18:30'
-const OPEN_TIME = '20:00'
+const CLOSE_TIME = '23:00'
+const OPEN_TIME = '05:00'
 let timer = null
 let lastKey = null
 
 function wibParts() {
   const now = new Date()
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-  const wib = new Date(utcMs + WIB_OFFSET * 3_600_000)
-  const hhmm = `${String(wib.getUTCHours()).padStart(2, '0')}:${String(wib.getUTCMinutes()).padStart(2, '0')}`
-  return {
-    hhmm,
-    dayKey: wib.toISOString().slice(0, 10),
-  }
+  const hour = (now.getUTCHours() + WIB_OFFSET) % 24
+  const hhmm = `${String(hour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`
+  const dayKey = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
+    .toISOString()
+    .slice(0, 10)
+  return { hhmm, dayKey }
 }
 
 async function applyState(jid, wantClosed) {
