@@ -9,6 +9,15 @@ if (!YT_API_KEY?.startsWith('AIza')) {
 }
 
 const CLIENTS = {
+  WEB_EMBEDDED: {
+    clientName: 'WEB_EMBEDDED_PLAYER',
+    clientVersion: '1.20250522.01.00',
+    thirdParty: { embedUrl: 'https://www.youtube.com' },
+  },
+  TVHTML5_SIMPLY: {
+    clientName: 'TVHTML5_SIMPLY_EMBEDDED_PLAYER',
+    clientVersion: '2.0',
+  },
   WEB: { clientName: 'WEB', clientVersion: '2.20250522.01.00' },
   MWEB: { clientName: 'MWEB', clientVersion: '2.20250522.01.00' },
   TVHTML5: { clientName: 'TVHTML5', clientVersion: '7.20250522.10.00' },
@@ -25,7 +34,13 @@ class YoutubeService {
 
     const { audioOnly = false, quality = 'best' } = opts;
 
-    let playerData = await this._fetchPlayer(videoId, 'WEB');
+    let playerData = await this._fetchPlayer(videoId, 'WEB_EMBEDDED');
+    if (!this._isPlayable(playerData)) {
+      playerData = await this._fetchPlayer(videoId, 'TVHTML5_SIMPLY');
+    }
+    if (!this._isPlayable(playerData)) {
+      playerData = await this._fetchPlayer(videoId, 'WEB');
+    }
     if (!this._isPlayable(playerData)) {
       playerData = await this._fetchPlayer(videoId, 'MWEB');
     }
@@ -36,8 +51,12 @@ class YoutubeService {
       if (!playerData) {
         throw new Error('Gagal mengambil data video dari YouTube. Coba lagi nanti.');
       }
+      const reason = playerData?.playabilityStatus?.reason;
+      if (reason?.includes('bot') || reason?.includes('Sign in')) {
+        throw new Error('YouTube mendeteksi bot. Coba lagi nanti atau gunakan video lain.');
+      }
       throw new Error(
-        `Video tidak bisa diputar: ${playerData?.playabilityStatus?.reason ?? 'Tidak diketahui'}`
+        `Video tidak bisa diputar: ${reason ?? 'Tidak diketahui'}`
       );
     }
 
@@ -46,32 +65,44 @@ class YoutubeService {
 
   async _fetchPlayer(videoId, clientName) {
     const client = CLIENTS[clientName];
+    const isEmbedded = clientName.includes('EMBEDDED');
     try {
+      const body = {
+        videoId,
+        contentCheckOk: true,
+        racyCheckOk: true,
+        context: {
+          client: { ...client, hl: 'en', gl: 'US', utcOffsetMinutes: 0 },
+        },
+      };
+      if (client.thirdParty) {
+        body.thirdParty = client.thirdParty;
+      }
+
+      const headers = {
+        'content-type': 'application/json',
+        'user-agent':
+          clientName === 'TVHTML5' || clientName === 'TVHTML5_SIMPLY'
+            ? 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0)'
+            : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'x-youtube-client-version': client.clientVersion,
+        origin: 'https://www.youtube.com',
+        referer: 'https://www.youtube.com/',
+      };
+      if (isEmbedded) {
+        headers['x-youtube-client-name'] = '56';
+      } else if (clientName === 'WEB') {
+        headers['x-youtube-client-name'] = '1';
+      } else if (clientName === 'MWEB') {
+        headers['x-youtube-client-name'] = '2';
+      } else {
+        headers['x-youtube-client-name'] = '7';
+      }
+
       const { data } = await axios.post(
         `${YT_PLAYER_URL}?key=${YT_API_KEY}&prettyPrint=false`,
-        {
-          videoId,
-          contentCheckOk: true,
-          racyCheckOk: true,
-          context: {
-            client: { ...client, hl: 'en', gl: 'US', utcOffsetMinutes: 0 },
-          },
-        },
-        {
-          headers: {
-            'content-type': 'application/json',
-            'user-agent':
-              clientName === 'TVHTML5'
-                ? 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0)'
-                : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'x-youtube-client-name':
-              clientName === 'WEB' ? '1' : clientName === 'MWEB' ? '2' : '7',
-            'x-youtube-client-version': client.clientVersion,
-            origin: 'https://www.youtube.com',
-            referer: 'https://www.youtube.com/',
-          },
-          timeout: 15000,
-        }
+        body,
+        { headers, timeout: 15000 }
       );
       return data;
     } catch (err) {
