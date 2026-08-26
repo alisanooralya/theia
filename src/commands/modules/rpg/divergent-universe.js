@@ -63,6 +63,7 @@ function runText(run) {
   const reward = state.finalReward
     ? `\nReward: *${F.formatNumber(state.finalReward.cash)} cash* + *${state.finalReward.exp} EXP*`
     : '';
+  const usage = du.getUsage(run.jid);
 
   return [
     '⌁ *DIVERGENT UNIVERSE*',
@@ -71,6 +72,7 @@ function runText(run) {
     `HP: ${bar(state.hp, maxHp)} *${state.hp}/${maxHp}*`,
     `Fragment: *${F.formatNumber(state.fragments)}*`,
     `Blessing: *${state.blessings.length}* | Curio: *${state.curios.length}*`,
+    `Kesempatan: harian *${usage.dailyCount}/${du.runLimit.daily}* | mingguan *${usage.weeklyCount}/${du.runLimit.weekly}*`,
     '',
     map,
     '`✓ clear` `◆ saat ini` `E elite` `B boss`',
@@ -111,6 +113,8 @@ function rewardText() {
     '*Syarat:* seluruh 16 node harus clear dan boss terakhir harus dikalahkan.',
     'Kalah hingga HP habis sebelum node 16 tidak memberikan cash/koin maupun EXP.',
     'Fragment adalah currency run dan tidak masuk ke wallet secara langsung.',
+    '',
+    `Batas bermain: *${du.runLimit.daily}x per hari* dan *${du.runLimit.weekly}x per minggu*.`
   ].join('\n');
 }
 
@@ -138,15 +142,30 @@ export default {
           '`.du blessings` - lihat Blessing milikmu',
           '`.du curios` - lihat Curio milikmu',
           '`.du reward` - lihat formula hadiah clear',
+          '`.du limit` - lihat sisa kesempatan bermain',
           '`.du abandon` - hentikan run',
           '',
           'Run memiliki 16 node: 6 battle, 3 event, 3 treasure, 2 elite, dan 2 boss.',
           'Cash/koin dan EXP hanya diberikan setelah semua 16 node clear.',
+          `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
         ].join('\n'));
       }
 
       if (sub === 'paths' || sub === 'pathlist') return ctx.reply(pathsText());
       if (sub === 'reward' || sub === 'hadiah') return ctx.reply(rewardText());
+      if (sub === 'limit' || sub === 'kuota') {
+        const usage = du.getUsage(ctx.sender);
+        return ctx.reply([
+          '⌁ *LIMIT DIVERGENT UNIVERSE*',
+          '',
+          `Harian: *${usage.dailyCount}/${du.runLimit.daily}* digunakan, *${usage.dailyRemaining}* tersisa.`,
+          `Mingguan: *${usage.weeklyCount}/${du.runLimit.weekly}* digunakan, *${usage.weeklyRemaining}* tersisa.`,
+          '',
+          'Limit harian reset pukul 00.00.',
+          'Limit mingguan reset Senin pukul 00.00.',
+          'Run yang kalah atau ditinggalkan tetap dihitung.',
+        ].join('\n'));
+      }
 
       if (sub === 'start' || sub === 'mulai') {
         const run = du.start(ctx.sender, { pushName: ctx.pushName });

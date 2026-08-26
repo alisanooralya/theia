@@ -170,6 +170,15 @@ export function createSchema() {
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS divergent_usage (
+      jid          TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+      daily_key    TEXT    NOT NULL DEFAULT '',
+      daily_count  INTEGER NOT NULL DEFAULT 0,
+      weekly_key   TEXT    NOT NULL DEFAULT '',
+      weekly_count INTEGER NOT NULL DEFAULT 0,
+      updated_at   INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
     CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at);

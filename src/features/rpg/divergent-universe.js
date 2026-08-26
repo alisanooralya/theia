@@ -1,6 +1,8 @@
 import { db } from '#storage/connection.js';
+import SETTINGS from '#environment/settings.js';
 import {
   divergentRunModel,
+  divergentUsageModel,
   statsModel,
   userModel,
   walletModel,
@@ -99,6 +101,45 @@ const FINAL_REWARD = {
   baseExp: 550,
   expPerBlessing: 25,
 };
+
+const RUN_LIMIT = {
+  daily: 2,
+  weekly: 5,
+};
+
+const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: SETTINGS.timezone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+function periodKeys(date = new Date()) {
+  const parts = Object.fromEntries(
+    dateFormatter
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value])
+  );
+  const dailyKey = `${parts.year}-${parts.month}-${parts.day}`;
+  const localDate = new Date(
+    Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day))
+  );
+  const daysSinceMonday = (localDate.getUTCDay() + 6) % 7;
+  localDate.setUTCDate(localDate.getUTCDate() - daysSinceMonday);
+  const weeklyKey = localDate.toISOString().slice(0, 10);
+  return { dailyKey, weeklyKey };
+}
+
+function normalizedUsage(row, date = new Date()) {
+  const { dailyKey, weeklyKey } = periodKeys(date);
+  return {
+    dailyKey,
+    dailyCount: row?.daily_key === dailyKey ? row.daily_count : 0,
+    weeklyKey,
+    weeklyCount: row?.weekly_key === weeklyKey ? row.weekly_count : 0,
+  };
+}
 
 const EVENT_SCENARIOS = {
   'Ruan Mei Replica': [
@@ -259,16 +300,44 @@ class DivergentUniverseService {
     return FINAL_REWARD;
   }
 
+  get runLimit() {
+    return RUN_LIMIT;
+  }
+
   getRun(jid) {
     return divergentRunModel.find(jid);
   }
 
+  getUsage(jid) {
+    const usage = normalizedUsage(divergentUsageModel.find(jid));
+    return {
+      ...usage,
+      dailyRemaining: Math.max(0, RUN_LIMIT.daily - usage.dailyCount),
+      weeklyRemaining: Math.max(0, RUN_LIMIT.weekly - usage.weeklyCount),
+    };
+  }
+
   start(jid, metadata = {}) {
+    return db.transaction(() => this._start(jid, metadata))();
+  }
+
+  _start(jid, metadata = {}) {
     userModel.ensure(jid, metadata);
     statsModel.ensure(jid);
     const current = divergentRunModel.find(jid);
     if (current?.status === 'active') {
       throw new Error('Masih ada run aktif. Gunakan `.du status` atau `.du abandon`.');
+    }
+    const usage = normalizedUsage(divergentUsageModel.ensure(jid));
+    if (usage.dailyCount >= RUN_LIMIT.daily) {
+      throw new Error(
+        `Batas harian DU tercapai (${usage.dailyCount}/${RUN_LIMIT.daily}). Coba lagi setelah reset pukul 00.00 ${SETTINGS.timezone}.`
+      );
+    }
+    if (usage.weeklyCount >= RUN_LIMIT.weekly) {
+      throw new Error(
+        `Batas mingguan DU tercapai (${usage.weeklyCount}/${RUN_LIMIT.weekly}). Coba lagi setelah reset Senin pukul 00.00 ${SETTINGS.timezone}.`
+      );
     }
     const state = {
       path: null,
@@ -283,7 +352,13 @@ class DivergentUniverseService {
       revived: false,
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
     };
-    return divergentRunModel.create(jid, state);
+    const run = divergentRunModel.create(jid, state);
+    divergentUsageModel.save(jid, {
+      ...usage,
+      dailyCount: usage.dailyCount + 1,
+      weeklyCount: usage.weeklyCount + 1,
+    });
+    return run;
   }
 
   choosePath(jid, pathId) {
