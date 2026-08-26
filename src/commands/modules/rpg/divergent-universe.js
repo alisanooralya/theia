@@ -133,7 +133,7 @@ export default {
         'Divergent Universe tidak dapat dimainkan melalui private chat. Gunakan command ini di grup. Private chat hanya tersedia untuk owner.'
       );
     }
-    const sub = ctx.args[0]?.toLowerCase() || 'status';
+    const sub = ctx.args[0]?.toLowerCase() || 'help';
 
     try {
       if (sub === 'help' || sub === 'bantuan') {
@@ -216,7 +216,7 @@ export default {
         return ctx.reply(collectionText('Curio', run.state.curios));
       }
       if (sub !== 'status') {
-        return ctx.reply('Subcommand tidak dikenal. Ketik `.du help` untuk bantuan.');
+        return ctx.reply('Subcommand tidak dikenal. Ketik `.du` untuk bantuan.');
       }
       return ctx.reply(runText(run));
     } catch (error) {
