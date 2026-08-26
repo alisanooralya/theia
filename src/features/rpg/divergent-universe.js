@@ -93,6 +93,13 @@ const BASE_REWARD = {
   boss: { fragments: 300, cash: 0 },
 };
 
+const FINAL_REWARD = {
+  baseCash: 9_000,
+  cashPerFragment: 9,
+  baseExp: 550,
+  expPerBlessing: 25,
+};
+
 const EVENT_SCENARIOS = {
   'Ruan Mei Replica': [
     { id: 'research', name: 'Bantu Penelitian', text: 'Dapatkan Blessing acak dan 60 fragment.' },
@@ -248,6 +255,10 @@ class DivergentUniverseService {
     return CURIOS;
   }
 
+  get finalReward() {
+    return FINAL_REWARD;
+  }
+
   getRun(jid) {
     return divergentRunModel.find(jid);
   }
@@ -400,11 +411,24 @@ class DivergentUniverseService {
         return;
       }
       if (state.hp <= 0) {
-        state.lastResult = `Run berakhir. Kamu dikalahkan ${node.name} di node ${node.position}.`;
+        const cleared = state.nodes.filter((item) => item.cleared).length;
+        state.lastResult = [
+          `RUN GAGAL: Kamu dikalahkan ${node.name} (${node.type}) di node ${node.position}/16.`,
+          `Damage diterima: ${damage} | HP: 0/${maxHp(state)} | Node clear: ${cleared}/16.`,
+          `${state.fragments} Fragment yang terkumpul hangus bersama run ini.`,
+          'Tidak ada cash/koin atau EXP yang diberikan karena node 16 belum diselesaikan.',
+          'Hadiah hanya diberikan jika seluruh Divergent Universe berhasil dimenangkan.',
+        ].join('\n');
         state.pending = null;
         return;
       }
-      state.lastResult = `Serangan terhadap ${node.name} gagal. HP -${damage}. Kamu dapat mencoba node ini lagi.`;
+      state.lastResult = [
+        `PERTARUNGAN KALAH: ${node.name} belum dikalahkan di node ${node.position}/16.`,
+        `Damage diterima: ${damage} | HP tersisa: ${state.hp}/${maxHp(state)} | Peluang menang: ${Math.round(winChance * 100)}%.`,
+        'Node belum clear dan progres tidak maju. Fragment, Blessing, serta Curio tetap tersimpan.',
+        'Kamu belum mendapat cash/koin atau EXP. Reward hanya dibayar setelah semua 16 node clear.',
+        'Pulihkan HP melalui event jika tersedia, atau ketik `.du explore` untuk mencoba lagi.',
+      ].join('\n');
       return;
     }
 
@@ -593,8 +617,13 @@ class DivergentUniverseService {
   _finish(run) {
     const state = run.state;
     const effects = totalEffects(state);
-    const rewardCash = Math.floor((7_500 + state.fragments * 8) * (1 + (effects.cashMult || 0)));
-    const rewardExp = 450 + state.blessings.length * 20;
+    const rewardCash = Math.floor(
+      (FINAL_REWARD.baseCash + state.fragments * FINAL_REWARD.cashPerFragment) *
+      (1 + (effects.cashMult || 0))
+    );
+    const rewardExp =
+      FINAL_REWARD.baseExp +
+      state.blessings.length * FINAL_REWARD.expPerBlessing;
     db.transaction(() => {
       walletModel.reward(run.jid, rewardCash, 'divergent universe clear');
       userModel.addExp(run.jid, rewardExp);

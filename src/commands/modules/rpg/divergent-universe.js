@@ -99,6 +99,21 @@ function collectionText(title, ids) {
   return `⌁ *${title.toUpperCase()}*\n\n${lines.join('\n')}`;
 }
 
+function rewardText() {
+  const reward = du.finalReward;
+  return [
+    '⌁ *HADIAH CLEAR DU*',
+    '',
+    `Cash/koin: *${F.formatNumber(reward.baseCash)} + (Fragment × ${reward.cashPerFragment})*`,
+    `EXP: *${reward.baseExp} + (jumlah Blessing × ${reward.expPerBlessing})*`,
+    'Silver Coin menambah total cash akhir sebesar 30%.',
+    '',
+    '*Syarat:* seluruh 16 node harus clear dan boss terakhir harus dikalahkan.',
+    'Kalah hingga HP habis sebelum node 16 tidak memberikan cash/koin maupun EXP.',
+    'Fragment adalah currency run dan tidak masuk ke wallet secara langsung.',
+  ].join('\n');
+}
+
 export default {
   name: 'du',
   aliases: ['divergent', 'divergentuniverse'],
@@ -122,13 +137,16 @@ export default {
           '`.du status` - lihat progres dan peta',
           '`.du blessings` - lihat Blessing milikmu',
           '`.du curios` - lihat Curio milikmu',
+          '`.du reward` - lihat formula hadiah clear',
           '`.du abandon` - hentikan run',
           '',
           'Run memiliki 16 node: 6 battle, 3 event, 3 treasure, 2 elite, dan 2 boss.',
+          'Cash/koin dan EXP hanya diberikan setelah semua 16 node clear.',
         ].join('\n'));
       }
 
       if (sub === 'paths' || sub === 'pathlist') return ctx.reply(pathsText());
+      if (sub === 'reward' || sub === 'hadiah') return ctx.reply(rewardText());
 
       if (sub === 'start' || sub === 'mulai') {
         const run = du.start(ctx.sender, { pushName: ctx.pushName });
