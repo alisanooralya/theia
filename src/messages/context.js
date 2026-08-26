@@ -1,5 +1,6 @@
 import { isOwnerJid } from '#helpers/owner.js';
 import { CommandError } from '#helpers/command-error.js';
+import { downloadMediaMessage, logger } from 'baileys';
 
 export function buildContext(s, sock) {
   const isOwnerUser =
@@ -128,7 +129,9 @@ export function buildContext(s, sock) {
     deleteMessage: (msgKey = s.key, meta = {}) =>
       sock.enqueueSend(s.jid, { delete: msgKey }, {}, bypassMeta(meta)),
     downloadMedia: () =>
-      s.isMedia ? sock.downloadMediaMessage(s.raw) : Promise.resolve(null),
+      s.isMedia
+        ? downloadMediaMessage(s.raw, 'buffer', {}, { logger, reuploadRequest: sock.updateMediaMessage })
+        : Promise.resolve(null),
     typing: () => sock.sendPresenceUpdate('composing', s.jid),
     stopTyping: () => sock.sendPresenceUpdate('paused', s.jid),
     markRead: () => sock.readMessages([s.key]),

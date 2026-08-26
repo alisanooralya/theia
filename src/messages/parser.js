@@ -2,6 +2,7 @@ import {
   getContentType,
   jidNormalizedUser,
   downloadMediaMessage,
+  logger,
 } from 'baileys';
 import { isStatus } from '#helpers/identifier.js';
 
@@ -172,10 +173,15 @@ async function extractQuoted(raw, content, jid, sock) {
       '',
     isMedia: MEDIA_TYPES.has(qType),
     download: () =>
-      downloadMediaMessage({
-        key: { remoteJid: jid, id: ctx.stanzaId, participant: ctx.participant },
-        message: ctx.quotedMessage,
-      }),
+      downloadMediaMessage(
+        {
+          key: { remoteJid: jid, id: ctx.stanzaId, participant: ctx.participant },
+          message: ctx.quotedMessage,
+        },
+        'buffer',
+        {},
+        { logger, reuploadRequest: sock.updateMediaMessage }
+      ),
   };
 }
 
