@@ -2,8 +2,8 @@ import {
   getContentType,
   jidNormalizedUser,
   downloadMediaMessage,
-  logger,
 } from 'baileys';
+import { logger } from '#helpers/index.js';
 import { isStatus } from '#helpers/identifier.js';
 
 const MEDIA_TYPES = new Set([

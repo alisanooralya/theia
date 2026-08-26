@@ -1,6 +1,7 @@
 import { isOwnerJid } from '#helpers/owner.js';
 import { CommandError } from '#helpers/command-error.js';
-import { downloadMediaMessage, logger } from 'baileys';
+import { downloadMediaMessage } from 'baileys';
+import { logger } from '#helpers/index.js';
 
 export function buildContext(s, sock) {
   const isOwnerUser =
