@@ -6,14 +6,9 @@ import {
 import { logger } from '#helpers/index.js';
 import { isStatus } from '#helpers/identifier.js';
 
-const MEDIA_TYPES = new Set([
-  'imageMessage',
-  'videoMessage',
-  'audioMessage',
-  'documentMessage',
-  'stickerMessage',
-  'ptvMessage',
-]);
+function isMediaType(type) {
+  return /image|video|audio|document|sticker|ptv/i.test(type);
+}
 
 export async function parseMessage(raw, sock) {
   if (!raw?.message) return null;
@@ -84,7 +79,7 @@ export async function parseMessage(raw, sock) {
     rawArgs: text ? text.trim().split(/\s+/).slice(1).join(' ') : '',
     quoted,
     mentions,
-    isMedia: MEDIA_TYPES.has(innerType),
+    isMedia: isMediaType(innerType),
     message: raw.message,
     raw,
     pushName: raw.pushName ?? '',
@@ -171,7 +166,7 @@ async function extractQuoted(raw, content, jid, sock) {
       qContent?.caption ??
       ctx.quotedMessage?.conversation ??
       '',
-    isMedia: MEDIA_TYPES.has(qType),
+    isMedia: isMediaType(qType),
     download: () =>
       downloadMediaMessage(
         {
