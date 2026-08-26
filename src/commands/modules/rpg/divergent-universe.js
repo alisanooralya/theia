@@ -70,6 +70,7 @@ function runText(run) {
     `Status: *${status}* | Path: *${path}*`,
     `Node: *${Math.min(state.nodeIndex + 1, 16)}/16*${node ? ` - ${TYPE[node.type]}: ${node.name}` : ''}`,
     `HP: ${bar(state.hp, maxHp)} *${state.hp}/${maxHp}*`,
+    'Stat: *murni sistem DU* (profil kamu tidak mempengaruhi)',
     `Fragment: *${F.formatNumber(state.fragments)}*`,
     `Blessing: *${state.blessings.length}* | Curio: *${state.curios.length}*`,
     `Kesempatan: harian *${usage.dailyCount}/${du.runLimit.daily}* | mingguan *${usage.weeklyCount}/${du.runLimit.weekly}*`,
@@ -112,6 +113,7 @@ function rewardText() {
     '',
     '*Syarat:* seluruh 16 node harus clear dan boss terakhir harus dikalahkan.',
     'Kalah hingga HP habis sebelum node 16 tidak memberikan cash/koin maupun EXP.',
+    'Stat profil kamu (`!stats`: ATK/DEF/HP/SPD) tidak mempengaruhi hasil di sini — hanya stat dasar dari sistem Divergent Universe yang dipakai.',
     'Fragment adalah currency run dan tidak masuk ke wallet secara langsung.',
     '',
     `Batas bermain: *${du.runLimit.daily}x per hari* dan *${du.runLimit.weekly}x per minggu*.`
@@ -152,6 +154,7 @@ export default {
           '',
           'Run memiliki 16 node: 6 battle, 3 event, 3 treasure, 2 elite, dan 2 boss.',
           'Cash/koin dan EXP hanya diberikan setelah semua 16 node clear.',
+          'Stat profil kamu (`!stats`: ATK/DEF/HP/SPD) TIDAK mempengaruhi DU — fitur ini hanya menggunakan stat dasar yang diberikan sistem Divergent Universe.',
           `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
           'Setiap grup hanya dapat memiliki satu pemain dengan run DU aktif.',
           'DU tidak tersedia di private chat, kecuali untuk owner.',
