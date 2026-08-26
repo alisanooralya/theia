@@ -161,6 +161,15 @@ export function createSchema() {
       PRIMARY KEY (jid, user_jid)
     );
 
+    CREATE TABLE IF NOT EXISTS divergent_runs (
+      jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+      status      TEXT    NOT NULL DEFAULT 'active',
+      state       TEXT    NOT NULL DEFAULT '{}',
+      revision    INTEGER NOT NULL DEFAULT 0,
+      created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
     CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at);
@@ -172,6 +181,7 @@ export function createSchema() {
     CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid);
     CREATE INDEX IF NOT EXISTS idx_group_activity_jid  ON group_activity(jid, xp DESC);
     CREATE INDEX IF NOT EXISTS idx_group_activity_user ON group_activity(user_jid);
+    CREATE INDEX IF NOT EXISTS idx_divergent_runs_status ON divergent_runs(status);
   `);
 
   try {
