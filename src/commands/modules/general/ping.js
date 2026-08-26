@@ -8,11 +8,11 @@ export default {
   cooldown: 5_000,
 
   async execute(ctx) {
-    let perf = Date.now();
+    const perf = Date.now();
     await axios.request('https://google.com');
+    const perfm = Date.now();
+    const speed = (perfm - perf).toFixed(2);
 
-    let perfm = Date.now();
-    let speed = ((perfm - perf) / 1000).toFixed(2);
-    ctx.reply(`🏓 *Pong!* ${speed} ms`);
+    await ctx.reply(`🏓 *Pong!* ${speed} ms`);
   },
 };

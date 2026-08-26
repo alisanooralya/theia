@@ -42,7 +42,7 @@ export default {
     timer = setInterval(() => {
       try {
         const { hour, minute, dayKey } = wibParts();
-        if (hour === 7 && minute === 0 && lastSentKey !== dayKey) {
+        if (hour === 7 && minute === 1 && lastSentKey !== dayKey) {
           lastSentKey = dayKey;
           sendGoodMorning().catch((err) =>
             logger.warn({ err: err.message }, '[GoodMorning] failed')

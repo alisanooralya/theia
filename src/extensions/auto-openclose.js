@@ -4,8 +4,8 @@ import { logger } from '#helpers/logger.js'
 
 const WIB_OFFSET = 7
 const TICK_MS = 30_000
-const CLOSE_HOUR = 23
-const OPEN_HOUR = 5
+const CLOSE_HOUR = 7
+const OPEN_HOUR = 8
 let timer = null
 let lastKey = null
 
