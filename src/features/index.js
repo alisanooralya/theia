@@ -2,7 +2,6 @@ export { aiService } from './ai.js';
 export { broadcastService } from './broadcast.js';
 export { downloaderService } from './downloader.js';
 export { battleService } from './combat/battle.js';
-export { dungeonService } from './combat/dungeon.js';
 export { robService } from './combat/rob.js';
 export { lootboxService } from './economy/lootbox.js';
 export { shopService } from './economy/shop.js';

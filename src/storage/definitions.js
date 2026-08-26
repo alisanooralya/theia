@@ -161,21 +161,6 @@ export function createSchema() {
       PRIMARY KEY (jid, user_jid)
     );
 
-    CREATE TABLE IF NOT EXISTS dungeon_runs (
-      jid           TEXT    PRIMARY KEY,
-      status        TEXT    NOT NULL DEFAULT 'active',
-      current_node  INTEGER NOT NULL DEFAULT 1,
-      total_nodes   INTEGER NOT NULL DEFAULT 12,
-      node_types    TEXT    NOT NULL,
-      blessings     TEXT    NOT NULL DEFAULT '[]',
-      curios        TEXT    NOT NULL DEFAULT '[]',
-      pending_choice TEXT,
-      total_cash    INTEGER NOT NULL DEFAULT 0,
-      total_exp     INTEGER NOT NULL DEFAULT 0,
-      created_at    INTEGER NOT NULL DEFAULT (unixepoch()),
-      updated_at    INTEGER NOT NULL DEFAULT (unixepoch())
-    );
-
     CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at);
