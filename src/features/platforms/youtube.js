@@ -1,8 +1,12 @@
 import axios from 'axios';
 import { logger } from '#helpers/logger.js';
 
-const YT_API_KEY = 'AIzaSyA8eiZmM1FaDVjRy-df2KTyQ-vrgitc';
+const YT_API_KEY = process.env.YT_API_KEY || 'AIzaSyA8eiZmM1FaDVjRy-df2KTyQ-vrgitc';
 const YT_PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player';
+
+if (!YT_API_KEY?.startsWith('AIza')) {
+  logger.warn('[YT] API key tidak valid atau belum dikonfigurasi');
+}
 
 const CLIENTS = {
   WEB: { clientName: 'WEB', clientVersion: '2.20250522.01.00' },
@@ -29,8 +33,11 @@ class YoutubeService {
       playerData = await this._fetchPlayer(videoId, 'TVHTML5');
     }
     if (!this._isPlayable(playerData)) {
+      if (!playerData) {
+        throw new Error('Gagal mengambil data video dari YouTube. Coba lagi nanti.');
+      }
       throw new Error(
-        `Video tidak bisa diputar: ${playerData?.playabilityStatus?.reason ?? 'Unknown'}`
+        `Video tidak bisa diputar: ${playerData?.playabilityStatus?.reason ?? 'Tidak diketahui'}`
       );
     }
 
@@ -68,10 +75,16 @@ class YoutubeService {
       );
       return data;
     } catch (err) {
-      logger.warn(
-        { clientName, videoId, err: err?.response?.data || err.message },
-        '[YT] Fetch failed'
-      );
+      const status = err?.response?.status;
+      const reason = err?.response?.data?.error?.message;
+      if (status === 403 || reason?.includes('API_KEY')) {
+        logger.error('[YT] API key invalid atau exceed quota');
+      } else {
+        logger.warn(
+          { clientName, videoId, status, err: reason || err.message },
+          '[YT] Fetch failed'
+        );
+      }
       return null;
     }
   }
@@ -91,6 +104,11 @@ class YoutubeService {
     const allFormats = [...formats, ...adaptive];
     if (!allFormats.length)
       throw new Error('Tidak ada format stream tersedia.');
+
+    const hasDirectUrl = allFormats.some((f) => f.url);
+    if (!hasDirectUrl && allFormats.some((f) => f.signatureCipher)) {
+      throw new Error('Video ini memerlukan dekripsi cipher yang belum didukung. Coba video lain.');
+    }
 
     const title = details.title ?? 'YouTube Video';
     const author = details.author ?? 'YouTube';
