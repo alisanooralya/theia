@@ -4,6 +4,7 @@ import { logger } from '#helpers/logger.js';
 
 const WIB_OFFSET = 7;
 const TICK_MS = 30_000;
+const GREET_TIME = '07:00';
 let timer = null;
 let lastSentKey = null;
 
@@ -11,9 +12,9 @@ function wibParts() {
   const now = new Date();
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000;
   const wib = new Date(utcMs + WIB_OFFSET * 3_600_000);
+  const hhmm = `${String(wib.getUTCHours()).padStart(2, '0')}:${String(wib.getUTCMinutes()).padStart(2, '0')}`;
   return {
-    hour: wib.getHours(),
-    minute: wib.getMinutes(),
+    hhmm,
     dayKey: wib.toISOString().slice(0, 10),
   };
 }
@@ -41,8 +42,8 @@ export default {
   init() {
     timer = setInterval(() => {
       try {
-        const { hour, minute, dayKey } = wibParts();
-        if (hour === 7 && minute === 1 && lastSentKey !== dayKey) {
+        const { hhmm, dayKey } = wibParts();
+        if (hhmm === GREET_TIME && lastSentKey !== dayKey) {
           lastSentKey = dayKey;
           sendGoodMorning().catch((err) =>
             logger.warn({ err: err.message }, '[GoodMorning] failed')

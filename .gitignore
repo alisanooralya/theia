@@ -9,7 +9,6 @@ logs/
 *.db-wal
 
 package-lock.json
-opencode.json
 AGENTS.md
 tasks.md
 STYLE.md

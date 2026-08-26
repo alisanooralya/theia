@@ -4,8 +4,8 @@ import { logger } from '#helpers/logger.js'
 
 const WIB_OFFSET = 7
 const TICK_MS = 30_000
-const CLOSE_HOUR = 7
-const OPEN_HOUR = 8
+const CLOSE_TIME = '18:30'
+const OPEN_TIME = '20:00'
 let timer = null
 let lastKey = null
 
@@ -13,9 +13,9 @@ function wibParts() {
   const now = new Date()
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
   const wib = new Date(utcMs + WIB_OFFSET * 3_600_000)
+  const hhmm = `${String(wib.getUTCHours()).padStart(2, '0')}:${String(wib.getUTCMinutes()).padStart(2, '0')}`
   return {
-    hour: wib.getHours(),
-    minute: wib.getMinutes(),
+    hhmm,
     dayKey: wib.toISOString().slice(0, 10),
   }
 }
@@ -47,15 +47,14 @@ export default {
   init() {
     timer = setInterval(() => {
       try {
-        const { hour, minute, dayKey } = wibParts()
-        if (minute !== 0) return
-        if (hour === CLOSE_HOUR) {
+        const { hhmm, dayKey } = wibParts()
+        if (hhmm === CLOSE_TIME) {
           const key = `${dayKey}:close`
           if (lastKey !== key) {
             lastKey = key
             runForHour(true).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] close failed'))
           }
-        } else if (hour === OPEN_HOUR) {
+        } else if (hhmm === OPEN_TIME) {
           const key = `${dayKey}:open`
           if (lastKey !== key) {
             lastKey = key
@@ -66,7 +65,7 @@ export default {
         logger.warn({ err: err.message }, '[AutoOpenClose] tick failed')
       }
     }, TICK_MS)
-    logger.info('[AutoOpenClose] Initialized — close 23:00, open 05:00 WIB')
+    logger.info('[AutoOpenClose] Initialized — close 18:30, open 20:00 WIB')
   },
 
   destroy() {
