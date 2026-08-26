@@ -1,4 +1,4 @@
-import { imageToWebp } from '#features/media/sticker.js';
+import { webpToImage } from '#features/media/sticker.js';
 
 export default {
   name: 'toimg',
@@ -16,11 +16,11 @@ export default {
     await ctx.react('⏳');
 
     try {
-      const buffer = await ctx.downloadMedia();
+      const buffer = await ctx.quoted.download();
       if (!buffer) return ctx.reply('Gagal download sticker.');
 
-      const jpgBuffer = await imageToWebp(buffer);
-      await ctx.sendMedia('image', jpgBuffer, '', { mimetype: 'image/png' });
+      const pngBuffer = await webpToImage(buffer);
+      await ctx.sendMedia('image', pngBuffer, '', { mimetype: 'image/png' });
       await ctx.react('✅');
     } catch (err) {
       await ctx.react('❌');

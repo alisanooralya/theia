@@ -126,6 +126,23 @@ export async function writeExif(media, metadata = {}) {
   return result;
 }
 
+export async function webpToImage(media) {
+  const tmpIn = path.join(TEMP_DIR, getRandom('webp'));
+  const tmpOut = path.join(TEMP_DIR, getRandom('png'));
+  fs.writeFileSync(tmpIn, media);
+  await new Promise((resolve, reject) => {
+    ff(tmpIn)
+      .on('error', reject)
+      .on('end', () => resolve(true))
+      .toFormat('png')
+      .save(tmpOut);
+  });
+  const buff = fs.readFileSync(tmpOut);
+  fs.promises.unlink(tmpOut).catch(() => {});
+  fs.promises.unlink(tmpIn).catch(() => {});
+  return buff;
+}
+
 export async function toStickerBuffer(buffer, meta = {}) {
   const type = await fileTypeFromBuffer(buffer);
   if (!type) throw new Error('Tidak bisa detect tipe file.');
