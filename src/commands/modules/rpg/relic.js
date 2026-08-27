@@ -2,6 +2,13 @@ import { relicService as relic } from '#features/rpg/relic.js';
 import { relicModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
+function getRelicByIndex(jid, rawIndex) {
+  const index = Number.parseInt(rawIndex, 10);
+  if (!Number.isInteger(index) || index < 1) return null;
+  const relics = relic.getRelics(jid);
+  return relics[index - 1] || null;
+}
+
 function relicListText(jid) {
   const relics = relic.getRelics(jid);
   if (!relics.length) return 'Kamu belum memiliki relic. Dapatkan dengan menyelesaikan Divergent Universe.';
@@ -59,9 +66,9 @@ function helpText() {
     '`.relic equip <nomor>` - pasang relic ke slot',
     '`.relic unequip <slot>` - lepas relic dari slot (head/hands/body/feet)',
     '`.relic inventory` - lihat relic terpasang dan stats',
-    '`.relic detail <id>` - lihat detail relic',
-    '`.relic levelup <id>` - naikkan level relic',
-    '`.relic smelt <id>` - lebur relic untuk dapat koin/cerelia',
+    '`.relic detail <nomor>` - lihat detail relic',
+    '`.relic levelup <nomor>` - naikkan level relic',
+    '`.relic smelt <nomor>` - lebur relic untuk dapat koin/cerelia',
     '',
     '*Slot Relic:*',
     '- *Head:* HP flat (+5 Lv.1, +20 Lv.15)',
@@ -113,9 +120,9 @@ export default {
       }
 
       if (sub === 'equip' || sub === 'pasang') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!id) return ctx.fail('Masukkan ID relic. Gunakan `.relic list` untuk melihat ID.');
-        const equipped = relic.equip(id, ctx.sender);
+        const target = getRelicByIndex(ctx.sender, ctx.args[1]);
+        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        const equipped = relic.equip(target.id, ctx.sender);
         const formatted = relic.formatRelic(equipped);
         return ctx.reply(`Relic *${formatted.slot}* Lv.${equipped.level} berhasil dipasang!`);
       }
@@ -131,21 +138,15 @@ export default {
       }
 
       if (sub === 'detail' || sub === 'info') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!id) return ctx.fail('Masukkan ID relic.');
-        const r = relicModel.find(id);
-        if (!r) return ctx.fail('Relic tidak ditemukan.');
-        if (r.owner_jid !== ctx.sender) return ctx.fail('Relic bukan milikmu.');
-        return ctx.reply(relicDetailText(r));
+        const target = getRelicByIndex(ctx.sender, ctx.args[1]);
+        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        return ctx.reply(relicDetailText(target));
       }
 
       if (sub === 'levelup' || sub === 'lvl' || sub === 'upgrade') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!id) return ctx.fail('Masukkan ID relic.');
-        const r = relicModel.find(id);
-        if (!r) return ctx.fail('Relic tidak ditemukan.');
-        if (r.owner_jid !== ctx.sender) return ctx.fail('Relic bukan milikmu.');
-        const leveled = relic.levelUp(id, ctx.sender);
+        const target = getRelicByIndex(ctx.sender, ctx.args[1]);
+        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        const leveled = relic.levelUp(target.id, ctx.sender);
         const formatted = relic.formatRelic(leveled);
         const cost = relic.getLevelUpCost(leveled);
         const nextCost = cost ? `\nNext level: ${cost.coins} koin${cost.cerelia > 0 ? ` + ${cost.cerelia} Cerelia` : ''}${cost.userExp > 0 ? ` + ${cost.userExp} EXP` : ''}` : '';
@@ -153,9 +154,9 @@ export default {
       }
 
       if (sub === 'smelt' || sub === 'lebur') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!id) return ctx.fail('Masukkan nomor relic. Gunakan `.relic list` untuk melihat nomor.');
-        const result = relic.smelt(id, ctx.sender);
+        const target = getRelicByIndex(ctx.sender, ctx.args[1]);
+        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        const result = relic.smelt(target.id, ctx.sender);
         const formatted = relic.formatRelic(result.relic);
         let text = `Relic *${formatted.slot}* Lv.${result.relic.level} berhasil dilebur!\n`;
         text += `+${result.coins} koin`;
