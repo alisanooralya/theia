@@ -593,22 +593,17 @@ class DivergentUniverseService {
         const cleared = state.nodes.filter((item) => item.cleared).length;
         const totalNodes = state.nodes.length;
         state.lastResult = [
-          `RUN GAGAL: Kamu dikalahkan ${node.name} (${node.type}) di node ${node.position}/${totalNodes}.`,
-          `Damage diterima: ${damage} | HP: 0/${maxHp(state)} | Node clear: ${cleared}/${totalNodes}.`,
-          `${state.fragments} Fragment yang terkumpul hangus bersama run ini.`,
-          `Tidak ada cash/koin atau EXP yang diberikan karena node ${totalNodes} belum diselesaikan.`,
-          'Hadiah hanya diberikan jika seluruh Divergent Universe berhasil dimenangkan.',
+          `RUN GAGAL: Kamu dikalahkan ${node.name} di node ${node.position}/${totalNodes}.`,
+          `Node clear: ${cleared}/${totalNodes} | Fragment hangus.`,
         ].join('\n');
         state.pending = null;
         return;
       }
       const totalNodes = state.nodes.length;
       state.lastResult = [
-        `PERTARUNGAN KALAH: ${node.name} belum dikalahkan di node ${node.position}/${totalNodes}.`,
-        `Damage diterima: ${damage} | HP tersisa: ${state.hp}/${maxHp(state)} | Peluang menang: ${Math.round(winChance * 100)}%.`,
-        'Node belum clear dan progres tidak maju. Fragment, Blessing, serta Curio tetap tersimpan.',
-        `Kamu belum mendapat cash/koin atau EXP. Reward hanya dibayar setelah semua ${totalNodes} node clear.`,
-        'Pulihkan HP melalui event jika tersedia, atau ketik `.du explore` untuk mencoba lagi.',
+        `PERTARUNGAN KALAH: ${node.name} di node ${node.position}/${totalNodes}.`,
+        `Damage: -${damage} | HP: ${state.hp}/${maxHp(state)}`,
+        'Ketik `.du explore` untuk mencoba lagi.',
       ].join('\n');
       return;
     }

@@ -68,6 +68,23 @@ function runText(run) {
     : '';
   const usage = du.getUsage(run.jid);
 
+  const tips = [];
+  if (run.status === 'failed') {
+    tips.push(
+      '',
+      '*Tips:*',
+      '- Ketik `.du start [difficulty]` untuk memulai run baru.',
+      '- Pilih Path yang sesuai strategimu.',
+      '- Relic bisa meningkatkan stat di DU.',
+    );
+  } else if (run.status === 'abandoned') {
+    tips.push(
+      '',
+      '*Tips:*',
+      '- Ketik `.du start [difficulty]` untuk memulai run baru.',
+    );
+  }
+
   return [
     '⌁ *DIVERGENT UNIVERSE*',
     `Status: *${status}* | Difficulty: *${difficultyName}* | Path: *${path}*`,
@@ -83,6 +100,7 @@ function runText(run) {
     '',
     state.lastResult,
     reward,
+    ...tips,
     '',
     run.status === 'active' ? pendingText(run) : 'Mulai run baru dengan `.du start`.',
   ].filter((line) => line !== undefined).join('\n');
