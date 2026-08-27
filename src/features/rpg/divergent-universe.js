@@ -118,6 +118,9 @@ const DIFFICULTY = {
     elitePositions: [5],
     bossPositions: [],
     rewardMultiplier: 0.6,
+    enemyMultiplier: 0.7,
+    baseWinChance: 0.8,
+    damageMultiplier: 0.7,
   },
   medium: {
     nodeCount: 16,
@@ -127,6 +130,9 @@ const DIFFICULTY = {
     elitePositions: [5, 12],
     bossPositions: [8, 16],
     rewardMultiplier: 1,
+    enemyMultiplier: 0.85,
+    baseWinChance: 0.75,
+    damageMultiplier: 0.85,
   },
   hard: {
     nodeCount: 22,
@@ -136,6 +142,9 @@ const DIFFICULTY = {
     elitePositions: [5, 12, 18],
     bossPositions: [8, 16, 22],
     rewardMultiplier: 1.5,
+    enemyMultiplier: 1,
+    baseWinChance: 0.7,
+    damageMultiplier: 1,
   },
 };
 
@@ -555,6 +564,7 @@ class DivergentUniverseService {
   _battle(state, node) {
     const effects = totalEffects(state);
     const relic = state.relicEffects || {};
+    const diffConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
     const tier = node.type === 'boss' ? 1.6 : node.type === 'elite' ? 1.3 : 1;
     const progress = 1 + node.position * 0.045;
     let playerPower = 1 + (effects.atk || 0) + (relic.atk_flat || 0) * 0.01;
@@ -565,18 +575,22 @@ class DivergentUniverseService {
     const critChance = Math.min(0.55, 0.12 + (effects.crit || 0) + relicCritRate);
     const crit = Math.random() < critChance;
     if (crit) playerPower *= 1.5 + (effects.critDamage || 0);
-    const enemyPower = tier * progress * (1 - (effects.weaken || 0)) * (1 + (effects.enemyPower || 0));
-    const winChance = Math.max(0.48, Math.min(0.94, 0.7 + (playerPower - enemyPower) * 0.18));
+    const enemyMultiplier = diffConfig.enemyMultiplier || 1;
+    const enemyPower = tier * progress * (1 - (effects.weaken || 0)) * (1 + (effects.enemyPower || 0)) * enemyMultiplier;
+    const baseWinChance = diffConfig.baseWinChance || 0.7;
+    const winChance = Math.max(0.48, Math.min(0.94, baseWinChance + (playerPower - enemyPower) * 0.18));
     const won = Math.random() < winChance;
     const relicDefBonus = Math.floor((state.baseMaxHp || 100) * (relic.def_percent || 0));
     const shield = (effects.shield || 0) + (state.path === 'preservation' ? 5 : 0) + relicDefBonus;
     const reduction = Math.min(0.6, (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0));
+    const damageMultiplier = diffConfig.damageMultiplier || 1;
     let damage = Math.floor(
       (won ? 13 : 27) *
       tier *
       progress *
       (1 - reduction) *
-      (1 + (effects.incomingDamage || 0))
+      (1 + (effects.incomingDamage || 0)) *
+      damageMultiplier
     );
     if (Math.random() < Math.min(0.4, effects.dodge || 0)) damage = 0;
     damage = Math.max(0, damage - shield);
