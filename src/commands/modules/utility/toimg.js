@@ -6,7 +6,6 @@ export default {
   category: 'utility',
   description: 'Convert sticker ke gambar',
   cooldown: 60_000,
-  isProblem: true,
 
   async execute(ctx) {
     const quoted = ctx.quoted;
