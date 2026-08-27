@@ -244,7 +244,10 @@ export default {
 
       const run = du.getRun(ctx.sender, ctx.jid);
       if (!run) {
-        return ctx.reply('Belum ada run Divergent Universe. Ketik `.du start` untuk memulai.');
+        return ctx.fail('Tidak ada run aktif. Ketik `.du start` untuk memulai.');
+      }
+      if (run.status !== 'active') {
+        return ctx.fail('Run sudah selesai atau gagal. Ketik `.du start` untuk memulai run baru.');
       }
       if (sub === 'blessings' || sub === 'blessing') {
         return ctx.reply(collectionText('Blessing', run.state.blessings));
@@ -252,10 +255,10 @@ export default {
       if (sub === 'curios' || sub === 'curio') {
         return ctx.reply(collectionText('Curio', run.state.curios));
       }
-      if (sub !== 'status') {
-        return ctx.reply('Subcommand tidak dikenal. Ketik `.du` untuk bantuan.');
+      if (sub === 'status' || sub === 'progres') {
+        return ctx.reply(runText(run));
       }
-      return ctx.reply(runText(run));
+      return ctx.reply('Subcommand tidak dikenal. Ketik `.du` untuk bantuan.');
     } catch (error) {
       return ctx.fail(error.message);
     }
