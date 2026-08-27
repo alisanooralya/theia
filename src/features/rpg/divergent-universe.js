@@ -358,6 +358,17 @@ function grantCurio(state) {
   return curio;
 }
 
+function grantRandomCurio(state) {
+  const available = CURIOS.filter((item) => !state.curios.includes(item.id));
+  if (!available.length) return null;
+  const curio = available[Math.floor(Math.random() * available.length)];
+  state.curios.push(curio.id);
+  if (curio.instantHeal) heal(state, curio.instantHeal);
+  if (curio.instantFragments) state.fragments += curio.instantFragments;
+  state.hp = Math.min(state.hp, maxHp(state));
+  return curio;
+}
+
 class DivergentUniverseService {
   get paths() {
     return PATHS;
@@ -627,12 +638,21 @@ class DivergentUniverseService {
         const restored = heal(state, (effects.heal || 0) + (state.path === 'abundance' ? 5 : 0));
         const options = availableBlessings(state);
         state.pending = { type: 'blessing', options: options.map((item) => item.id) };
-        state.lastResult = [
+        const lines = [
           `${lastCrit ? 'Critical! ' : ''}${node.name} dikalahkan dalam *${rounds} ronde*.`,
           `Total damage diterima: -${totalDamageTaken} | HP: ${state.hp}/${maxHp(state)}`,
           restored ? `Pemulihan: +${restored} HP` : '',
-          `Fragment +${gained}. Pilih satu Blessing.`,
-        ].filter(Boolean).join('\n');
+          `Fragment +${gained}.`,
+        ];
+        if (node.type === 'elite' || node.type === 'boss') {
+          const curio = grantRandomCurio(state);
+          if (curio) {
+            const errorTag = curio.error ? ' [ERROR]' : '';
+            lines.push(`Curio diterima: *${curio.name}*${errorTag} - ${curio.text}`);
+          }
+        }
+        lines.push('Pilih satu Blessing.');
+        state.lastResult = lines.filter(Boolean).join('\n');
         return;
       }
 
