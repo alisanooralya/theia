@@ -107,6 +107,36 @@ const RUN_LIMIT = {
   weekly: 5,
 };
 
+const DIFFICULTY = {
+  easy: {
+    nodeCount: 8,
+    name: 'Easy',
+    description: '8 node: 3 battle, 2 event, 2 treasure, 1 elite, 0 boss',
+    nodeDistribution: { battle: 3, event: 2, treasure: 2, elite: 1, boss: 0 },
+    elitePositions: [5],
+    bossPositions: [],
+    rewardMultiplier: 0.6,
+  },
+  medium: {
+    nodeCount: 16,
+    name: 'Medium',
+    description: '16 node: 6 battle, 3 event, 3 treasure, 2 elite, 2 boss',
+    nodeDistribution: { battle: 6, event: 3, treasure: 3, elite: 2, boss: 2 },
+    elitePositions: [5, 12],
+    bossPositions: [8, 16],
+    rewardMultiplier: 1,
+  },
+  hard: {
+    nodeCount: 22,
+    name: 'Hard',
+    description: '22 node: 8 battle, 4 event, 4 treasure, 3 elite, 3 boss',
+    nodeDistribution: { battle: 8, event: 4, treasure: 4, elite: 3, boss: 3 },
+    elitePositions: [5, 12, 18],
+    bossPositions: [8, 16, 22],
+    rewardMultiplier: 1.5,
+  },
+};
+
 const dateFormatter = new Intl.DateTimeFormat('en-CA', {
   timeZone: SETTINGS.timezone,
   year: 'numeric',
@@ -197,22 +227,24 @@ function sample(values, count) {
   return shuffle(values).slice(0, count);
 }
 
-function buildNodes() {
+function buildNodes(difficulty = 'medium') {
+  const config = DIFFICULTY[difficulty];
+  const { nodeDistribution, elitePositions, bossPositions } = config;
   const regular = shuffle([
-    ...Array(6).fill('battle'),
-    ...Array(3).fill('event'),
-    ...Array(3).fill('treasure'),
+    ...Array(nodeDistribution.battle).fill('battle'),
+    ...Array(nodeDistribution.event).fill('event'),
+    ...Array(nodeDistribution.treasure).fill('treasure'),
   ]);
   let regularIndex = 0;
   const counters = { battle: 0, event: 0, treasure: 0, elite: 0, boss: 0 };
   const namePools = Object.fromEntries(
     Object.entries(NAMES).map(([type, names]) => [type, shuffle(names)])
   );
-  return Array.from({ length: 16 }, (_, index) => {
+  return Array.from({ length: config.nodeCount }, (_, index) => {
     const position = index + 1;
-    const type = position === 5 || position === 12
+    const type = elitePositions.includes(position)
       ? 'elite'
-      : position === 8 || position === 16
+      : bossPositions.includes(position)
         ? 'boss'
         : regular[regularIndex++];
     const names = namePools[type];
@@ -304,6 +336,10 @@ class DivergentUniverseService {
     return RUN_LIMIT;
   }
 
+  get difficulty() {
+    return DIFFICULTY;
+  }
+
   getRun(jid, chatJid = null) {
     const run = divergentRunModel.find(jid);
     if (!run || !chatJid) return run;
@@ -319,12 +355,15 @@ class DivergentUniverseService {
     };
   }
 
-  start(jid, chatJid, metadata = {}) {
-    return db.transaction(() => this._start(jid, chatJid, metadata))();
+  start(jid, chatJid, metadata = {}, difficulty = 'medium') {
+    return db.transaction(() => this._start(jid, chatJid, metadata, difficulty))();
   }
 
-  _start(jid, chatJid, metadata = {}) {
+  _start(jid, chatJid, metadata = {}, difficulty = 'medium') {
     if (!chatJid) throw new Error('Chat asal DU tidak valid.');
+    if (!DIFFICULTY[difficulty]) {
+      throw new Error('Difficulty tidak valid. Pilih easy, medium, atau hard.');
+    }
     userModel.ensure(jid, metadata);
     statsModel.ensure(jid);
     const current = divergentRunModel.find(jid);
@@ -351,7 +390,8 @@ class DivergentUniverseService {
     const state = {
       path: null,
       nodeIndex: 0,
-      nodes: buildNodes(),
+      nodes: buildNodes(difficulty),
+      difficulty,
       baseMaxHp: 100,
       hp: 100,
       fragments: 0,
@@ -512,21 +552,23 @@ class DivergentUniverseService {
       }
       if (state.hp <= 0) {
         const cleared = state.nodes.filter((item) => item.cleared).length;
+        const totalNodes = state.nodes.length;
         state.lastResult = [
-          `RUN GAGAL: Kamu dikalahkan ${node.name} (${node.type}) di node ${node.position}/16.`,
-          `Damage diterima: ${damage} | HP: 0/${maxHp(state)} | Node clear: ${cleared}/16.`,
+          `RUN GAGAL: Kamu dikalahkan ${node.name} (${node.type}) di node ${node.position}/${totalNodes}.`,
+          `Damage diterima: ${damage} | HP: 0/${maxHp(state)} | Node clear: ${cleared}/${totalNodes}.`,
           `${state.fragments} Fragment yang terkumpul hangus bersama run ini.`,
-          'Tidak ada cash/koin atau EXP yang diberikan karena node 16 belum diselesaikan.',
+          `Tidak ada cash/koin atau EXP yang diberikan karena node ${totalNodes} belum diselesaikan.`,
           'Hadiah hanya diberikan jika seluruh Divergent Universe berhasil dimenangkan.',
         ].join('\n');
         state.pending = null;
         return;
       }
+      const totalNodes = state.nodes.length;
       state.lastResult = [
-        `PERTARUNGAN KALAH: ${node.name} belum dikalahkan di node ${node.position}/16.`,
+        `PERTARUNGAN KALAH: ${node.name} belum dikalahkan di node ${node.position}/${totalNodes}.`,
         `Damage diterima: ${damage} | HP tersisa: ${state.hp}/${maxHp(state)} | Peluang menang: ${Math.round(winChance * 100)}%.`,
         'Node belum clear dan progres tidak maju. Fragment, Blessing, serta Curio tetap tersimpan.',
-        'Kamu belum mendapat cash/koin atau EXP. Reward hanya dibayar setelah semua 16 node clear.',
+        `Kamu belum mendapat cash/koin atau EXP. Reward hanya dibayar setelah semua ${totalNodes} node clear.`,
         'Pulihkan HP melalui event jika tersedia, atau ketik `.du explore` untuk mencoba lagi.',
       ].join('\n');
       return;
@@ -717,13 +759,18 @@ class DivergentUniverseService {
   _finish(run) {
     const state = run.state;
     const effects = totalEffects(state);
+    const difficultyConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
+    const multiplier = difficultyConfig.rewardMultiplier;
     const rewardCash = Math.floor(
       (FINAL_REWARD.baseCash + state.fragments * FINAL_REWARD.cashPerFragment) *
-      (1 + (effects.cashMult || 0))
+      (1 + (effects.cashMult || 0)) *
+      multiplier
     );
-    const rewardExp =
-      FINAL_REWARD.baseExp +
-      state.blessings.length * FINAL_REWARD.expPerBlessing;
+    const rewardExp = Math.floor(
+      (FINAL_REWARD.baseExp +
+        state.blessings.length * FINAL_REWARD.expPerBlessing) *
+      multiplier
+    );
     db.transaction(() => {
       walletModel.reward(run.jid, rewardCash, 'divergent universe clear');
       userModel.addExp(run.jid, rewardExp);

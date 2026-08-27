@@ -41,11 +41,14 @@ function runText(run) {
   const state = run.state;
   const node = state.nodes[state.nodeIndex];
   const path = state.path ? du.paths[state.path].name : 'Belum dipilih';
+  const difficulty = state.difficulty || 'medium';
+  const difficultyName = du.difficulty[difficulty]?.name || 'Medium';
   const effects = [...state.blessings, ...state.curios]
     .map(effectById)
     .filter(Boolean);
   const maxHpBonus = effects.reduce((sum, item) => sum + (item.maxHp || 0), 0);
   const maxHp = Math.max(50, state.baseMaxHp + maxHpBonus);
+  const totalNodes = state.nodes.length;
   const map = state.nodes.map((item) => {
     if (item.cleared) return '✓';
     if (item.position === state.nodeIndex + 1) return '◆';
@@ -67,8 +70,8 @@ function runText(run) {
 
   return [
     '⌁ *DIVERGENT UNIVERSE*',
-    `Status: *${status}* | Path: *${path}*`,
-    `Node: *${Math.min(state.nodeIndex + 1, 16)}/16*${node ? ` - ${TYPE[node.type]}: ${node.name}` : ''}`,
+    `Status: *${status}* | Difficulty: *${difficultyName}* | Path: *${path}*`,
+    `Node: *${Math.min(state.nodeIndex + 1, totalNodes)}/${totalNodes}*${node ? ` - ${TYPE[node.type]}: ${node.name}` : ''}`,
     `HP: ${bar(state.hp, maxHp)} *${state.hp}/${maxHp}*`,
     'Stat: *murni sistem DU* (profil kamu tidak mempengaruhi)',
     `Fragment: *${F.formatNumber(state.fragments)}*`,
@@ -104,15 +107,23 @@ function collectionText(title, ids) {
 
 function rewardText() {
   const reward = du.finalReward;
+  const difficulties = du.difficulty;
+  const difficultyLines = Object.entries(difficulties).map(
+    ([key, config]) => `- *${config.name}*: ${config.nodeCount} node - Reward ×${config.rewardMultiplier}`
+  );
   return [
     '⌁ *HADIAH CLEAR DU*',
     '',
+    '*Formula dasar:*',
     `Cash/koin: *${F.formatNumber(reward.baseCash)} + (Fragment × ${reward.cashPerFragment})*`,
     `EXP: *${reward.baseExp} + (jumlah Blessing × ${reward.expPerBlessing})*`,
     'Silver Coin menambah total cash akhir sebesar 30%.',
     '',
-    '*Syarat:* seluruh 16 node harus clear dan boss terakhir harus dikalahkan.',
-    'Kalah hingga HP habis sebelum node 16 tidak memberikan cash/koin maupun EXP.',
+    '*Multiplier berdasarkan Difficulty:*',
+    ...difficultyLines,
+    '',
+    '*Syarat:* seluruh node harus clear dan boss terakhir harus dikalahkan.',
+    'Kalah hingga HP habis sebelum node terakhir tidak memberikan cash/koin maupun EXP.',
     'Stat profil kamu (`.profile`: ATK/DEF/HP/SPD) tidak mempengaruhi hasil di sini — hanya stat dasar dari sistem Divergent Universe yang dipakai.',
     'Fragment adalah currency run dan tidak masuk ke wallet secara langsung.',
     '',
@@ -124,7 +135,7 @@ export default {
   name: 'du',
   aliases: ['divergent', 'divergentuniverse'],
   category: 'rpg',
-  description: 'Jelajahi Divergent Universe dalam 16 node',
+  description: 'Jelajahi Divergent Universe dengan difficulty easy/medium/hard',
   cooldown: 2_000,
 
   async execute(ctx) {
@@ -140,7 +151,7 @@ export default {
         return ctx.reply([
           '⌁ *DIVERGENT UNIVERSE - BANTUAN*',
           '',
-          '`.du start` - buat run baru',
+          '`.du start [difficulty]` - buat run baru (easy/medium/hard)',
           '`.du paths` - lihat semua Path',
           '`.du path <nama>` - pilih Path',
           '`.du explore` - selesaikan node saat ini',
@@ -152,8 +163,12 @@ export default {
           '`.du limit` - lihat sisa kesempatan bermain',
           '`.du abandon` - hentikan run',
           '',
-          'Run memiliki 16 node: 6 battle, 3 event, 3 treasure, 2 elite, dan 2 boss.',
-          'Cash/koin dan EXP hanya diberikan setelah semua 16 node clear.',
+          '*Difficulty:*',
+          '- Easy: 8 node (3 battle, 2 event, 2 treasure, 1 elite, 0 boss) - Reward ×0.6',
+          '- Medium: 16 node (6 battle, 3 event, 3 treasure, 2 elite, 2 boss) - Reward ×1',
+          '- Hard: 22 node (8 battle, 4 event, 4 treasure, 3 elite, 3 boss) - Reward ×1.5',
+          '',
+          'Cash/koin dan EXP hanya diberikan setelah semua node clear.',
           'Stat profil kamu (`.profile`: ATK/DEF/HP/SPD) TIDAK mempengaruhi DU — fitur ini hanya menggunakan stat dasar yang diberikan sistem Divergent Universe.',
           `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
           'Setiap grup hanya dapat memiliki satu pemain dengan run DU aktif.',
@@ -178,7 +193,11 @@ export default {
       }
 
       if (sub === 'start' || sub === 'mulai') {
-        const run = du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName });
+        const difficulty = ctx.args[1]?.toLowerCase() || 'medium';
+        if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+          return ctx.fail('Difficulty tidak valid. Pilih easy, medium, atau hard.');
+        }
+        const run = du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName }, difficulty);
         return ctx.reply(runText(run));
       }
 
