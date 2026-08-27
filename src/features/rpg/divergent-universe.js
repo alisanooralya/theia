@@ -567,67 +567,92 @@ class DivergentUniverseService {
     const diffConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
     const tier = node.type === 'boss' ? 1.6 : node.type === 'elite' ? 1.3 : 1;
     const progress = 1 + node.position * 0.045;
-    let playerPower = 1 + (effects.atk || 0) + (relic.atk_flat || 0) * 0.01;
-    if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction') playerPower += 0.18;
-    if (node.type !== 'battle') playerPower += effects.bossAtk || 0;
-    playerPower += Math.floor(state.blessings.length / 3) * (effects.perBlessing || 0);
-    const relicCritRate = relic.crit_rate || 0;
-    const critChance = Math.min(0.55, 0.12 + (effects.crit || 0) + relicCritRate);
-    const crit = Math.random() < critChance;
-    if (crit) playerPower *= 1.5 + (effects.critDamage || 0);
-    const enemyMultiplier = diffConfig.enemyMultiplier || 1;
-    const enemyPower = tier * progress * (1 - (effects.weaken || 0)) * (1 + (effects.enemyPower || 0)) * enemyMultiplier;
-    const baseWinChance = diffConfig.baseWinChance || 0.7;
-    const winChance = Math.max(0.48, Math.min(0.94, baseWinChance + (playerPower - enemyPower) * 0.18));
-    const won = Math.random() < winChance;
     const relicDefBonus = Math.floor((state.baseMaxHp || 100) * (relic.def_percent || 0));
     const shield = (effects.shield || 0) + (state.path === 'preservation' ? 5 : 0) + relicDefBonus;
     const reduction = Math.min(0.6, (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0));
     const damageMultiplier = diffConfig.damageMultiplier || 1;
-    let damage = Math.floor(
-      (won ? 13 : 27) *
-      tier *
-      progress *
-      (1 - reduction) *
-      (1 + (effects.incomingDamage || 0)) *
-      damageMultiplier
-    );
-    if (Math.random() < Math.min(0.4, effects.dodge || 0)) damage = 0;
-    damage = Math.max(0, damage - shield);
-    state.hp = Math.max(0, state.hp - damage);
+    const enemyMultiplier = diffConfig.enemyMultiplier || 1;
+    const enemyPower = tier * progress * (1 - (effects.weaken || 0)) * (1 + (effects.enemyPower || 0)) * enemyMultiplier;
+    const baseWinChance = diffConfig.baseWinChance || 0.7;
+    const relicCritRate = relic.crit_rate || 0;
+    const critChance = Math.min(0.55, 0.12 + (effects.crit || 0) + relicCritRate);
 
-    if (!won) {
-      if (state.hp <= 0 && effects.revive && !state.revived) {
-        state.revived = true;
-        state.hp = 35;
-        state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name}, tetapi bangkit dengan 35 HP. Coba lagi.`;
+    let rounds = 0;
+    let totalDamageTaken = 0;
+    let lastCrit = false;
+
+    while (state.hp > 0) {
+      rounds++;
+      let playerPower = 1 + (effects.atk || 0) + (relic.atk_flat || 0) * 0.01;
+      if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction') playerPower += 0.18;
+      if (node.type !== 'battle') playerPower += effects.bossAtk || 0;
+      playerPower += Math.floor(state.blessings.length / 3) * (effects.perBlessing || 0);
+      const crit = Math.random() < critChance;
+      lastCrit = crit;
+      if (crit) playerPower *= 1.5 + (effects.critDamage || 0);
+      const winChance = Math.max(0.48, Math.min(0.94, baseWinChance + (playerPower - enemyPower) * 0.18));
+      const won = Math.random() < winChance;
+      let damage = Math.floor(
+        (won ? 13 : 27) *
+        tier *
+        progress *
+        (1 - reduction) *
+        (1 + (effects.incomingDamage || 0)) *
+        damageMultiplier
+      );
+      if (Math.random() < Math.min(0.4, effects.dodge || 0)) damage = 0;
+      damage = Math.max(0, damage - shield);
+      state.hp = Math.max(0, state.hp - damage);
+      totalDamageTaken += damage;
+
+      if (won) {
+        if (effects.revive && !state.revived && state.hp <= 0) {
+          state.revived = true;
+          state.hp = 35;
+          state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name}, tetapi bangkit dengan 35 HP.`;
+          return;
+        }
+        if (state.hp <= 0) {
+          const cleared = state.nodes.filter((item) => item.cleared).length;
+          const totalNodes = state.nodes.length;
+          state.lastResult = [
+            `RUN GAGAL: Kamu dikalahkan ${node.name} di node ${node.position}/${totalNodes} pada ronde ${rounds}.`,
+            `Node clear: ${cleared}/${totalNodes} | Fragment hangus.`,
+          ].join('\n');
+          state.pending = null;
+          return;
+        }
+        const reward = BASE_REWARD[node.type];
+        const gained = addFragments(state, reward.fragments + (effects.fragments || 0));
+        const restored = heal(state, (effects.heal || 0) + (state.path === 'abundance' ? 5 : 0));
+        const options = availableBlessings(state);
+        state.pending = { type: 'blessing', options: options.map((item) => item.id) };
+        state.lastResult = [
+          `${lastCrit ? 'Critical! ' : ''}${node.name} dikalahkan dalam *${rounds} ronde*.`,
+          `Total damage diterima: -${totalDamageTaken} | HP: ${state.hp}/${maxHp(state)}`,
+          restored ? `Pemulihan: +${restored} HP` : '',
+          `Fragment +${gained}. Pilih satu Blessing.`,
+        ].filter(Boolean).join('\n');
         return;
       }
+
       if (state.hp <= 0) {
+        if (effects.revive && !state.revived) {
+          state.revived = true;
+          state.hp = 35;
+          state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name} dalam ${rounds} ronde, tetapi bangkit dengan 35 HP.`;
+          return;
+        }
         const cleared = state.nodes.filter((item) => item.cleared).length;
         const totalNodes = state.nodes.length;
         state.lastResult = [
-          `RUN GAGAL: Kamu dikalahkan ${node.name} di node ${node.position}/${totalNodes}.`,
+          `RUN GAGAL: Kamu dikalahkan ${node.name} di node ${node.position}/${totalNodes} dalam *${rounds} ronde*.`,
           `Node clear: ${cleared}/${totalNodes} | Fragment hangus.`,
         ].join('\n');
         state.pending = null;
         return;
       }
-      const totalNodes = state.nodes.length;
-      state.lastResult = [
-        `PERTARUNGAN KALAH: ${node.name} di node ${node.position}/${totalNodes}.`,
-        `Damage: -${damage} | HP: ${state.hp}/${maxHp(state)}`,
-        'Ketik `.du explore` untuk mencoba lagi.',
-      ].join('\n');
-      return;
     }
-
-    const reward = BASE_REWARD[node.type];
-    const gained = addFragments(state, reward.fragments + (effects.fragments || 0));
-    const restored = heal(state, (effects.heal || 0) + (state.path === 'abundance' ? 5 : 0));
-    const options = availableBlessings(state);
-    state.pending = { type: 'blessing', options: options.map((item) => item.id) };
-    state.lastResult = `${crit ? 'Critical! ' : ''}${node.name} dikalahkan. HP -${damage}${restored ? `, pulih ${restored}` : ''}, fragment +${gained}. Pilih satu Blessing.`;
   }
 
   _openTreasure(state, node) {
