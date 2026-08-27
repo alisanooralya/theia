@@ -211,7 +211,7 @@ export default {
       }
 
       if (sub === 'start' || sub === 'mulai') {
-        const difficulty = ctx.args[1]?.toLowerCase() || 'medium';
+        const difficulty = ctx.args[1]?.toLowerCase() || 'easy';
         if (!['easy', 'medium', 'hard'].includes(difficulty)) {
           return ctx.fail('Difficulty tidak valid. Pilih easy, medium, atau hard.');
         }
