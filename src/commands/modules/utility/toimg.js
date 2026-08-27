@@ -10,7 +10,7 @@ export default {
 
   async execute(ctx) {
     const quoted = ctx.quoted;
-    if (!quoted || !quoted.isMedia || !quoted.mimetype?.includes('webp'))
+    if (!quoted || !quoted.isMedia || !quoted.message.stickerMessage.mimetype?.includes('webp'))
       return ctx.reply('Reply sticker dengan `!toimg`');
 
     await ctx.react('⏳');
@@ -19,9 +19,9 @@ export default {
       const buffer = await ctx.quoted.download();
       if (!buffer) return ctx.reply('Gagal download sticker.');
 
-      const pngBuffer = await webpToImage(buffer);
-      await ctx.sendMedia('image', pngBuffer, '', { mimetype: 'image/png' });
-      await ctx.react('✅');
+      const imgBuffer = await webpToImage(buffer);
+      ctx.sendMedia('image', imgBuffer, '', { mimetype: 'image/jpeg' });
+      ctx.react('✅');
     } catch (err) {
       await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);

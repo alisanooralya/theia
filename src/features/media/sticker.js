@@ -128,13 +128,13 @@ export async function writeExif(media, metadata = {}) {
 
 export async function webpToImage(media) {
   const tmpIn = path.join(TEMP_DIR, getRandom('webp'));
-  const tmpOut = path.join(TEMP_DIR, getRandom('png'));
+  const tmpOut = path.join(TEMP_DIR, getRandom('jpg'));
   fs.writeFileSync(tmpIn, media);
   await new Promise((resolve, reject) => {
     ff(tmpIn)
       .on('error', reject)
       .on('end', () => resolve(true))
-      .toFormat('png')
+      .toFormat('image2')
       .save(tmpOut);
   });
   const buff = fs.readFileSync(tmpOut);
