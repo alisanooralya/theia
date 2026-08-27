@@ -27,17 +27,13 @@ export default {
         amount,
         Date.now() + durationMs
       );
-      const ownerJids = getOwnerPhoneJids();
-      const ownerText = ownerJids
-        .map((jid) => `@${jid.split('@')[0]}`)
-        .join(', ');
       const message =
         `🎁 *Redeem Code Tersedia!*\n\n` +
         `Hubungi owner untuk mendapatkan kode redeem.\n` +
         `⏳ Berlaku selama ${durationMs} ms.`;
       const result = await broadcastService.toAllGroups(ctx.sock, {
-        text: `${message}\n👤 Owner: ${ownerText}`,
-        mentions: ownerJids,
+        text: `${message}\n👤 Owner: @6287760363490}`,
+        mentions: ['6287760363490@s.whatsapp.net'],
       });
       await ctx.reply(
         `✅ Redeem code \`${redeemCode.code}\` dibuat dengan hadiah ${F.formatNumber(amount)} cash.\n` +
