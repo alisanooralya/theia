@@ -32,14 +32,14 @@ class RelicModel {
   }
 
   findByOwner(jid) {
-    return this._findByOwner.all(jid).map((row) => {
+    return this._findByOwner().all(jid).map((row) => {
       row.substats = JSON.parse(row.substats);
       return row;
     });
   }
 
   findByOwnerAndSlot(jid, slot) {
-    return this._findByOwnerAndSlot.all(jid, slot).map((row) => {
+    return this._findByOwnerAndSlot().all(jid, slot).map((row) => {
       row.substats = JSON.parse(row.substats);
       return row;
     });

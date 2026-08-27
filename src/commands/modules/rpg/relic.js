@@ -8,7 +8,8 @@ function relicListText(jid) {
   const lines = relics.map((r, i) => {
     const formatted = relic.formatRelic(r);
     const equipped = relicModel.isEquipped(r.id) ? ' *[Equipped]*' : '';
-    return `${i + 1}. *[${formatted.slot}]* Lv.${r.level} - ${formatted.mainStat}${equipped}`;
+    const substats = formatted.substats.length ? '\n' + formatted.substats.join('\n') : '';
+    return `${i + 1}. *[${formatted.slot}]* Lv.${r.level} - ${formatted.mainStat}${equipped}${substats}`;
   });
   return `⌁ *RELIC COLLECTION*\n\n${lines.join('\n')}`;
 }
@@ -45,7 +46,7 @@ function inventoryText(jid) {
     statLines.length ? '*Total Stats:*' : '',
     ...statLines,
     statLines.length ? '' : '',
-    'Gunakan `.relic equip <id>` untuk memasang relic.',
+    'Gunakan `.relic equip <nomor>` untuk memasang relic.',
     'Gunakan `.relic unequip <slot>` untuk melepas relic.',
   ].filter((line) => line !== undefined).join('\n');
 }
@@ -55,7 +56,7 @@ function helpText() {
     '⌁ *RELIC SYSTEM - BANTUAN*',
     '',
     '`.relic list` - lihat semua relic',
-    '`.relic equip <id>` - pasang relic ke slot',
+    '`.relic equip <nomor>` - pasang relic ke slot',
     '`.relic unequip <slot>` - lepas relic dari slot (head/hands/body/feet)',
     '`.relic inventory` - lihat relic terpasang dan stats',
     '`.relic detail <id>` - lihat detail relic',
