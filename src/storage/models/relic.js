@@ -76,7 +76,7 @@ class RelicModel {
   }
 
   getInventory(jid) {
-    return this._findInventory.get(jid) ?? null;
+    return this._findInventory().get(jid) ?? null;
   }
 
   setInventory(jid, headId, handsId, bodyId, feetId) {
