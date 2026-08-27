@@ -184,6 +184,17 @@ const ITEMS = [
     stackable: true,
     data: { mult: 8 },
   },
+  {
+    id: 'cerelia',
+    name: 'Cerelia',
+    description: 'Divergent Universe Core - material untuk level up relic',
+    category: 'material',
+    price: 0,
+    rarity: 'rare',
+    sellable: false,
+    stackable: true,
+    data: {},
+  },
 ];
 
 const QUESTS = [

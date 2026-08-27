@@ -180,6 +180,29 @@ export function createSchema() {
       updated_at   INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS relics (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+      slot        TEXT    NOT NULL CHECK(slot IN ('head', 'hands', 'body', 'feet')),
+      main_stat   TEXT    NOT NULL,
+      main_value  INTEGER NOT NULL DEFAULT 0,
+      substats    TEXT    NOT NULL DEFAULT '[]',
+      level       INTEGER NOT NULL DEFAULT 1,
+      created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS relic_inventory (
+      jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+      head_id     INTEGER REFERENCES relics(id) ON DELETE SET NULL,
+      hands_id    INTEGER REFERENCES relics(id) ON DELETE SET NULL,
+      body_id     INTEGER REFERENCES relics(id) ON DELETE SET NULL,
+      feet_id     INTEGER REFERENCES relics(id) ON DELETE SET NULL,
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_relics_owner      ON relics(owner_jid);
+    CREATE INDEX IF NOT EXISTS idx_relics_slot       ON relics(owner_jid, slot);
     CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at);

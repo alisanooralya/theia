@@ -12,3 +12,4 @@ export { redeemCodeModel } from './redeem-code.js';
 export { afkModel } from './afk.js';
 export { divergentRunModel } from './divergent-run.js';
 export { divergentUsageModel } from './divergent-usage.js';
+export { relicModel } from './relic.js';

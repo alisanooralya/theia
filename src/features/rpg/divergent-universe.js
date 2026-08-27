@@ -6,6 +6,8 @@ import {
   statsModel,
   userModel,
   walletModel,
+  inventoryModel,
+  relicModel,
 } from '#storage/models/index.js';
 
 const PATHS = {
@@ -272,6 +274,38 @@ function maxHp(state) {
   return Math.max(50, state.baseMaxHp + (totalEffects(state).maxHp || 0));
 }
 
+function getRelicEffects(jid) {
+  const inventory = relicModel.getInventory(jid);
+  if (!inventory) return {};
+  const stats = {
+    hp_flat: 0,
+    atk_flat: 0,
+    crit_rate: 0,
+    hp_percent: 0,
+    def_percent: 0,
+    spd_flat: 0,
+  };
+  const slots = ['head', 'hands', 'body', 'feet'];
+  for (const slot of slots) {
+    const relicId = inventory[`${slot}_id`];
+    if (!relicId) continue;
+    const relic = relicModel.find(relicId);
+    if (!relic) continue;
+    stats[relic.main_stat] += relic.main_value;
+    for (const sub of relic.substats) {
+      stats[sub.stat] += sub.value;
+    }
+  }
+  return {
+    hp_flat: stats.hp_flat,
+    atk_flat: stats.atk_flat,
+    crit_rate: stats.crit_rate / 100,
+    hp_percent: stats.hp_percent / 100,
+    def_percent: stats.def_percent / 100,
+    spd_flat: stats.spd_flat,
+  };
+}
+
 function addFragments(state, amount) {
   const mult = 1 + (totalEffects(state).fragmentMult || 0);
   const gained = Math.floor(amount * mult);
@@ -387,19 +421,21 @@ class DivergentUniverseService {
         `Batas mingguan DU tercapai (${usage.weeklyCount}/${RUN_LIMIT.weekly}). Coba lagi setelah reset Senin pukul 00.00 ${SETTINGS.timezone}.`
       );
     }
+    const relicEffects = getRelicEffects(jid);
     const state = {
       path: null,
       nodeIndex: 0,
       nodes: buildNodes(difficulty),
       difficulty,
-      baseMaxHp: 100,
-      hp: 100,
+      baseMaxHp: 100 + (relicEffects.hp_flat || 0),
+      hp: 100 + (relicEffects.hp_flat || 0),
       fragments: 0,
       blessings: [],
       curios: [],
       pending: { type: 'path', options: Object.keys(PATHS) },
       revived: false,
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
+      relicEffects,
     };
     const run = divergentRunModel.create(jid, chatJid, state);
     divergentUsageModel.save(jid, {
@@ -518,19 +554,22 @@ class DivergentUniverseService {
 
   _battle(state, node) {
     const effects = totalEffects(state);
+    const relic = state.relicEffects || {};
     const tier = node.type === 'boss' ? 1.6 : node.type === 'elite' ? 1.3 : 1;
     const progress = 1 + node.position * 0.045;
-    let playerPower = 1 + (effects.atk || 0);
+    let playerPower = 1 + (effects.atk || 0) + (relic.atk_flat || 0) * 0.01;
     if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction') playerPower += 0.18;
     if (node.type !== 'battle') playerPower += effects.bossAtk || 0;
     playerPower += Math.floor(state.blessings.length / 3) * (effects.perBlessing || 0);
-    const critChance = Math.min(0.55, 0.12 + (effects.crit || 0));
+    const relicCritRate = relic.crit_rate || 0;
+    const critChance = Math.min(0.55, 0.12 + (effects.crit || 0) + relicCritRate);
     const crit = Math.random() < critChance;
     if (crit) playerPower *= 1.5 + (effects.critDamage || 0);
     const enemyPower = tier * progress * (1 - (effects.weaken || 0)) * (1 + (effects.enemyPower || 0));
     const winChance = Math.max(0.48, Math.min(0.94, 0.7 + (playerPower - enemyPower) * 0.18));
     const won = Math.random() < winChance;
-    const shield = (effects.shield || 0) + (state.path === 'preservation' ? 5 : 0);
+    const relicDefBonus = Math.floor((state.baseMaxHp || 100) * (relic.def_percent || 0));
+    const shield = (effects.shield || 0) + (state.path === 'preservation' ? 5 : 0) + relicDefBonus;
     const reduction = Math.min(0.6, (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0));
     let damage = Math.floor(
       (won ? 13 : 27) *
@@ -771,13 +810,110 @@ class DivergentUniverseService {
         state.blessings.length * FINAL_REWARD.expPerBlessing) *
       multiplier
     );
+    const cereliaAmount = Math.floor(
+      (state.difficulty === 'easy' ? 2 : state.difficulty === 'medium' ? 4 : 6) * multiplier
+    );
+    const relicDrops = this._rollRelicDrops(state.difficulty);
+    const relicIds = [];
     db.transaction(() => {
       walletModel.reward(run.jid, rewardCash, 'divergent universe clear');
       userModel.addExp(run.jid, rewardExp);
+      if (cereliaAmount > 0) {
+        inventoryModel.add(run.jid, 'cerelia', cereliaAmount);
+      }
+      for (let i = 0; i < relicDrops; i++) {
+        const relic = this._generateRelic(run.jid);
+        relicIds.push(relic.id);
+      }
     })();
     run.status = 'completed';
-    state.finalReward = { cash: rewardCash, exp: rewardExp };
-    state.lastResult = `Divergent Universe ditaklukkan. Reward akhir: ${rewardCash} cash dan ${rewardExp} EXP.`;
+    state.finalReward = {
+      cash: rewardCash,
+      exp: rewardExp,
+      cerelia: cereliaAmount,
+      relics: relicIds,
+    };
+    const relicText = relicDrops > 0
+      ? ` + ${relicDrops} relic`
+      : '';
+    state.lastResult = `Divergent Universe ditaklukkan. Reward akhir: ${rewardCash} cash, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
+  }
+
+  _generateRelic(jid) {
+    const slot = ['head', 'hands', 'body', 'feet'][Math.floor(Math.random() * 4)];
+    const mainStats = {
+      head: ['hp_flat'],
+      hands: ['atk_flat'],
+      body: ['crit_rate', 'hp_percent', 'def_percent'],
+      feet: ['spd_flat', 'def_percent', 'hp_percent'],
+    };
+    const weights = {
+      head: [1],
+      hands: [1],
+      body: [1, 1, 1],
+      feet: [1, 2, 2],
+    };
+    const stats = mainStats[slot];
+    const w = weights[slot];
+    const totalWeight = w.reduce((a, b) => a + b, 0);
+    let random = Math.random() * totalWeight;
+    let mainStat = stats[0];
+    for (let i = 0; i < stats.length; i++) {
+      if (random < w[i]) {
+        mainStat = stats[i];
+        break;
+      }
+      random -= w[i];
+    }
+    const mainValues = {
+      hp_flat: 5,
+      atk_flat: 2,
+      crit_rate: 2,
+      hp_percent: 3,
+      def_percent: 3,
+      spd_flat: 2,
+    };
+    const allSubstats = ['hp_flat', 'atk_flat', 'crit_rate', 'hp_percent', 'def_percent', 'spd_flat'];
+    const substats = [];
+    const available = [...allSubstats];
+    for (let i = 0; i < 3 && available.length > 0; i++) {
+      const idx = Math.floor(Math.random() * available.length);
+      const stat = available.splice(idx, 1)[0];
+      const subValues = {
+        hp_flat: 3,
+        atk_flat: 1,
+        crit_rate: 1,
+        hp_percent: 2,
+        def_percent: 2,
+        spd_flat: 1,
+      };
+      substats.push({ stat, value: subValues[stat], rolls: 0 });
+    }
+    return relicModel.create({
+      owner_jid: jid,
+      slot,
+      main_stat: mainStat,
+      main_value: mainValues[mainStat],
+      substats,
+      level: 1,
+    });
+  }
+
+  _rollRelicDrops(difficulty) {
+    const dropTable = {
+      easy: 0.3,
+      medium: 1,
+      hard: 1,
+    };
+    const chance = dropTable[difficulty] || 0;
+    if (Math.random() > chance) return 0;
+    if (difficulty === 'medium') {
+      return Math.random() < 0.1 ? 2 : 1;
+    }
+    if (difficulty === 'hard') {
+      return Math.random() < 0.5 ? 2 : 0;
+    }
+    return 1;
   }
 }
 
