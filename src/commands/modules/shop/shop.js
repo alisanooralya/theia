@@ -43,7 +43,6 @@ export default {
     text += `📖 *Cara Pakai:*\n`;
     text += `• Beli: \`.shop buy <id> [jumlah]\`\n`;
     text += `• Jual: \`.shop sell <id> [jumlah]\`\n`;
-    text += `• Buka lootbox: \`.lootbox\`\n`;
     text += `• Pakai item: \`.use <id>\` (contoh: \`.use potion_hp_sm\`)\n`;
     text += `• Equip: \`.equip <id>\` | Lepas: \`.equip unequip <weapon/armor>\`\n\n`;
 

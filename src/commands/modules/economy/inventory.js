@@ -26,7 +26,6 @@ export default {
       'consumable',
       'material',
       'special',
-      'lootbox',
     ];
     const grouped = items.reduce((acc, i) => {
       const cat = i.category || 'misc';
