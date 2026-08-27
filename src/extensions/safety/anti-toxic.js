@@ -1,6 +1,7 @@
 import { db } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
+import { aiService } from '#features/ai.js';
 import { logger } from '#helpers/logger.js';
 
 const TOXIC_DAMAGE = 10;
@@ -116,6 +117,32 @@ const TOXIC_RE = new RegExp(
   'i'
 );
 
+const AI_TOXIC_PROMPT = `Analisis pesan WhatsApp ini apakah mengandung konten toxic, kasar, tidak sopan, atau menyerang seseorang.
+
+Pesan: "{message}"
+
+Jawab HANYA dengan salah satu:
+- TOXIC: jika pesan mengandung konten toxic/kasar/tidak sopan/menyerang
+- SAFE: jika pesan aman dan tidak toxic
+
+Contoh TOXIC: menghina, mengancam, kata kasar, sarkasme menyakitkan, provokasi, bullying
+Contoh SAFE: percakapan normal, pertanyaan, opini tanpa serangan, humor ringan
+
+Jawaban:`;
+
+async function detectToxicWithAI(text) {
+  if (!aiService.isAvailable()) return false;
+  try {
+    const prompt = AI_TOXIC_PROMPT.replace('{message}', text.slice(0, 500));
+    const response = await aiService.chat(prompt);
+    const result = response.toUpperCase().trim();
+    return result.includes('TOXIC');
+  } catch (err) {
+    logger.error({ err }, '[AntiToxic] AI detection error');
+    return false;
+  }
+}
+
 export default {
   name: 'anti-toxic',
 
@@ -128,14 +155,26 @@ export default {
     if (!groupModel.hasAntitoxic(s.jid)) return true;
 
     const text = s.text ?? '';
-    if (!TOXIC_RE.test(text)) return true;
+
+    // Layer 1: Regex check
+    const isToxicByRegex = TOXIC_RE.test(text);
+
+    // Layer 2: AI check (only if regex doesn't detect)
+    let isToxicByAI = false;
+    if (!isToxicByRegex) {
+      isToxicByAI = await detectToxicWithAI(text);
+    }
+
+    if (!isToxicByRegex && !isToxicByAI) return true;
 
     try {
       await sock.sendMessage(s.jid, { delete: s.key });
 
+      const reason = isToxicByRegex ? 'Toxic (regex)' : 'Toxic (AI detected)';
+
       db.prepare(
         `INSERT INTO warns (jid, group_jid, reason, damage) VALUES (?, ?, ?, ?)`
-      ).run(s.sender, s.jid, 'Toxic', TOXIC_DAMAGE);
+      ).run(s.sender, s.jid, reason, TOXIC_DAMAGE);
 
       const health = getHealth(s.sender, s.jid);
 
@@ -159,7 +198,7 @@ export default {
       }
 
       logger.info(
-        { jid: s.jid, sender: s.sender },
+        { jid: s.jid, sender: s.sender, method: isToxicByRegex ? 'regex' : 'ai' },
         '[AntiToxic] Toxic message removed'
       );
     } catch (err) {
