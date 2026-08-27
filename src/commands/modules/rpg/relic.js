@@ -61,6 +61,7 @@ function helpText() {
     '`.relic inventory` - lihat relic terpasang dan stats',
     '`.relic detail <id>` - lihat detail relic',
     '`.relic levelup <id>` - naikkan level relic',
+    '`.relic smelt <id>` - lebur relic untuk dapat koin/cerelia',
     '',
     '*Slot Relic:*',
     '- *Head:* HP flat (+5 Lv.1, +20 Lv.15)',
@@ -78,6 +79,11 @@ function helpText() {
     '- Easy: 30% chance dapat 1 relic',
     '- Medium: garansi 1, 10% chance dapat 2',
     '- Hard: 50% chance dapat 2 relic',
+    '',
+    '*Lebur (Smelt):*',
+    '- Lv.1-5: koin saja (Lv × 200)',
+    '- Lv.6-14: koin + 1 Cerelia',
+    '- Lv.15: koin + 2 Cerelia',
     '',
     '*Cerelia* adalah Divergent Universe Core yang didapat dari menyelesaikan DU.',
   ].join('\n');
@@ -144,6 +150,17 @@ export default {
         const cost = relic.getLevelUpCost(leveled);
         const nextCost = cost ? `\nNext level: ${cost.coins} koin${cost.cerelia > 0 ? ` + ${cost.cerelia} Cerelia` : ''}${cost.userExp > 0 ? ` + ${cost.userExp} EXP` : ''}` : '';
         return ctx.reply(`Relic berhasil di-upgrade ke *Lv.${leveled.level}*!\n${formatted.mainStat}${nextCost}`);
+      }
+
+      if (sub === 'smelt' || sub === 'lebur') {
+        const id = Number.parseInt(ctx.args[1], 10);
+        if (!id) return ctx.fail('Masukkan nomor relic. Gunakan `.relic list` untuk melihat nomor.');
+        const result = relic.smelt(id, ctx.sender);
+        const formatted = relic.formatRelic(result.relic);
+        let text = `Relic *${formatted.slot}* Lv.${result.relic.level} berhasil dilebur!\n`;
+        text += `+${result.coins} koin`;
+        if (result.cerelia > 0) text += `\n+${result.cerelia} Cerelia`;
+        return ctx.reply(text);
       }
 
       return ctx.reply('Subcommand tidak dikenal. Ketik `.relic` untuk bantuan.');

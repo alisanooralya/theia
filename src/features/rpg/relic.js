@@ -272,6 +272,32 @@ class RelicService {
     return relic;
   }
 
+  smelt(relicId, jid) {
+    const relic = relicModel.find(relicId);
+    if (!relic) throw new Error('Relic tidak ditemukan.');
+    if (relic.owner_jid !== jid) throw new Error('Relic bukan milikmu.');
+    const inventory = relicModel.getInventory(jid);
+    if (inventory) {
+      const equipped = ['head_id', 'hands_id', 'body_id', 'feet_id'].some(
+        (key) => inventory[key] === relic.id
+      );
+      if (equipped) throw new Error('Tidak bisa melebur relic yang sedang terpasang.');
+    }
+    const coins = relic.level * 200;
+    let cerelia = 0;
+    if (relic.level >= 15) {
+      cerelia = 2;
+    } else if (relic.level > 5) {
+      cerelia = 1;
+    }
+    walletModel.addCash(jid, coins);
+    if (cerelia > 0) {
+      inventoryModel.add(jid, 'cerelia', cerelia);
+    }
+    relicModel.delete(relic.id);
+    return { coins, cerelia, relic };
+  }
+
   getEquippedStats(jid) {
     return getEquippedStats(jid);
   }
