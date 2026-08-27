@@ -9,7 +9,7 @@ function relicListText(jid) {
     const formatted = relic.formatRelic(r);
     const equipped = relicModel.isEquipped(r.id) ? ' *[Equipped]*' : '';
     const substats = formatted.substats.length ? '\n' + formatted.substats.join('\n') : '';
-    return `${i + 1}. *[${formatted.slot}]* Lv.${r.level} - ${formatted.mainStat}${equipped}${substats}`;
+    return `${i + 1} *[${formatted.slot}]* Lv.${r.level} - ${formatted.mainStat}${equipped}${substats}`;
   });
   return `⌁ *RELIC COLLECTION*\n\n${lines.join('\n')}`;
 }
@@ -65,8 +65,8 @@ function helpText() {
     '*Slot Relic:*',
     '- *Head:* HP flat (+5 Lv.1, +20 Lv.15)',
     '- *Hands:* ATK flat (+2 Lv.1, +8 Lv.15)',
-    '- *Body:* Crit Rate / HP% / DEF% (random)',
-    '- *Feet:* SPD flat / DEF% / HP% (SPD lebih langka)',
+    '- *Body:* Crit Rate / HP% / DEF%',
+    '- *Feet:* SPD flat / DEF% / HP%',
     '',
     '*Leveling:*',
     '- Setiap level membutuhkan koin',
