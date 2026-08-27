@@ -1,4 +1,4 @@
-import { afkModel, userModel, walletModel } from '#storage/models/index.js';
+import { afkModel, userModel, walletModel, groupModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
 
@@ -15,6 +15,7 @@ export default {
     const prefix = SETTINGS.prefix || '.';
     const isAfkCmd =
       text === `${prefix}afk` || text.startsWith(`${prefix}afk `);
+    const isMuted = parsed.isGroup && groupModel.isMuted(parsed.jid);
 
     userModel.ensure(jid, { pushName: parsed.pushName || '' });
 
@@ -42,6 +43,7 @@ export default {
     }
 
     if (isAfkCmd) {
+      if (isMuted) return true;
       const reason = text.slice(`${prefix}afk`.length).trim();
       afkModel.set(jid, reason);
       await sock
@@ -58,7 +60,7 @@ export default {
       return false;
     }
 
-    if (parsed.mentions?.length) {
+    if (parsed.mentions?.length && !isMuted) {
       for (const m of parsed.mentions) {
         if (m === jid) continue;
         const a = afkModel.get(m);
