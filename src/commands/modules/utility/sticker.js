@@ -5,8 +5,7 @@ export default {
   aliases: ['s', 'stiker', 'sgif'],
   category: 'utility',
   description: 'Buat sticker dari gambar/video',
-  cooldown: 10_000,
-  isProblem: true,
+  cooldown: 60_000,
 
   async execute(ctx) {
     const isMedia = ctx.quoted?.isMedia || ctx.msg?.isMedia;

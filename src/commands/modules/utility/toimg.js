@@ -5,7 +5,7 @@ export default {
   aliases: ['toimage', 'jpg', 'png'],
   category: 'utility',
   description: 'Convert sticker ke gambar',
-  cooldown: 10_000,
+  cooldown: 60_000,
   isProblem: true,
 
   async execute(ctx) {
