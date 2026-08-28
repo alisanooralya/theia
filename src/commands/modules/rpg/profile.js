@@ -48,7 +48,7 @@ export default {
       `╭──┄  *${user.push_name || 'Unknown'}*${premiumBadge}  ┄──`,
       `│• ⭐ Lv. ${user.level} - ${user.exp}/${expNeeded} (${expPct}%)`,
       '│',
-      `│• ❤️ ${finalStats.hp}`,
+      `│• ❤️ ${stats.hp}/${finalStats.hp}`,
       `│• ⚔️ ${finalStats.atk}  🛡️ ${finalStats.def}  💥 ${finalStats.critRate.toFixed(0)}%`,
       '│',
       ...slotLines,
