@@ -1,8 +1,9 @@
 import { db } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
-import { aiService } from '#features/ai.js';
 import { logger } from '#helpers/logger.js';
+import SETTINGS from '#environment/settings.js';
+import axios from 'axios';
 
 const TOXIC_DAMAGE = 10;
 
@@ -121,29 +122,45 @@ const TOXIC_RE = new RegExp(
   'i'
 );
 
-const AI_TOXIC_PROMPT = `Analisis pesan WhatsApp ini apakah mengandung konten toxic, kasar, tidak sopan, atau menyerang seseorang.
-
-Pesan: "{message}"
-
-Jawab HANYA dengan salah satu:
-- TOXIC: jika pesan mengandung konten toxic/kasar/tidak sopan/menyerang
-- SAFE: jika pesan aman dan tidak toxic
-
-Contoh TOXIC: menghina, mengancam, kata kasar, sarkasme menyakitkan, provokasi, bullying
-Contoh SAFE: percakapan normal, pertanyaan, opini tanpa serangan, humor ringan
-
-Jawaban:`;
+const AI_SYSTEM_PROMPT = `Anda adalah filter moderasi pesan WhatsApp. Analisis teks berikut, apakah mengandung kata kasar, plesetan kata kotor, ujaran kebencian, atau insult dalam bahasa Indonesia/bahasa daerah/slang gaul. Jawab HANYA dengan JSON format: {"is_toxic": true/false, "reason": "alasan singkat"}`;
 
 async function detectToxicWithAI(text) {
-  if (!aiService.isAvailable()) return false;
+  if (!SETTINGS.openaiKey) return { is_toxic: false, reason: '' };
   try {
-    const prompt = AI_TOXIC_PROMPT.replace('{message}', text.slice(0, 500));
-    const response = await aiService.chat(prompt);
-    const result = response.toUpperCase().trim();
-    return result.includes('TOXIC');
+    const { data } = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: AI_SYSTEM_PROMPT },
+          { role: 'user', content: text.slice(0, 500) },
+        ],
+        max_tokens: 100,
+        temperature: 0.3,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${SETTINGS.openaiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 10_000,
+      }
+    );
+
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    if (!content) return { is_toxic: false, reason: '' };
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { is_toxic: false, reason: '' };
+
+    const result = JSON.parse(jsonMatch[0]);
+    return {
+      is_toxic: Boolean(result.is_toxic),
+      reason: result.reason || '',
+    };
   } catch (err) {
     logger.error({ err }, '[AntiToxic] AI detection error');
-    return false;
+    return { is_toxic: false, reason: '' };
   }
 }
 
@@ -165,8 +182,11 @@ export default {
 
     // Layer 2: AI check (only if regex doesn't detect)
     let isToxicByAI = false;
+    let aiReason = '';
     if (!isToxicByRegex) {
-      isToxicByAI = await detectToxicWithAI(text);
+      const aiResult = await detectToxicWithAI(text);
+      isToxicByAI = aiResult.is_toxic;
+      aiReason = aiResult.reason;
     }
 
     if (!isToxicByRegex && !isToxicByAI) return true;
@@ -174,7 +194,9 @@ export default {
     try {
       await sock.sendMessage(s.jid, { delete: s.key });
 
-      const reason = isToxicByRegex ? 'Toxic (regex)' : 'Toxic (AI detected)';
+      const reason = isToxicByRegex
+        ? 'Toxic (regex)'
+        : `Toxic (AI): ${aiReason}`;
 
       db.prepare(
         `INSERT INTO warns (jid, group_jid, reason, damage) VALUES (?, ?, ?, ?)`
