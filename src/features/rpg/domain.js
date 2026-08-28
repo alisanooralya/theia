@@ -116,6 +116,7 @@ class DomainService {
     }
 
     const won = boss.hp <= 0;
+    statsModel.setHp(jid, player.hp);
     return { won, rounds, playerFinalHp: player.hp, bossFinalHp: boss.hp };
   }
 
