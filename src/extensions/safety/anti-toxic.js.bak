@@ -7,11 +7,7 @@ import { logger } from '#helpers/logger.js';
 const TOXIC_DAMAGE = 10;
 
 const TOXIC_WORDS = [
-  'b4bi',
-  'babi',
   'anjing',
-  'k0ntl',
-  'k0nt0l',
   'anying',
   'anjg',
   'ajg',
@@ -158,7 +154,7 @@ export default {
     if (!s.isGroup || s.fromMe) return true;
     if (!groupModel.hasAntitoxic(s.jid)) return true;
 
-    const text = s.text.toLowerCase() ?? '';
+    const text = s.text ?? '';
 
     // Layer 1: Regex check
     const isToxicByRegex = TOXIC_RE.test(text);
