@@ -3,7 +3,7 @@ import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
-import axios from 'axios';
+import OpenAI from 'openai';
 
 const TOXIC_DAMAGE = 10;
 
@@ -124,30 +124,30 @@ const TOXIC_RE = new RegExp(
 
 const AI_SYSTEM_PROMPT = `Anda adalah filter moderasi pesan WhatsApp. Analisis teks berikut, apakah mengandung kata kasar, plesetan kata kotor, ujaran kebencian, atau insult dalam bahasa Indonesia/bahasa daerah/slang gaul. Jawab HANYA dengan JSON format: {"is_toxic": true/false, "reason": "alasan singkat"}`;
 
-async function detectToxicWithAI(text) {
-  if (!SETTINGS.openaiKey) return { is_toxic: false, reason: '' };
-  try {
-    const { data } = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: AI_SYSTEM_PROMPT },
-          { role: 'user', content: text.slice(0, 500) },
-        ],
-        max_tokens: 100,
-        temperature: 0.3,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${SETTINGS.openaiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 10_000,
-      }
-    );
+let openaiClient = null;
 
-    const content = data?.choices?.[0]?.message?.content?.trim();
+function getOpenAIClient() {
+  if (openaiClient) return openaiClient;
+  if (!SETTINGS.openaiKey) return null;
+  openaiClient = new OpenAI({ apiKey: SETTINGS.openaiKey });
+  return openaiClient;
+}
+
+async function detectToxicWithAI(text) {
+  const client = getOpenAIClient();
+  if (!client) return { is_toxic: false, reason: '' };
+  try {
+    const response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: AI_SYSTEM_PROMPT },
+        { role: 'user', content: text.slice(0, 500) },
+      ],
+      max_tokens: 100,
+      temperature: 0.3,
+    });
+
+    const content = response.choices?.[0]?.message?.content?.trim();
     if (!content) return { is_toxic: false, reason: '' };
 
     const jsonMatch = content.match(/\{[\s\S]*\}/);
