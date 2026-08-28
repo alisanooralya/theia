@@ -7,6 +7,7 @@ export default {
   category: 'shop',
   description: 'Equip/unequip weapon atau armor',
   cooldown: 5_000,
+  isProblem: true,
 
   async execute(ctx) {
     const first = ctx.args[0]?.toLowerCase();
@@ -28,7 +29,7 @@ export default {
       } else {
         if (!first)
           ctx.fail(
-            'Usage: `.equip <item_id>` | `.equip unequip <weapon/armor>`\nContoh: `.equip sword_iron` atau `.equip armor_steel`'
+            'Usage: `.equip <item_id>` | `.equip unequip <weapon/armor>`'
           );
         const result = shopService.equip(ctx.sender, first, user.level);
         await ctx.reply(
