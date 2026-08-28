@@ -3,7 +3,7 @@ import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
-import OpenAI from 'openai';
+import { google } from 'googleapis';
 
 const TOXIC_DAMAGE = 10;
 
@@ -122,44 +122,71 @@ const TOXIC_RE = new RegExp(
   'i'
 );
 
-const AI_SYSTEM_PROMPT = `Anda adalah filter moderasi pesan WhatsApp. Analisis teks berikut, apakah mengandung kata kasar, plesetan kata kotor, ujaran kebencian, atau insult dalam bahasa Indonesia/bahasa daerah/slang gaul. Jawab HANYA dengan JSON format: {"is_toxic": true/false, "reason": "alasan singkat"}`;
+const TOXIC_THRESHOLD = 0.7;
 
-let openaiClient = null;
+const DISCOVERY_URL = 'https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1';
 
-function getOpenAIClient() {
-  if (openaiClient) return openaiClient;
-  if (!SETTINGS.openaiKey) return null;
-  openaiClient = new OpenAI({ apiKey: SETTINGS.openaiKey });
-  return openaiClient;
+let perspectiveClient = null;
+
+async function getPerspectiveClient() {
+  if (perspectiveClient) return perspectiveClient;
+  if (!SETTINGS.geminiKey) return null;
+  perspectiveClient = google.commentanalyzer({
+    version: 'v1alpha1',
+    auth: SETTINGS.geminiKey,
+    discovery: DISCOVERY_URL,
+  });
+  return perspectiveClient;
 }
 
 async function detectToxicWithAI(text) {
-  const client = getOpenAIClient();
+  const client = await getPerspectiveClient();
   if (!client) return { is_toxic: false, reason: '' };
   try {
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: AI_SYSTEM_PROMPT },
-        { role: 'user', content: text.slice(0, 500) },
-      ],
-      max_tokens: 100,
-      temperature: 0.3,
-    });
+    const request = {
+      comment: { text: text.slice(0, 500) },
+      languages: ['id', 'en'],
+      requestedAttributes: {
+        TOXICITY: {},
+        SEVERE_TOXICITY: {},
+        IDENTITY_ATTACK: {},
+        INSULT: {},
+        PROFANITY: {},
+        THREAT: {},
+      },
+    };
 
-    const content = response.choices?.[0]?.message?.content?.trim();
-    if (!content) return { is_toxic: false, reason: '' };
+    const response = await client.comments.analyze({ requestBody: request });
+    const scores = response.data?.attributeScores || {};
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { is_toxic: false, reason: '' };
+    const toxicity = scores.TOXICITY?.summaryScore?.value || 0;
+    const severeToxicity = scores.SEVERE_TOXICITY?.summaryScore?.value || 0;
+    const identityAttack = scores.IDENTITY_ATTACK?.summaryScore?.value || 0;
+    const insult = scores.INSULT?.summaryScore?.value || 0;
+    const profanity = scores.PROFANITY?.summaryScore?.value || 0;
+    const threat = scores.THREAT?.summaryScore?.value || 0;
 
-    const result = JSON.parse(jsonMatch[0]);
+    const maxScore = Math.max(toxicity, severeToxicity, identityAttack, insult, profanity, threat);
+
+    if (maxScore < TOXIC_THRESHOLD) {
+      return { is_toxic: false, reason: '' };
+    }
+
+    const reasons = [];
+    if (toxicity >= TOXIC_THRESHOLD) reasons.push('toxic');
+    if (severeToxicity >= TOXIC_THRESHOLD) reasons.push('severe toxic');
+    if (identityAttack >= TOXIC_THRESHOLD) reasons.push('identity attack');
+    if (insult >= TOXIC_THRESHOLD) reasons.push('insult');
+    if (profanity >= TOXIC_THRESHOLD) reasons.push('profanity');
+    if (threat >= TOXIC_THRESHOLD) reasons.push('threat');
+
     return {
-      is_toxic: Boolean(result.is_toxic),
-      reason: result.reason || '',
+      is_toxic: true,
+      reason: reasons.join(', ') || 'toxic content',
+      score: maxScore,
     };
   } catch (err) {
-    logger.error({ err }, '[AntiToxic] AI detection error');
+    logger.error({ err }, '[AntiToxic] Perspective API error');
     return { is_toxic: false, reason: '' };
   }
 }
@@ -183,10 +210,12 @@ export default {
     // Layer 2: AI check (only if regex doesn't detect)
     let isToxicByAI = false;
     let aiReason = '';
+    let aiScore = 0;
     if (!isToxicByRegex) {
       const aiResult = await detectToxicWithAI(text);
       isToxicByAI = aiResult.is_toxic;
       aiReason = aiResult.reason;
+      aiScore = aiResult.score || 0;
     }
 
     if (!isToxicByRegex && !isToxicByAI) return true;
@@ -196,7 +225,7 @@ export default {
 
       const reason = isToxicByRegex
         ? 'Toxic (regex)'
-        : `Toxic (AI): ${aiReason}`;
+        : `Toxic (${aiReason}): ${aiScore.toFixed(2)}`;
 
       db.prepare(
         `INSERT INTO warns (jid, group_jid, reason, damage) VALUES (?, ?, ?, ?)`
