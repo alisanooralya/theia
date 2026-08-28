@@ -2,24 +2,22 @@ import {
   statsModel,
   inventoryModel,
   itemModel,
-  walletModel,
-  userModel
 } from '#storage/models/index.js';
 
 const BUFF_DURATION = 3_600_000;
 
 export default {
   name: 'use',
-  aliases: ['pakai', 'minum', 'consume'],
+  aliases: ['pakai', 'makan', 'consume'],
   category: 'rpg',
-  description: 'Pakai item consumable (potion, booster)',
+  description: 'Pakai item consumable (food, buff)',
   cooldown: 3_000,
 
   async execute(ctx) {
     const query = ctx.args.join(' ').trim().toLowerCase();
     if (!query)
       ctx.fail(
-        'Usage: `.use <id/nama item>`\nContoh: `.use potion_hp_sm` / `.use potion_atk`'
+        'Usage: `.use <id/nama item>`\nContoh: `.use food_sm` / `.use potion_atk`'
       );
 
     const owned = inventoryModel.getAll(ctx.sender);
@@ -33,18 +31,6 @@ export default {
 
     const def = itemModel.findById(item.item_id);
     const data = JSON.parse(def?.data ?? '{}');
-
-    if (item.item_id === 'bank_upgrade') {
-      const amount = Number(data.bankLimit) || 50000;
-      walletModel.upgradeBankLimit(ctx.sender, amount);
-      userModel.incrementBankUpgrade(ctx.sender);
-      const w = walletModel.find(ctx.sender);
-      inventoryModel.remove(ctx.sender, item.item_id, 1);
-      await ctx.reply(
-        `✅ Kamu menggunakan *${item.name}*!\n🏦 Limit bank +${amount} (sekarang ${w.bank_limit})`
-      );
-      return;
-    }
 
     if (item.category !== 'consumable')
       ctx.fail('❌ Hanya item consumable yang bisa dipakai.');
@@ -71,12 +57,6 @@ export default {
         durationMs: BUFF_DURATION,
       });
       msg = `🛡️ DEF +${data.def} selama 1 jam!`;
-    } else if (data.mult) {
-      statsModel.applyBuff(ctx.sender, {
-        expMult: data.mult,
-        durationMs: BUFF_DURATION,
-      });
-      msg = `✨ EXP x${data.mult} selama 1 jam!`;
     } else {
       ctx.fail('❓ Item ini belum punya efek yang bisa dipakai.');
     }

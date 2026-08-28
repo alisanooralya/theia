@@ -8,41 +8,41 @@ const { itemModel } = await import('#storage/models/item.js');
 
 const ITEMS = [
   {
-    id: 'potion_hp_sm',
-    name: 'Health Potion (S)',
-    description: 'Pulihkan 50 HP',
+    id: 'food_sm',
+    name: 'Bread',
+    description: 'Pulihkan 100 HP',
     category: 'consumable',
-    price: 650,
+    price: 500,
     rarity: 'common',
     sellable: true,
     stackable: true,
-    data: { heal: 50 },
+    data: { heal: 100 },
   },
   {
-    id: 'potion_hp_md',
-    name: 'Health Potion (M)',
-    description: 'Pulihkan 150 HP',
+    id: 'food_md',
+    name: 'Roasted Meat',
+    description: 'Pulihkan 300 HP',
     category: 'consumable',
-    price: 1500,
+    price: 1200,
     rarity: 'uncommon',
     sellable: true,
     stackable: true,
-    data: { heal: 150 },
+    data: { heal: 300 },
   },
   {
-    id: 'potion_exp',
-    name: 'EXP Booster',
-    description: '2x EXP selama 1 jam',
+    id: 'food_lg',
+    name: 'Feast Meal',
+    description: 'Pulihkan 600 HP',
     category: 'consumable',
-    price: 6000,
+    price: 3000,
     rarity: 'rare',
     sellable: true,
     stackable: true,
-    data: { mult: 2 },
+    data: { heal: 600 },
   },
   {
     id: 'potion_atk',
-    name: 'Attack Potion',
+    name: 'Attack Food',
     description: 'ATK +10 selama 1 jam',
     category: 'consumable',
     price: 1800,
@@ -53,7 +53,7 @@ const ITEMS = [
   },
   {
     id: 'potion_def',
-    name: 'Defense Potion',
+    name: 'Defense Food',
     description: 'DEF +10 selama 1 jam',
     category: 'consumable',
     price: 1800,
@@ -61,17 +61,6 @@ const ITEMS = [
     sellable: true,
     stackable: true,
     data: { def: 10 },
-  },
-  {
-    id: 'bank_upgrade',
-    name: 'Bank Upgrade',
-    description: 'Limit bank +50000',
-    category: 'special',
-    price: 18000,
-    rarity: 'uncommon',
-    sellable: false,
-    stackable: false,
-    data: {},
   },
   {
     id: 'cerelia',
@@ -87,7 +76,5 @@ const ITEMS = [
 ];
 
 itemModel.bulkUpsert(ITEMS);
-db.prepare('DELETE FROM items WHERE id = ?').run('premium_7d');
-db.prepare('DELETE FROM items WHERE id = ?').run('potion_hp_lg');
 logger.info(`Seeded ${ITEMS.length} items`);
 logger.info('Seed complete — run: npm run dev');

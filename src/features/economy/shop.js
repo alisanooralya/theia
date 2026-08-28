@@ -4,17 +4,12 @@ import {
   inventoryModel,
   itemModel,
   statsModel,
-  userModel,
 } from '#storage/models/index.js';
 
 const SELL_RATE = 0.6;
 
 class ShopService {
   priceForBuy(jid, item) {
-    if (item.id === 'bank_upgrade') {
-      const used = userModel.getBankUpgradeCount(jid);
-      return item.price * (used + 1);
-    }
     return item.price;
   }
 

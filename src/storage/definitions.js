@@ -23,7 +23,7 @@ export function createSchema() {
       jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
       cash        INTEGER NOT NULL DEFAULT 0,
       bank        INTEGER NOT NULL DEFAULT 0,
-      bank_limit  INTEGER NOT NULL DEFAULT 10000,
+      bank_limit  INTEGER NOT NULL DEFAULT 1000000,
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 

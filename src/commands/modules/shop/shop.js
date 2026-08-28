@@ -1,5 +1,5 @@
 import { shopService } from '#features/economy/shop.js';
-import { userModel, walletModel } from '#storage/models/index.js';
+import { walletModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
 const RARITY_EMOJI = {
@@ -44,16 +44,14 @@ export default {
     text += `📖 *Cara Pakai:*\n`;
     text += `• Beli: \`.shop buy <id> [jumlah]\`\n`;
     text += `• Jual: \`.shop sell <id> [jumlah]\`\n`;
-    text += `• Pakai item: \`.use <id>\` (contoh: \`.use potion_hp_sm\`)\n`;
-    text += `• Equip: \`.equip <id>\` | Lepas: \`.equip unequip <weapon/armor>\`\n\n`;
+    text += `• Pakai item: \`.use <id>\` (contoh: \`.use food_sm\`)\n\n`;
 
     for (const [cat, items] of Object.entries(grouped)) {
       text += `*[ ${cat.toUpperCase()} ]*\n`;
        items.forEach((item) => {
         const emoji = RARITY_EMOJI[item.rarity] ?? '⬜';
         const price = shopService.priceForBuy(ctx.sender, item);
-        const priceNote = item.id === 'bank_upgrade' ? ` (naik tiap pakai, sudah ${userModel.getBankUpgradeCount(ctx.sender)}x)` : '';
-        text += `${emoji} \`${item.id}\`\n  *${item.name}* — 🪙${F.formatNumber(price)}${priceNote}\n  _${item.description}_\n`;
+        text += `${emoji} \`${item.id}\`\n  *${item.name}* — 🪙${F.formatNumber(price)}\n  _${item.description}_\n`;
       });
       text += '\n';
     }
