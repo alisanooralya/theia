@@ -5,7 +5,6 @@ import {
   itemModel,
   statsModel,
   userModel,
-  questModel,
 } from '#storage/models/index.js';
 
 const SELL_RATE = 0.6;
@@ -35,7 +34,6 @@ class ShopService {
     db.transaction(() => {
       walletModel.addCash(jid, -total);
       inventoryModel.add(jid, itemId, qty);
-      questModel.addProgress(jid, 'daily_shop', qty);
     })();
     return { item, qty, total, unitPrice: price };
   }

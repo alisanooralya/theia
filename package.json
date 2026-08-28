@@ -1,6 +1,6 @@
 {
   "name": "theia",
-  "version": "4.4.1",
+  "version": "4.6",
   "description": "Production-grade WhatsApp bot framework",
   "type": "module",
   "main": "src/index.js",

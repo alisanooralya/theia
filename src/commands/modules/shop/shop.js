@@ -16,6 +16,7 @@ export default {
   category: 'shop',
   description: 'Lihat & beli item di toko',
   cooldown: 5_000,
+  isProblem: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();

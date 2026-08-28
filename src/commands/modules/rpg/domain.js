@@ -41,7 +41,7 @@ export default {
   aliases: ['domains'],
   category: 'rpg',
   description: 'Farm Artifact dengan melawan Boss',
-  cooldown: 5_000,
+  cooldown: 9 * 60 * 60 * 1_000,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
@@ -69,7 +69,7 @@ export default {
         ].join('\n')
       );
 
-      await sleep(800);
+      await sleep(6000);
 
       const result = domain.simulateBattle(ctx.sender, sub);
 

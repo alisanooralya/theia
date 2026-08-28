@@ -3,7 +3,6 @@ import {
   userModel,
   walletModel,
   statsModel,
-  questModel,
 } from '#storage/models/index.js';
 
 const MIN_CHANCE = 0.3;
@@ -41,7 +40,6 @@ class RobService {
         stolen = Math.max(1, Math.floor(targetWallet.cash * pct));
         walletModel.addCash(targetJid, -stolen);
         walletModel.addCash(robberJid, stolen);
-        questModel.addProgress(robberJid, 'daily_rob', 1);
       } else {
         const robberWallet = walletModel.find(robberJid);
         penalty = Math.floor((robberWallet?.cash ?? 0) * PENALTY_PCT);

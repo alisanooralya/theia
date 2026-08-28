@@ -7,6 +7,7 @@ export default {
   category: 'shop',
   description: 'Jual item ke toko',
   cooldown: 5_000,
+  isProblem: true,
 
   async execute(ctx) {
     const itemId = ctx.args[0];

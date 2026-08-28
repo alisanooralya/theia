@@ -3,7 +3,6 @@ import {
   userModel,
   walletModel,
   statsModel,
-  questModel,
 } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
 
@@ -75,10 +74,6 @@ class BattleService {
         winnerBase.buff_expire > now ? winnerBase.buff_exp_mult || 1 : 1;
       userModel.addExp(winner, Math.floor(REWARD_EXP_WIN * expMult));
       userModel.addExp(loser, REWARD_EXP_LOSS);
-      questModel.addProgress(winner, 'daily_win', 1);
-      questModel.addProgress(winner, 'weekly_win', 1);
-      questModel.addProgress(winner, 'total_battles', 1);
-      questModel.addProgress(loser, 'total_battles', 1);
     })();
 
     return {

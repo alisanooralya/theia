@@ -69,29 +69,6 @@ export function createSchema() {
       UNIQUE(jid, item_id)
     );
 
-    CREATE TABLE IF NOT EXISTS quests (
-      id          TEXT    PRIMARY KEY,
-      name        TEXT    NOT NULL,
-      description TEXT    NOT NULL DEFAULT '',
-      type        TEXT    NOT NULL DEFAULT 'daily',
-      goal        INTEGER NOT NULL DEFAULT 1,
-      reward_cash INTEGER NOT NULL DEFAULT 0,
-      reward_exp  INTEGER NOT NULL DEFAULT 0,
-      reward_item TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS user_quests (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      jid         TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
-      quest_id    TEXT    NOT NULL REFERENCES quests(id),
-      progress    INTEGER NOT NULL DEFAULT 0,
-      completed   INTEGER NOT NULL DEFAULT 0,
-      claimed     INTEGER NOT NULL DEFAULT 0,
-      reset_at    INTEGER NOT NULL DEFAULT 0,
-      updated_at  INTEGER NOT NULL DEFAULT (unixepoch()),
-      UNIQUE(jid, quest_id)
-    );
-
     CREATE TABLE IF NOT EXISTS groups (
       jid         TEXT    PRIMARY KEY,
       name        TEXT    NOT NULL DEFAULT '',
@@ -236,7 +213,6 @@ export function createSchema() {
     CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid);
     CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at);
     CREATE INDEX IF NOT EXISTS idx_cooldowns_expires    ON cooldowns(expires_at);
-    CREATE INDEX IF NOT EXISTS idx_user_quests_jid      ON user_quests(jid);
     CREATE INDEX IF NOT EXISTS idx_users_level          ON users(level DESC);
     CREATE INDEX IF NOT EXISTS idx_redeem_codes_expiry  ON redeem_codes(expires_at);
 
