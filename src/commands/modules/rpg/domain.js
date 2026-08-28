@@ -29,16 +29,10 @@ function selectionText() {
     '🏰 *DOMAIN - Pilih Difficulty*',
     '',
     '1. *Easy* — Boss: Slime (HP 500, ATK 50, DEF 20)',
-    '   Reward: 100-200 🪙, 20-40 ⭐, 1 🧿 Artifact',
-    '',
     '2. *Medium* — Boss: Golem (HP 1000, ATK 100, DEF 50)',
-    '   Reward: 300-500 🪙, 50-80 ⭐, 1-2 🧿 Artifact',
-    '',
     '3. *Hard* — Boss: Dragon (HP 2000, ATK 180, DEF 100)',
-    '   Reward: 700-1000 🪙, 100-150 ⭐, 1-2 🧿 Artifact',
     '',
     'Ketik `.domain <difficulty>` untuk mulai.',
-    'Contoh: `.domain easy`',
   ].join('\n');
 }
 
@@ -82,7 +76,7 @@ export default {
       for (const round of result.rounds) {
         const text = domain.formatRoundPlayer(ctx.sender, round, config);
         try {
-          await ctx.sock.sendMessage(ctx.jid, { text }, { edit: statusMsg.key });
+          await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
         } catch {
           break;
         }
@@ -99,7 +93,7 @@ export default {
         finalText = domain.formatDefeat(config);
       }
 
-      await ctx.sock.sendMessage(ctx.jid, { text: finalText }, { edit: statusMsg.key });
+      await ctx.sock.sendMessage(ctx.jid, { text: finalText, edit: statusMsg.key });
     } catch (error) {
       return ctx.fail(error.message);
     }
