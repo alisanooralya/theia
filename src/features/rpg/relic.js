@@ -231,41 +231,58 @@ class RelicService {
     const relic = relicModel.find(relicId);
     if (!relic) throw new Error('Relic tidak ditemukan.');
     if (relic.owner_jid !== jid) throw new Error('Relic bukan milikmu.');
-    if (!this.canLevelUp(relic)) throw new Error('Relic sudah mencapai level maksimum.');
-    const cost = this.getLevelUpCost(relic);
+    if (!this.canLevelUp(relic)) throw new Error('Relic sudah mencapai level maksimum (15).');
+
     const wallet = walletModel.find(jid);
-    if (wallet.cash < cost.coins) {
-      throw new Error(`Butuh ${cost.coins} koin untuk level up. Kamu hanya punya ${wallet.cash}.`);
+    const user = userModel.findById(jid);
+    let coins = wallet?.cash ?? 0;
+    let exp = user?.exp ?? 0;
+    let cereliaItem = inventoryModel.getItem(jid, 'cerelia');
+    let cerelia = cereliaItem?.quantity ?? 0;
+    let totalCostCoins = 0;
+    let totalCostExp = 0;
+    let totalCostCerelia = 0;
+    let targetLevel = relic.level;
+
+    for (let lv = relic.level; lv < 15; lv++) {
+      const cost = LEVELING_COSTS[lv];
+      if (!cost) break;
+      if (coins < cost.coins) break;
+      if (cost.cerelia > 0 && cerelia < cost.cerelia) break;
+      if (cost.userExp > 0 && exp < cost.userExp) break;
+      coins -= cost.coins;
+      cerelia -= cost.cerelia;
+      exp -= cost.userExp;
+      totalCostCoins += cost.coins;
+      totalCostCerelia += cost.cerelia;
+      totalCostExp += cost.userExp;
+      targetLevel = lv + 1;
     }
-    if (cost.cerelia > 0) {
-      const cereliaItem = inventoryModel.getItem(jid, 'cerelia');
-      const cereliaQty = cereliaItem?.quantity || 0;
-      if (cereliaQty < cost.cerelia) {
-        throw new Error(`Butuh ${cost.cerelia} Cerelia untuk level up. Kamu hanya punya ${cereliaQty}.`);
-      }
+
+    if (targetLevel === relic.level) {
+      const nextCost = LEVELING_COSTS[relic.level];
+      throw new Error(`Butuh ${nextCost.coins} koin${nextCost.cerelia > 0 ? ` + ${nextCost.cerelia} Cerelia` : ''}${nextCost.userExp > 0 ? ` + ${nextCost.userExp} EXP` : ''} untuk upgrade. Kamu tidak punya cukup resources.`);
     }
-    if (cost.userExp > 0) {
-      const user = userModel.findById(jid);
-      if (user.exp < cost.userExp) {
-        throw new Error(`Butuh ${cost.userExp} EXP untuk level up. Kamu hanya punya ${user.exp}.`);
-      }
-    }
+
+    const fromLevel = relic.level;
     db.transaction(() => {
-      walletModel.addCash(jid, -cost.coins);
-      if (cost.cerelia > 0) {
-        inventoryModel.remove(jid, 'cerelia', cost.cerelia);
+      walletModel.addCash(jid, -totalCostCoins);
+      if (totalCostCerelia > 0) {
+        inventoryModel.remove(jid, 'cerelia', totalCostCerelia);
       }
-      if (cost.userExp > 0) {
-        userModel.addExp(jid, -cost.userExp);
+      if (totalCostExp > 0) {
+        userModel.addExp(jid, -totalCostExp);
       }
-      relic.level += 1;
+      relic.level = targetLevel;
       relic.main_value = interpolateStat(relic.main_stat, relic.level);
-      if (relic.level % 5 === 0 && relic.substats.length > 0) {
-        const subIndex = Math.floor(Math.random() * relic.substats.length);
-        const sub = relic.substats[subIndex];
-        const upgradeValues = SUBSTAT_VALUES[sub.stat];
-        sub.value += upgradeValues[5] || upgradeValues[1];
-        sub.rolls += 1;
+      for (let lv = fromLevel + 1; lv <= targetLevel; lv++) {
+        if (lv % 5 === 0 && relic.substats.length > 0) {
+          const subIndex = Math.floor(Math.random() * relic.substats.length);
+          const sub = relic.substats[subIndex];
+          const upgradeValues = SUBSTAT_VALUES[sub.stat];
+          sub.value += upgradeValues[5] || upgradeValues[1];
+          sub.rolls += 1;
+        }
       }
       relicModel.update(relic);
     })();

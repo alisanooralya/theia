@@ -53,8 +53,7 @@ function inventoryText(jid) {
     statLines.length ? '*Total Stats:*' : '',
     ...statLines,
     statLines.length ? '' : '',
-    'Gunakan `.relic equip <nomor>` untuk memasang relic.',
-    'Gunakan `.relic unequip <slot>` untuk melepas relic.',
+    'Gunakan `.relic help` untuk bantuan.',
   ].filter((line) => line !== undefined).join('\n');
 }
 
@@ -65,7 +64,6 @@ function helpText() {
     '`.relic list` - lihat semua relic',
     '`.relic equip <nomor>` - pasang relic ke slot',
     '`.relic unequip <slot>` - lepas relic dari slot (head/hands/body/feet)',
-    '`.relic inventory` - lihat relic terpasang dan stats',
     '`.relic detail <nomor>` - lihat detail relic',
     '`.relic levelup <nomor>` - naikkan level relic',
     '`.relic smelt <nomor>` - lebur relic untuk dapat koin/cerelia',
@@ -104,22 +102,18 @@ export default {
   cooldown: 2_000,
 
   async execute(ctx) {
-    const sub = ctx.args[0]?.toLowerCase() || 'help';
+    const sub = ctx.args[0]?.toLowerCase() || '';
 
     try {
-      if (sub === 'help' || sub === 'bantuan') {
+      if (sub === 'help') {
         return ctx.reply(helpText());
       }
 
-      if (sub === 'list' || sub === 'listrik') {
+      if (sub === 'list') {
         return ctx.reply(relicListText(ctx.sender));
       }
 
-      if (sub === 'inventory' || sub === 'inv' || sub === 'equipped') {
-        return ctx.reply(inventoryText(ctx.sender));
-      }
-
-      if (sub === 'equip' || sub === 'pasang') {
+      if (sub === 'equip') {
         const target = getRelicByIndex(ctx.sender, ctx.args[1]);
         if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
         const equipped = relic.equip(target.id, ctx.sender);
@@ -127,7 +121,7 @@ export default {
         return ctx.reply(`Relic *${formatted.slot}* Lv.${equipped.level} berhasil dipasang!`);
       }
 
-      if (sub === 'unequip' || sub === 'lepas') {
+      if (sub === 'unequip') {
         const slot = ctx.args[1]?.toLowerCase();
         if (!slot || !['head', 'hands', 'body', 'feet'].includes(slot)) {
           return ctx.fail('Masukkan slot: head, hands, body, atau feet.');
@@ -137,23 +131,23 @@ export default {
         return ctx.reply(`Relic *${formatted.slot}* Lv.${removed.level} berhasil dilepas!`);
       }
 
-      if (sub === 'detail' || sub === 'info') {
+      if (sub === 'detail') {
         const target = getRelicByIndex(ctx.sender, ctx.args[1]);
         if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
         return ctx.reply(relicDetailText(target));
       }
 
-      if (sub === 'levelup' || sub === 'lvl' || sub === 'upgrade') {
+      if (sub === 'levelup') {
         const target = getRelicByIndex(ctx.sender, ctx.args[1]);
         if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
         const leveled = relic.levelUp(target.id, ctx.sender);
         const formatted = relic.formatRelic(leveled);
         const cost = relic.getLevelUpCost(leveled);
-        const nextCost = cost ? `\nNext level: ${cost.coins} koin${cost.cerelia > 0 ? ` + ${cost.cerelia} Cerelia` : ''}${cost.userExp > 0 ? ` + ${cost.userExp} EXP` : ''}` : '';
+        const nextCost = cost ? `\nNext: ${cost.coins} koin${cost.cerelia > 0 ? ` + ${cost.cerelia} Cerelia` : ''}${cost.userExp > 0 ? ` + ${cost.userExp} EXP` : ''}` : '\nMax level tercapai!';
         return ctx.reply(`Relic berhasil di-upgrade ke *Lv.${leveled.level}*!\n${formatted.mainStat}${nextCost}`);
       }
 
-      if (sub === 'smelt' || sub === 'lebur') {
+      if (sub === 'smelt') {
         const target = getRelicByIndex(ctx.sender, ctx.args[1]);
         if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
         const result = relic.smelt(target.id, ctx.sender);
@@ -164,7 +158,7 @@ export default {
         return ctx.reply(text);
       }
 
-      return ctx.reply('Subcommand tidak dikenal. Ketik `.relic` untuk bantuan.');
+      return ctx.reply(inventoryText(ctx.sender));
     } catch (error) {
       return ctx.fail(error.message);
     }
