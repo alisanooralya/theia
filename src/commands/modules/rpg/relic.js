@@ -99,7 +99,7 @@ export default {
   aliases: ['reliks', 'equipment'],
   category: 'rpg',
   description: 'Kelola relic untuk meningkatkan stat di Divergent Universe',
-  cooldown: 2_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase() || '';
