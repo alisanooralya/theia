@@ -6,8 +6,7 @@ export default {
   aliases: ['jual'],
   category: 'shop',
   description: 'Jual item ke toko',
-  cooldown: 5_000,
-  isProblem: true,
+  cooldown: 10_000,
 
   async execute(ctx) {
     const itemId = ctx.args[0];

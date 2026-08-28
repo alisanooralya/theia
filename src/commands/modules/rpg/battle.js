@@ -60,6 +60,7 @@ export default {
   category: 'rpg',
   description: 'Tantang user lain untuk battle',
   cooldown: 120_000,
+  isProblem: true,
 
   async execute(ctx) {
     const targetJid =
