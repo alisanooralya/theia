@@ -34,11 +34,11 @@ const STAT_FORMAT = {
 
 const MAIN_STAT_SCALING = {
   hp: { 0: 50, 20: 300 },
-  atk: { 0: 10, 20: 60 },
-  hp_percent: { 0: 2, 20: 15 },
-  atk_percent: { 0: 2, 20: 15 },
-  def_percent: { 0: 2, 20: 15 },
-  crit_rate: { 0: 2, 20: 10 },
+  atk: { 0: 10, 20: 56 },
+  hp_percent: { 0: 2, 20: 18 },
+  atk_percent: { 0: 2, 20: 18 },
+  def_percent: { 0: 2, 20: 18 },
+  crit_rate: { 0: 2, 20: 16 },
 };
 
 const SUBSTAT_VALUES = {
