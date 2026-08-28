@@ -174,7 +174,7 @@ class DomainService {
     ];
 
     for (const art of rewards.artifacts) {
-      lines.push(`│ • 🧿 Artifact #${art.id}`);
+      lines.push(`│ • 🧿 Artifact #${art.user_id}`);
     }
 
     lines.push('╰──────────╯');

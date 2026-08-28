@@ -176,18 +176,17 @@ class ArtifactService {
     return artifactModel.findByOwnerAndSlot(jid, slot);
   }
 
-  getArtifact(id) {
-    return artifactModel.find(id);
+  getArtifact(jid, userId) {
+    return artifactModel.find(jid, userId);
   }
 
   getInventory(jid) {
     return artifactModel.getInventory(jid);
   }
 
-  equip(artifactId, jid) {
-    const artifact = artifactModel.find(artifactId);
+  equip(jid, userId) {
+    const artifact = artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
-    if (artifact.owner_jid !== jid) throw new Error('Artifact bukan milikmu.');
     const inventory = artifactModel.getInventory(jid) || {
       flower_id: null, feather_id: null, sands_id: null, goblet_id: null, circlet_id: null,
     };
@@ -214,7 +213,7 @@ class ArtifactService {
       inventory.flower_id, inventory.feather_id,
       inventory.sands_id, inventory.goblet_id, inventory.circlet_id
     );
-    return artifactModel.find(artifactId);
+    return artifactModel.findById(artifactId);
   }
 
   canUpgrade(artifact) {
@@ -226,10 +225,9 @@ class ArtifactService {
     return LEVELING_COSTS[artifact.level];
   }
 
-  upgrade(artifactId, jid) {
-    const artifact = artifactModel.find(artifactId);
+  upgrade(jid, userId) {
+    const artifact = artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
-    if (artifact.owner_jid !== jid) throw new Error('Artifact bukan milikmu.');
     if (!this.canUpgrade(artifact)) throw new Error('Artifact sudah mencapai level maksimum (20).');
 
     const wallet = walletModel.find(jid);
@@ -295,7 +293,7 @@ class ArtifactService {
       for (const slot of slots) {
         const artifactId = inventory[`${slot}_id`];
         if (!artifactId) continue;
-        const artifact = artifactModel.find(artifactId);
+        const artifact = artifactModel.findById(artifactId);
         if (!artifact) continue;
         switch (artifact.main_stat) {
           case 'hp': artifactHp += artifact.main_value; break;

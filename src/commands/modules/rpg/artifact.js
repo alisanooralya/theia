@@ -10,7 +10,7 @@ function equippedText(jid) {
   const lines = SLOTS.map((slot) => {
     const artifactId = inventory?.[`${slot}_id`];
     if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
-    const a = artifactModel.find(artifactId);
+    const a = artifactModel.findById(artifactId);
     if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
     return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
   });
@@ -20,11 +20,11 @@ function equippedText(jid) {
 function artifactListText(jid) {
   const artifacts = artifact.getArtifacts(jid);
   if (!artifacts.length) return 'Kamu belum memiliki artifact.';
-  const lines = artifacts.map((a, i) => {
+  const lines = artifacts.map((a) => {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
     const mainStatName = artifact.statNames[a.main_stat] || a.main_stat;
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
-    return `${i + 1}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted} - ID: ${a.id}${equipped}`;
+    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainStatName}: ${mainFormatted}${equipped}`;
   });
   return lines.join('\n');
 }
@@ -71,13 +71,12 @@ export default {
       }
 
       if (sub === 'detail' || sub === 'info') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!Number.isInteger(id) || id < 1) {
+        const userId = Number.parseInt(ctx.args[1], 10);
+        if (!Number.isInteger(userId) || userId < 1) {
           return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
         }
-        const a = artifact.getArtifact(id);
+        const a = artifact.getArtifact(ctx.sender, userId);
         if (!a) return ctx.fail('Artifact tidak ditemukan.');
-        if (a.owner_jid !== ctx.sender) return ctx.fail('Artifact bukan milikmu.');
         const full = artifact.formatArtifactFull(a);
         const cost = artifact.getUpgradeCost(a);
         const costText = cost ? `\nUpgrade: ${cost.coins} koin${cost.exp > 0 ? ` + ${cost.exp} EXP` : ''}` : '\nArtifact sudah max level!';
@@ -85,11 +84,11 @@ export default {
       }
 
       if (sub === 'equip' || sub === 'pasang') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!Number.isInteger(id) || id < 1) {
+        const userId = Number.parseInt(ctx.args[1], 10);
+        if (!Number.isInteger(userId) || userId < 1) {
           return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
         }
-        const equipped = artifact.equip(id, ctx.sender);
+        const equipped = artifact.equip(ctx.sender, userId);
         return ctx.reply(`✅ *${equipped.name}* (${equipped.slot}) Lv.${equipped.level} berhasil dipasang!`);
       }
 
@@ -103,11 +102,11 @@ export default {
       }
 
       if (sub === 'upgrade' || sub === 'lvl' || sub === 'levelup') {
-        const id = Number.parseInt(ctx.args[1], 10);
-        if (!Number.isInteger(id) || id < 1) {
+        const userId = Number.parseInt(ctx.args[1], 10);
+        if (!Number.isInteger(userId) || userId < 1) {
           return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
         }
-        const upgraded = artifact.upgrade(id, ctx.sender);
+        const upgraded = artifact.upgrade(ctx.sender, userId);
         const cost = artifact.getUpgradeCost(upgraded);
         const nextCost = cost ? `\nNext: ${cost.coins} koin${cost.exp > 0 ? ` + ${cost.exp} EXP` : ''}` : '\nMax level tercapai!';
         return ctx.reply(`✅ *${upgraded.name}* berhasil di-upgrade ke *Lv.${upgraded.level}*!${nextCost}`);

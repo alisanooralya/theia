@@ -205,14 +205,16 @@ export function createSchema() {
     CREATE TABLE IF NOT EXISTS artifacts (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+      user_id     INTEGER NOT NULL DEFAULT 1,
       name        TEXT    NOT NULL DEFAULT '',
       slot        TEXT    NOT NULL CHECK(slot IN ('flower', 'feather', 'sands', 'goblet', 'circlet')),
-      level       INTEGER NOT NULL DEFAULT 0,
+      level       INTEGER NOT NULL DEFAULT 1,
       main_stat   TEXT    NOT NULL,
       main_value  INTEGER NOT NULL DEFAULT 0,
       substats    TEXT    NOT NULL DEFAULT '{}',
       created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
-      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      UNIQUE(owner_jid, user_id)
     );
 
     CREATE TABLE IF NOT EXISTS artifact_inventory (

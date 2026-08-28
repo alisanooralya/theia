@@ -39,7 +39,7 @@ export default {
     const slotLines = ['flower', 'feather', 'sands', 'goblet', 'circlet'].map((slot) => {
       const artifactId = inv?.[`${slot}_id`];
       if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
-      const a = artifactModel.find(artifactId);
+      const a = artifactModel.findById(artifactId);
       if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
       return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
     });
