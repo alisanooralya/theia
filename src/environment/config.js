@@ -20,7 +20,7 @@ export default {
   sessionId: 'default',
 
   // ─── AI Provider (isi salah satu) ───
-  openaiKey: '',
+  openaiKey: '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',
   openaiModel: 'gpt-4o-mini',
   anthropicKey: '',
   anthropicModel: 'claude-haiku-4-5',
