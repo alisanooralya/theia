@@ -52,7 +52,6 @@ const ALL_SUBSTATS = ['hp', 'atk', 'def'];
 const UPGRADE_MILESTONES = [4, 8, 12, 16, 20];
 
 const LEVELING_COSTS = {
-  0: { coins: 200, exp: 0 },
   1: { coins: 250, exp: 0 },
   2: { coins: 300, exp: 0 },
   3: { coins: 350, exp: 0 },
@@ -232,29 +231,47 @@ class ArtifactService {
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
     if (artifact.owner_jid !== jid) throw new Error('Artifact bukan milikmu.');
     if (!this.canUpgrade(artifact)) throw new Error('Artifact sudah mencapai level maksimum (20).');
-    const cost = this.getUpgradeCost(artifact);
+
     const wallet = walletModel.find(jid);
-    if (!wallet || wallet.cash < cost.coins) {
-      throw new Error(`Butuh ${cost.coins} koin untuk upgrade. Kamu hanya punya ${wallet?.cash ?? 0}.`);
+    const user = userModel.findById(jid);
+    let coins = wallet?.cash ?? 0;
+    let exp = user?.exp ?? 0;
+    let totalCostCoins = 0;
+    let totalCostExp = 0;
+    let targetLevel = artifact.level;
+
+    for (let lv = artifact.level; lv < 20; lv++) {
+      const cost = LEVELING_COSTS[lv];
+      if (!cost) break;
+      if (coins < cost.coins) break;
+      if (cost.exp > 0 && exp < cost.exp) break;
+      coins -= cost.coins;
+      exp -= cost.exp;
+      totalCostCoins += cost.coins;
+      totalCostExp += cost.exp;
+      targetLevel = lv + 1;
     }
-    if (cost.exp > 0) {
-      const user = userModel.findById(jid);
-      if (!user || user.exp < cost.exp) {
-        throw new Error(`Butuh ${cost.exp} EXP untuk upgrade. Kamu hanya punya ${user?.exp ?? 0}.`);
-      }
+
+    if (targetLevel === artifact.level) {
+      const nextCost = LEVELING_COSTS[artifact.level];
+      throw new Error(`Butuh ${nextCost.coins} koin untuk upgrade. Kamu hanya punya ${wallet?.cash ?? 0}.`);
     }
+
+    const fromLevel = artifact.level;
     db.transaction(() => {
-      walletModel.addCash(jid, -cost.coins);
-      if (cost.exp > 0) {
-        userModel.addExp(jid, -cost.exp);
+      walletModel.addCash(jid, -totalCostCoins);
+      if (totalCostExp > 0) {
+        userModel.addExp(jid, -totalCostExp);
       }
-      artifact.level += 1;
+      artifact.level = targetLevel;
       artifact.main_value = interpolateMainStat(artifact.main_stat, artifact.level);
-      if (UPGRADE_MILESTONES.includes(artifact.level)) {
-        const subKeys = Object.keys(artifact.substats);
-        if (subKeys.length > 0) {
-          const key = subKeys[Math.floor(Math.random() * subKeys.length)];
-          artifact.substats[key] += SUBSTAT_VALUES[key].upgrade;
+      for (let lv = fromLevel + 1; lv <= targetLevel; lv++) {
+        if (UPGRADE_MILESTONES.includes(lv)) {
+          const subKeys = Object.keys(artifact.substats);
+          if (subKeys.length > 0) {
+            const key = subKeys[Math.floor(Math.random() * subKeys.length)];
+            artifact.substats[key] += SUBSTAT_VALUES[key].upgrade;
+          }
         }
       }
       artifactModel.update(artifact);
