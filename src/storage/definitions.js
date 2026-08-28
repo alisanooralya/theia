@@ -29,10 +29,10 @@ export function createSchema() {
 
     CREATE TABLE IF NOT EXISTS stats (
       jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
-      hp          INTEGER NOT NULL DEFAULT 200,
-      max_hp      INTEGER NOT NULL DEFAULT 200,
+      hp          INTEGER NOT NULL DEFAULT 1200,
+      max_hp      INTEGER NOT NULL DEFAULT 1200,
       atk         INTEGER NOT NULL DEFAULT 30,
-      def         INTEGER NOT NULL DEFAULT 10,
+      def         INTEGER NOT NULL DEFAULT 20,
       spd         INTEGER NOT NULL DEFAULT 10,
       weapon_id   TEXT,
       armor_id    TEXT,
@@ -297,7 +297,7 @@ export function createSchema() {
   } catch {}
   try {
     db.exec(
-      "UPDATE stats SET hp = 200, max_hp = 200, atk = 30, def = 10 WHERE hp = 100 AND max_hp = 100 AND atk = 10 AND def = 5"
+      "UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10"
     );
   } catch {}
   try {
