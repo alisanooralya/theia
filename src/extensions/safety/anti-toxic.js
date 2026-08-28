@@ -132,7 +132,7 @@ export default {
     if (!s.isGroup || s.fromMe) return true;
     if (!groupModel.hasAntitoxic(s.jid)) return true;
 
-    const text = s.text ?? '';
+    const text = s.text.toLowerCase() ?? '';
     if (!TOXIC_RE.test(text)) return true;
 
     try {
