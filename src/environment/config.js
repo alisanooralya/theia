@@ -7,7 +7,7 @@ export default {
   ownerNumber: ['6287760363490', '6283175202307', '6289514701687'],
 
   // ─── Login Mode ───
-  pairingNumber: /*'6283872712735',*/ '6283879462232',
+  pairingNumber: '6283872712735', // '6283879462232',
 
   // ─── Paths ───
   sessionPath: './sessions',
@@ -30,7 +30,7 @@ export default {
   // ─── AI Agent ───
   // Key Gemini: https://aistudio.google.com/apikey
   aiAgentEnabled: false,
-  geminiKey: 'AIzaSyDEobRbk_zUpmAfA0RN1FdUFFaEipb2VZM',
+  geminiKey: '',
   geminiModel: 'gemini-3.6-flash',
   agentMaxToolCalls: 5,
   agentRateLimitMax: 10,
