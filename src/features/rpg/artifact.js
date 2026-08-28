@@ -145,7 +145,7 @@ class ArtifactService {
     const mainStat = Array.isArray(config.mainStat)
       ? config.mainStat[Math.floor(Math.random() * config.mainStat.length)]
       : config.mainStat;
-    const level = 0;
+    const level = 1;
     const mainValue = interpolateMainStat(mainStat, level);
     const substats = {};
     if (config.substats) {
