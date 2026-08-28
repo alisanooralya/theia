@@ -54,7 +54,7 @@ export default {
   cooldown: 3_000,
 
   async execute(ctx) {
-    const sub = ctx.args[0]?.toLowerCase() || 'info';
+    const sub = ctx.args[0]?.toLowerCase() || '';
 
     try {
       userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -126,8 +126,7 @@ export default {
         '│',
         `│• 📦 Total: ${artifacts.length} artifact`,
         '│',
-        '│ Ketik `.artifact list` untuk melihat semua artifact.',
-        '│ Ketik `.artifact detail <id>` untuk detail.',
+        '│ Ketik `.artifact help` untuk bantuan.',
         '╰─────── ୨୧ ───────┘',
       ].join('\n');
 
