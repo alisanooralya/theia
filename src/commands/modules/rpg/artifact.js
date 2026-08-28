@@ -24,7 +24,7 @@ function artifactListText(jid) {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
     const mainStatName = artifact.statNames[a.main_stat] || a.main_stat;
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
-    return `${i + 1}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainStatName}: ${mainFormatted} - ID: ${a.id}${equipped}`;
+    return `${i + 1}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted} - ID: ${a.id}${equipped}`;
   });
   return lines.join('\n');
 }
