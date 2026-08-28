@@ -114,7 +114,7 @@ export default {
         return ctx.reply(`✅ *${upgraded.name}* berhasil di-upgrade ke *Lv.${upgraded.level}*!${nextCost}`);
       }
 
-      if (sub === 'smelt' || sub === 'lebur') {
+      if (sub === 'smelt') {
         const userId = Number.parseInt(ctx.args[1], 10);
         if (!Number.isInteger(userId) || userId < 1) {
           return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
