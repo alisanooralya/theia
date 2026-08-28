@@ -115,9 +115,14 @@ export function createSchema() {
     CREATE TABLE IF NOT EXISTS redeem_codes (
       code        TEXT    PRIMARY KEY,
       amount      INTEGER NOT NULL,
-      expires_at  INTEGER NOT NULL,
-      used_by     TEXT,
-      used_at     INTEGER
+      expires_at  INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS redeem_code_users (
+      code        TEXT    NOT NULL REFERENCES redeem_codes(code) ON DELETE CASCADE,
+      jid         TEXT    NOT NULL,
+      used_at     INTEGER NOT NULL DEFAULT (unixepoch()),
+      PRIMARY KEY (code, jid)
     );
 
     CREATE TABLE IF NOT EXISTS warns (

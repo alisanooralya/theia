@@ -14,29 +14,19 @@ class RedeemCodeModel {
 
   redeem(code, jid) {
     return db.transaction(() => {
-      const already = db
-        .prepare('SELECT 1 FROM redeem_codes WHERE used_by = @jid LIMIT 1')
-        .get({ jid });
-      if (already) throw new Error('Kamu sudah pernah me-redeem code.');
-
       const redeemCode = this._find().get(code);
       if (!redeemCode) throw new Error('Redeem code tidak ditemukan.');
-      if (redeemCode.used_by) throw new Error('Redeem code sudah digunakan.');
       if (redeemCode.expires_at <= Date.now())
         throw new Error('Redeem code sudah expired.');
 
-      const result = db
-        .prepare(
-          'UPDATE redeem_codes SET used_by = @jid, used_at = @usedAt WHERE code = @code AND used_by IS NULL AND expires_at > @now'
-        )
-        .run({
-          code,
-          jid,
-          usedAt: Math.floor(Date.now() / 1000),
-          now: Date.now(),
-        });
-      if (result.changes !== 1)
-        throw new Error('Redeem code sudah digunakan atau expired.');
+      const already = db
+        .prepare('SELECT 1 FROM redeem_code_users WHERE code = @code AND jid = @jid')
+        .get({ code, jid });
+      if (already) throw new Error('Kamu sudah pernah me-redeem code ini.');
+
+      db.prepare(
+        'INSERT INTO redeem_code_users (code, jid, used_at) VALUES (@code, @jid, @usedAt)'
+      ).run({ code, jid, usedAt: Math.floor(Date.now() / 1000) });
 
       db.prepare(
         'UPDATE wallets SET cash = cash + @amount, updated_at = unixepoch() WHERE jid = @jid'

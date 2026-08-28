@@ -7,7 +7,8 @@ import {
 import { artifactService } from '#features/rpg/artifact.js';
 
 const GACHA_COST = 1600;
-const ARTIFACT_RATE = 0.10;
+const ARTIFACT_RATE = 0.08;
+const ZONK_RATE = 0.15;
 
 const RARITY_WEIGHTS = {
   common: 50,
@@ -44,6 +45,10 @@ function singlePull(pool) {
 
   if (roll < ARTIFACT_RATE) {
     return { type: 'artifact' };
+  }
+
+  if (roll < ARTIFACT_RATE + ZONK_RATE) {
+    return { type: 'zonk' };
   }
 
   const items = pool.map((e) => e.item);
