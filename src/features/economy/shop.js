@@ -66,42 +66,13 @@ class ShopService {
       throw new Error('Hanya weapon atau armor yang bisa diequip.');
     if (!inventoryModel.hasItem(jid, itemId))
       throw new Error(`Kamu tidak punya *${item.name}*.`);
-
-    const stats = statsModel.ensure(jid);
-    const itemData = JSON.parse(item.data ?? '{}');
-    const weaponId = item.category === 'weapon' ? itemId : stats.weapon_id;
-    const armorId = item.category === 'armor' ? itemId : stats.armor_id;
-    const weaponData = weaponId
-      ? JSON.parse(itemModel.findById(weaponId)?.data ?? '{}')
-      : {};
-    const armorData = armorId
-      ? JSON.parse(itemModel.findById(armorId)?.data ?? '{}')
-      : {};
-    const atk = 10 + (weaponData.atk ?? 0);
-    const def = 5 + (armorData.def ?? 0);
-    const maxHp = 100 + userLevel * 10 + (armorData.hp ?? 0);
-
-    statsModel.updateEquipment(jid, { weaponId, armorId, atk, def, maxHp });
-    return { item, atk, def, maxHp };
+    return { item, atk: 0, def: 0, maxHp: 0 };
   }
 
   unequip(jid, slot, userLevel = 1) {
     if (!['weapon', 'armor'].includes(slot))
       throw new Error("Slot harus 'weapon' atau 'armor'.");
-    const stats = statsModel.ensure(jid);
-    const weaponId = slot === 'weapon' ? null : stats.weapon_id;
-    const armorId = slot === 'armor' ? null : stats.armor_id;
-    const weaponData = weaponId
-      ? JSON.parse(itemModel.findById(weaponId)?.data ?? '{}')
-      : {};
-    const armorData = armorId
-      ? JSON.parse(itemModel.findById(armorId)?.data ?? '{}')
-      : {};
-    const atk = 10 + (weaponData.atk ?? 0);
-    const def = 5 + (armorData.def ?? 0);
-    const maxHp = 100 + userLevel * 10 + (armorData.hp ?? 0);
-    statsModel.updateEquipment(jid, { weaponId, armorId, atk, def, maxHp });
-    return { slot, atk, def, maxHp };
+    return { slot, atk: 0, def: 0, maxHp: 0 };
   }
 
   getShopItems() {

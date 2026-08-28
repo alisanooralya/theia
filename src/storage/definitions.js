@@ -201,6 +201,32 @@ export function createSchema() {
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS artifacts (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+      name        TEXT    NOT NULL DEFAULT '',
+      slot        TEXT    NOT NULL CHECK(slot IN ('flower', 'feather', 'sands', 'goblet', 'circlet')),
+      level       INTEGER NOT NULL DEFAULT 0,
+      main_stat   TEXT    NOT NULL,
+      main_value  INTEGER NOT NULL DEFAULT 0,
+      substats    TEXT    NOT NULL DEFAULT '{}',
+      created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS artifact_inventory (
+      jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+      flower_id   INTEGER REFERENCES artifacts(id) ON DELETE SET NULL,
+      feather_id  INTEGER REFERENCES artifacts(id) ON DELETE SET NULL,
+      sands_id    INTEGER REFERENCES artifacts(id) ON DELETE SET NULL,
+      goblet_id   INTEGER REFERENCES artifacts(id) ON DELETE SET NULL,
+      circlet_id  INTEGER REFERENCES artifacts(id) ON DELETE SET NULL,
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_artifacts_owner      ON artifacts(owner_jid);
+    CREATE INDEX IF NOT EXISTS idx_artifacts_slot       ON artifacts(owner_jid, slot);
+
     CREATE INDEX IF NOT EXISTS idx_relics_owner      ON relics(owner_jid);
     CREATE INDEX IF NOT EXISTS idx_relics_slot       ON relics(owner_jid, slot);
     CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid);

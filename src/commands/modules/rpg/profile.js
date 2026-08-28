@@ -2,15 +2,18 @@ import {
   userModel,
   walletModel,
   statsModel,
-  inventoryModel,
+  artifactModel,
 } from '#storage/models/index.js';
+import { artifactService } from '#features/rpg/artifact.js';
 import { F } from '#helpers/index.js';
 
-const HP_BAR_LEN = 10;
-function hpBar(hp, maxHp) {
-  const f = Math.round((hp / maxHp) * HP_BAR_LEN);
-  return '█'.repeat(f) + '░'.repeat(HP_BAR_LEN - f);
-}
+const SLOT_EMOJI = {
+  flower: '🌸',
+  feather: '🪶',
+  sands: '⏳',
+  goblet: '🏆',
+  circlet: '👑',
+};
 
 export default {
   name: 'profile',
@@ -24,38 +27,35 @@ export default {
     const user = userModel.ensure(jid, { pushName: ctx.pushName });
     const wallet = walletModel.find(jid);
     const stats = statsModel.ensure(jid);
-    const items = inventoryModel.getAll(jid);
     userModel.checkPremiumExpiry(jid);
 
-    const total = (wallet?.cash ?? 0) + (wallet?.bank ?? 0);
+    const finalStats = artifactService.getPlayerStats(jid);
     const expNeeded = userModel.expForLevel(user.level + 1);
     const expPct = Math.round((user.exp / expNeeded) * 100);
     const winrate = statsModel.winrate(jid);
-    const weapon = items.find((i) => i.item_id === stats.weapon_id);
-    const armor = items.find((i) => i.item_id === stats.armor_id);
     const premiumBadge = user.premium ? ' 👑' : '';
 
+    const inv = artifactService.getInventory(jid);
+    const slotLines = ['flower', 'feather', 'sands', 'goblet', 'circlet'].map((slot) => {
+      const artifactId = inv?.[`${slot}_id`];
+      if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
+      const a = artifactModel.find(artifactId);
+      if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
+      return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
+    });
+
     const text = [
-      `╔══ 👤 *${user.push_name || 'Unknown'}*${premiumBadge}`,
-      '║',
-      `║  ⭐ Level  : *${user.level}*`,
-      `║  📊 EXP    : ${user.exp} / ${expNeeded} (${expPct}%)`,
-      '║',
-      `║  ❤️  HP    : ${hpBar(stats.hp, stats.max_hp)} ${stats.hp}/${stats.max_hp}`,
-      `║  ⚔️  ATK   : *${stats.atk}*`,
-      `║  🛡️  DEF   : *${stats.def}*`,
-      `║  💨 SPD   : *${stats.spd}*`,
-      '║',
-      `║  🗡️  Weapon: *${weapon?.name ?? 'Kosong'}*`,
-      `║  🥋 Armor : *${armor?.name ?? 'Kosong'}*`,
-      '║',
-      `║  🪙 Cash  : *${F.formatNumber(wallet?.cash ?? 0)}*`,
-      `║  🏦 Bank  : *${F.formatNumber(wallet?.bank ?? 0)}*`,
-      `║  📦 Total : *${F.formatNumber(total)}*`,
-      '║',
-      `║  🏆 W/L   : *${stats.win}W* / ${stats.loss}L (${winrate}%)`,
-      `║  🔥 Streak: *${user.daily_streak || 0} hari*`,
-      '╚══════════════════',
+      `╭──┄  *${user.push_name || 'Unknown'}*${premiumBadge}  ┄──`,
+      `│• ⭐ Lv. ${user.level} - ${user.exp}/${expNeeded} (${expPct}%)`,
+      '│',
+      `│• ❤️ ${finalStats.hp}`,
+      `│• ⚔️ ${finalStats.atk}  🛡️ ${finalStats.def}  💥 ${finalStats.critRate.toFixed(0)}%`,
+      '│',
+      ...slotLines,
+      '│',
+      `│• 🪙 ${F.formatNumber(wallet?.cash ?? 0)}  🏦 ${F.formatNumber(wallet?.bank ?? 0)}`,
+      `│• 🏆 ${stats.win}W / ${stats.loss}L  🔥 ${user.daily_streak || 0} hari`,
+      '╰─────── ୨୧ ───────┘',
     ].join('\n');
 
     await ctx.reply(text);
