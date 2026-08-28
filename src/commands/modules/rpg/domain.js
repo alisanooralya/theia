@@ -10,7 +10,6 @@ function helpText() {
     '',
     'Farm Artifact dengan melawan Boss!',
     '',
-    '`.domain` - lihat pilihan difficulty',
     '`.domain <difficulty>` - mulai battle',
     '',
     '*Difficulty:*',
@@ -21,18 +20,6 @@ function helpText() {
     '*Reward:*',
     '- Menang: Artifact + Coin + EXP',
     '- Kalah: Tidak ada reward',
-  ].join('\n');
-}
-
-function selectionText() {
-  return [
-    '🏰 *DOMAIN - Pilih Difficulty*',
-    '',
-    '1. *Easy* — Boss: Slime (HP 500, ATK 50, DEF 20)',
-    '2. *Medium* — Boss: Golem (HP 1000, ATK 100, DEF 50)',
-    '3. *Hard* — Boss: Dragon (HP 2000, ATK 180, DEF 100)',
-    '',
-    'Ketik `.domain <difficulty>` untuk mulai.',
   ].join('\n');
 }
 
@@ -47,9 +34,7 @@ export default {
     const sub = ctx.args[0]?.toLowerCase();
 
     try {
-      if (!sub) return ctx.reply(selectionText());
-
-      if (sub === 'help' || sub === 'bantuan') return ctx.reply(helpText());
+      if (!sub) return ctx.fail(helpText());
 
       const config = domain.getDifficultyConfig(sub);
       if (!config) return ctx.fail('Difficulty tidak valid. Pilih: easy, medium, atau hard.');

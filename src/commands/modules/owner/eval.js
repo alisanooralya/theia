@@ -22,7 +22,7 @@ export default {
       isError = true;
     }
     await ctx.reply(
-      `${isError ? '❌' : '✅'} *${isError ? 'Error' : 'Output'}:*\n\`\`\`\n${String(output).slice(0, 3500)}\n\`\`\``
+      `${isError ? '❌' : '✅'} *${isError ? 'Error' : 'Output'}:*\n\n${String(output).slice(0, 3500)}`
     );
   },
 };

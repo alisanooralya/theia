@@ -32,7 +32,7 @@ export default {
         `Hubungi owner untuk mendapatkan kode redeem.\n` +
         `⏳ Berlaku selama ${durationMs} ms.`;
       const result = await broadcastService.toAllGroups(ctx.sock, {
-        text: `${message}\n👤 Owner: @6287760363490}`,
+        text: `${message}\n👤 Owner: @6287760363490`,
         mentions: ['6287760363490@s.whatsapp.net'],
       });
       await ctx.reply(
