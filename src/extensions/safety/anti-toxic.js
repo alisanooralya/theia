@@ -2,7 +2,6 @@ import { db } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
-import SETTINGS from '#environment/settings.js';
 import { google } from 'googleapis';
 
 const TOXIC_DAMAGE = 10;
@@ -130,10 +129,9 @@ let perspectiveClient = null;
 
 async function getPerspectiveClient() {
   if (perspectiveClient) return perspectiveClient;
-  if (!SETTINGS.geminiKey) return null;
   perspectiveClient = google.commentanalyzer({
     version: 'v1alpha1',
-    auth: SETTINGS.geminiKey,
+    auth: 'AIzaSyDEobRbk_zUpmAfA0RN1FdUFFaEipb2VZM',
     discovery: DISCOVERY_URL,
   });
   return perspectiveClient;
