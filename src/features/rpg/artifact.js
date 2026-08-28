@@ -277,6 +277,39 @@ class ArtifactService {
     return artifact;
   }
 
+  smelt(jid, userId) {
+    const artifact = artifactModel.find(jid, userId);
+    if (!artifact) throw new Error('Artifact tidak ditemukan.');
+
+    const inventory = artifactModel.getInventory(jid);
+    if (inventory) {
+      const slotKey = `${artifact.slot}_id`;
+      if (inventory[slotKey] === artifact.id) {
+        inventory[slotKey] = null;
+        artifactModel.setInventory(
+          jid,
+          inventory.flower_id, inventory.feather_id,
+          inventory.sands_id, inventory.goblet_id, inventory.circlet_id
+        );
+      }
+    }
+
+    let totalSpent = 0;
+    for (let lv = 1; lv < artifact.level; lv++) {
+      const cost = LEVELING_COSTS[lv];
+      if (cost) totalSpent += cost.coins;
+    }
+    const coinsEarned = Math.floor(totalSpent * 0.7);
+
+    artifactModel.delete(artifact.id);
+
+    if (coinsEarned > 0) {
+      walletModel.addCash(jid, coinsEarned);
+    }
+
+    return { artifact, coinsEarned };
+  }
+
   getPlayerStats(jid) {
     const base = statsModel.find(jid);
     const baseHp = base?.max_hp ?? 1200;
