@@ -160,12 +160,13 @@ class DomainService {
     ].join('\n');
   }
 
-  formatVictory(config, rewards) {
+  formatVictory(config, rewards, rounds) {
     const lines = [
       '╭─── ୨୧ ───╮',
       '│ 🏰 DOMAIN CLEAR',
       '│',
       `│ 👹 ${config.boss.name} defeated!`,
+      `│ ⚔️ ${rounds} round${rounds > 1 ? 's' : ''}`,
       '│',
       '│ 🎁 Rewards',
       `│ • 🪙 +${rewards.coin} Coin`,
@@ -180,12 +181,13 @@ class DomainService {
     return lines.join('\n');
   }
 
-  formatDefeat(config) {
+  formatDefeat(config, rounds) {
     return [
       '╭─── ୨୧ ───╮',
       '│ 🏰 DOMAIN FAILED',
       '│',
       '│ 💀 You were defeated.',
+      `│ ⚔️ Survived ${rounds} round${rounds > 1 ? 's' : ''}`,
       '│',
       '│ Tidak ada reward.',
       '╰──────────╯',

@@ -73,24 +73,12 @@ export default {
 
       const result = domain.simulateBattle(ctx.sender, sub);
 
-      for (const round of result.rounds) {
-        const text = domain.formatRoundPlayer(ctx.sender, round, config);
-        try {
-          await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
-        } catch {
-          break;
-        }
-        await sleep(600);
-      }
-
-      await sleep(500);
-
       let finalText;
       if (result.won) {
         const rewards = domain.grantRewards(ctx.sender, sub);
-        finalText = domain.formatVictory(config, rewards);
+        finalText = domain.formatVictory(config, rewards, result.rounds.length);
       } else {
-        finalText = domain.formatDefeat(config);
+        finalText = domain.formatDefeat(config, result.rounds.length);
       }
 
       await ctx.sock.sendMessage(ctx.jid, { text: finalText, edit: statusMsg.key });
