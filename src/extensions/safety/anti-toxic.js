@@ -2,7 +2,8 @@ import { db } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
-import { google } from 'googleapis';
+import SETTINGS from '#environment/settings.js';
+import axios from 'axios';
 
 const TOXIC_DAMAGE = 10;
 
@@ -123,23 +124,10 @@ const TOXIC_RE = new RegExp(
 
 const TOXIC_THRESHOLD = 0.7;
 
-const DISCOVERY_URL = 'https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1';
-
-let perspectiveClient = null;
-
-async function getPerspectiveClient() {
-  if (perspectiveClient) return perspectiveClient;
-  perspectiveClient = google.commentanalyzer({
-    version: 'v1alpha1',
-    auth: 'AIzaSyDEobRbk_zUpmAfA0RN1FdUFFaEipb2VZM',
-    discovery: DISCOVERY_URL,
-  });
-  return perspectiveClient;
-}
+const PERSPECTIVE_API_URL = 'https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze';
 
 async function detectToxicWithAI(text) {
-  const client = await getPerspectiveClient();
-  if (!client) return { is_toxic: false, reason: '' };
+  if (!SETTINGS.geminiKey) return { is_toxic: false, reason: '' };
   try {
     const request = {
       comment: { text: text.slice(0, 500) },
@@ -154,8 +142,13 @@ async function detectToxicWithAI(text) {
       },
     };
 
-    const response = await client.comments.analyze({ requestBody: request });
-    const scores = response.data?.attributeScores || {};
+    const { data } = await axios.post(
+      `${PERSPECTIVE_API_URL}?key=${SETTINGS.geminiKey}`,
+      request,
+      { timeout: 10_000 }
+    );
+
+    const scores = data?.attributeScores || {};
 
     const toxicity = scores.TOXICITY?.summaryScore?.value || 0;
     const severeToxicity = scores.SEVERE_TOXICITY?.summaryScore?.value || 0;
