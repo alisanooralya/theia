@@ -29,10 +29,10 @@ export function createSchema() {
 
     CREATE TABLE IF NOT EXISTS stats (
       jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
-      hp          INTEGER NOT NULL DEFAULT 100,
-      max_hp      INTEGER NOT NULL DEFAULT 100,
-      atk         INTEGER NOT NULL DEFAULT 10,
-      def         INTEGER NOT NULL DEFAULT 5,
+      hp          INTEGER NOT NULL DEFAULT 200,
+      max_hp      INTEGER NOT NULL DEFAULT 200,
+      atk         INTEGER NOT NULL DEFAULT 30,
+      def         INTEGER NOT NULL DEFAULT 10,
       spd         INTEGER NOT NULL DEFAULT 10,
       weapon_id   TEXT,
       armor_id    TEXT,
@@ -294,6 +294,11 @@ export function createSchema() {
   } catch {}
   try {
     db.exec('ALTER TABLE stats ADD COLUMN crit_rate INTEGER NOT NULL DEFAULT 5');
+  } catch {}
+  try {
+    db.exec(
+      "UPDATE stats SET hp = 200, max_hp = 200, atk = 30, def = 10 WHERE hp = 100 AND max_hp = 100 AND atk = 10 AND def = 5"
+    );
   } catch {}
   try {
     db.exec('CREATE TABLE IF NOT EXISTS afk (jid TEXT PRIMARY KEY, reason TEXT NOT NULL DEFAULT \'\', started_at INTEGER NOT NULL DEFAULT (unixepoch()))');

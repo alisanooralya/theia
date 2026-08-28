@@ -264,9 +264,9 @@ class ArtifactService {
 
   getPlayerStats(jid) {
     const base = statsModel.find(jid);
-    const baseHp = base?.max_hp ?? 100;
-    const baseAtk = base?.atk ?? 10;
-    const baseDef = base?.def ?? 5;
+    const baseHp = base?.max_hp ?? 200;
+    const baseAtk = base?.atk ?? 30;
+    const baseDef = base?.def ?? 10;
     const baseCritRate = base?.crit_rate ?? 5;
     let artifactHp = 0;
     let artifactAtk = 0;
@@ -308,9 +308,9 @@ class ArtifactService {
   getRawBaseStats(jid) {
     const base = statsModel.find(jid);
     return {
-      hp: base?.max_hp ?? 100,
-      atk: base?.atk ?? 10,
-      def: base?.def ?? 5,
+      hp: base?.max_hp ?? 200,
+      atk: base?.atk ?? 30,
+      def: base?.def ?? 10,
       critRate: base?.crit_rate ?? 5,
     };
   }
