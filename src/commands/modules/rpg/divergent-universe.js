@@ -149,6 +149,19 @@ function rewardText() {
   ].join('\n');
 }
 
+async function sendOrEdit(ctx, run, text) {
+  const lastKey = run.state.lastMessageKey;
+  if (lastKey) {
+    try {
+      await ctx.sock.sendMessage(ctx.jid, { text, edit: lastKey });
+      return;
+    } catch {}
+  }
+  const msg = await ctx.reply(text);
+  run.state.lastMessageKey = msg.key;
+  du.saveRun(run);
+}
+
 export default {
   name: 'du',
   aliases: ['divergent', 'divergentuniverse'],
@@ -216,23 +229,30 @@ export default {
           return ctx.fail('Difficulty tidak valid. Pilih easy, medium, atau hard.');
         }
         const run = du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName }, difficulty);
-        return ctx.reply(runText(run));
+        const text = runText(run);
+        const msg = await ctx.reply(text);
+        run.state.lastMessageKey = msg.key;
+        du.saveRun(run);
+        return;
       }
 
       if (sub === 'path') {
         if (!ctx.args[1]) return ctx.reply(pathsText());
         const run = du.choosePath(ctx.sender, ctx.jid, ctx.args[1]);
-        return ctx.reply(runText(run));
+        await sendOrEdit(ctx, run, runText(run));
+        return;
       }
 
       if (sub === 'explore' || sub === 'jelajah' || sub === 'next') {
         const run = du.explore(ctx.sender, ctx.jid);
-        return ctx.reply(runText(run));
+        await sendOrEdit(ctx, run, runText(run));
+        return;
       }
 
       if (sub === 'choose' || sub === 'pilih') {
         const run = du.choose(ctx.sender, ctx.jid, ctx.args[1]);
-        return ctx.reply(runText(run));
+        await sendOrEdit(ctx, run, runText(run));
+        return;
       }
 
       if (sub === 'abandon' || sub === 'keluar') {

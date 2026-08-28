@@ -549,6 +549,10 @@ class DivergentUniverseService {
     return true;
   }
 
+  saveRun(run) {
+    return divergentRunModel.save(run);
+  }
+
   _activeRun(jid, chatJid) {
     const run = divergentRunModel.find(jid);
     if (!run || run.status !== 'active') {
