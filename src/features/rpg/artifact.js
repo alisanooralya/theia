@@ -267,6 +267,7 @@ class ArtifactService {
     const baseHp = base?.max_hp ?? 100;
     const baseAtk = base?.atk ?? 10;
     const baseDef = base?.def ?? 5;
+    const baseCritRate = base?.crit_rate ?? 5;
     let artifactHp = 0;
     let artifactAtk = 0;
     let artifactDef = 0;
@@ -300,7 +301,7 @@ class ArtifactService {
       hp: baseHp + artifactHp,
       atk: baseAtk + artifactAtk,
       def: baseDef + artifactDef,
-      critRate: artifactCritRate,
+      critRate: baseCritRate + artifactCritRate,
     };
   }
 
@@ -310,7 +311,7 @@ class ArtifactService {
       hp: base?.max_hp ?? 100,
       atk: base?.atk ?? 10,
       def: base?.def ?? 5,
-      critRate: 0,
+      critRate: base?.crit_rate ?? 5,
     };
   }
 

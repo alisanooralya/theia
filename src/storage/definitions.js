@@ -43,6 +43,7 @@ export function createSchema() {
       buff_def    INTEGER NOT NULL DEFAULT 0,
       buff_expire INTEGER NOT NULL DEFAULT 0,
       buff_exp_mult INTEGER NOT NULL DEFAULT 1,
+      crit_rate    INTEGER NOT NULL DEFAULT 5,
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
@@ -290,6 +291,9 @@ export function createSchema() {
   } catch {}
   try {
     db.exec('ALTER TABLE warns ADD COLUMN damage INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE stats ADD COLUMN crit_rate INTEGER NOT NULL DEFAULT 5');
   } catch {}
   try {
     db.exec('CREATE TABLE IF NOT EXISTS afk (jid TEXT PRIMARY KEY, reason TEXT NOT NULL DEFAULT \'\', started_at INTEGER NOT NULL DEFAULT (unixepoch()))');
