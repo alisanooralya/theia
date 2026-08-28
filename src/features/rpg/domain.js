@@ -19,7 +19,7 @@ const DIFFICULTY = {
   },
   medium: {
     name: 'Medium',
-    boss: { name: 'Golem', hp: 1000, atk: 100, def: 50 },
+    boss: { name: 'Golem', hp: 1000, atk: 100, def: 350 },
     coin: [300, 500],
     exp: [50, 80],
     artifactChance: 1.0,
@@ -28,7 +28,7 @@ const DIFFICULTY = {
   },
   hard: {
     name: 'Hard',
-    boss: { name: 'Dragon', hp: 2000, atk: 180, def: 100 },
+    boss: { name: 'Dragon', hp: 2000, atk: 180, def: 500 },
     coin: [700, 1000],
     exp: [100, 150],
     artifactChance: 1.0,

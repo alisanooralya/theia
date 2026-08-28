@@ -3,7 +3,7 @@ import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
 
-const TOXIC_DAMAGE = 10;
+const TOXIC_DAMAGE = 5;
 
 const TOXIC_WORDS = [
   'b4bi',
