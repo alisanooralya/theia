@@ -127,7 +127,10 @@ const TOXIC_THRESHOLD = 0.7;
 const PERSPECTIVE_API_URL = 'https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze';
 
 async function detectToxicWithAI(text) {
-  if (!SETTINGS.geminiKey) return { is_toxic: false, reason: '' };
+  if (!SETTINGS.geminiKey) {
+    logger.debug('[AntiToxic] No geminiKey configured, skipping AI check');
+    return { is_toxic: false, reason: '' };
+  }
   try {
     const request = {
       comment: { text: text.slice(0, 500) },
@@ -142,6 +145,7 @@ async function detectToxicWithAI(text) {
       },
     };
 
+    logger.debug({ url: `${PERSPECTIVE_API_URL}?key=***` }, '[AntiToxic] Calling Perspective API');
     const { data } = await axios.post(
       `${PERSPECTIVE_API_URL}?key=${SETTINGS.geminiKey}`,
       request,
@@ -149,6 +153,7 @@ async function detectToxicWithAI(text) {
     );
 
     const scores = data?.attributeScores || {};
+    logger.debug({ scores }, '[AntiToxic] Perspective API response');
 
     const toxicity = scores.TOXICITY?.summaryScore?.value || 0;
     const severeToxicity = scores.SEVERE_TOXICITY?.summaryScore?.value || 0;
@@ -158,6 +163,7 @@ async function detectToxicWithAI(text) {
     const threat = scores.THREAT?.summaryScore?.value || 0;
 
     const maxScore = Math.max(toxicity, severeToxicity, identityAttack, insult, profanity, threat);
+    logger.debug({ maxScore, threshold: TOXIC_THRESHOLD }, '[AntiToxic] Score comparison');
 
     if (maxScore < TOXIC_THRESHOLD) {
       return { is_toxic: false, reason: '' };
@@ -194,16 +200,20 @@ export default {
     if (!groupModel.hasAntitoxic(s.jid)) return true;
 
     const text = s.text.toLowerCase() ?? '';
+    logger.debug({ text, jid: s.jid }, '[AntiToxic] Processing message');
 
     // Layer 1: Regex check
     const isToxicByRegex = TOXIC_RE.test(text);
+    logger.debug({ isToxicByRegex }, '[AntiToxic] Regex check result');
 
     // Layer 2: AI check (only if regex doesn't detect)
     let isToxicByAI = false;
     let aiReason = '';
     let aiScore = 0;
     if (!isToxicByRegex) {
+      logger.debug('[AntiToxic] Calling Perspective API...');
       const aiResult = await detectToxicWithAI(text);
+      logger.debug({ aiResult }, '[AntiToxic] AI check result');
       isToxicByAI = aiResult.is_toxic;
       aiReason = aiResult.reason;
       aiScore = aiResult.score || 0;
