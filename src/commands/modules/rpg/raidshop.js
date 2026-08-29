@@ -4,7 +4,7 @@ import { userModel } from '#storage/models/index.js';
 export default {
   name: 'raidshop',
   aliases: ['raidershop', 'rs'],
-  category: 'rpg',
+  category: 'shop',
   description: 'Toko item Raid Coin',
   cooldown: 5_000,
 
