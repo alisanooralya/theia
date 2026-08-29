@@ -1,4 +1,3 @@
-export { aiService } from './ai.js';
 export { broadcastService } from './broadcast.js';
 export { downloaderService } from './downloader.js';
 export { battleService } from './combat/battle.js';

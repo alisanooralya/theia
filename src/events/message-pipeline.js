@@ -4,7 +4,6 @@ import { dispatch } from '#messages/dispatcher.js';
 import { logger } from '#helpers/logger.js';
 import { isStatus } from '#helpers/identifier.js';
 import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
-import { aiService } from '#features/ai.js';
 import { agentService } from '#agent/index.js';
 import SETTINGS from '#environment/settings.js';
 
@@ -46,33 +45,15 @@ export async function onMessagesUpsert({ messages, type }, sock) {
         continue;
       }
 
-      // Legacy mention-AI chat — only when the agent is disabled.
+      // Legacy mention response — only when the agent is disabled.
       if (isMentioned && parsed.text && !isCommand) {
-        if (aiService.isAvailable()) {
-          const prompt = parsed.text
-            .replace(new RegExp(`@${botId?.split('@')[0]}`, 'g'), '')
-            .trim();
-          if (prompt) {
-            try {
-              const response = await aiService.chat(prompt);
-              await sock.sendMessage(
-                parsed.jid,
-                { text: response },
-                { quoted: msg }
-              );
-            } catch (err) {
-              logger.warn({ err }, 'AI response failed');
-            }
-          }
-        } else {
-          await sock.sendMessage(
-            parsed.jid,
-            {
-              text: `Halo! Ketik ${SETTINGS.prefix}help untuk lihat command.`,
-            },
-            { quoted: msg }
-          );
-        }
+        await sock.sendMessage(
+          parsed.jid,
+          {
+            text: `Halo! Ketik ${SETTINGS.prefix}help untuk lihat command.`,
+          },
+          { quoted: msg }
+        );
         continue;
       }
 
