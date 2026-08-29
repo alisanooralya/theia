@@ -150,7 +150,17 @@ function rewardText() {
 }
 
 async function sendOrEdit(ctx, run, text) {
-  const lastKey = run.state.lastMessageKey;
+  const state = run.state;
+  const clearedCount = state.nodes.filter((n) => n.cleared).length;
+
+  if (clearedCount > 0 && clearedCount % 3 === 0) {
+    const msg = await ctx.reply(text);
+    state.lastMessageKey = msg.key;
+    du.saveRun(run);
+    return;
+  }
+
+  const lastKey = state.lastMessageKey;
   if (lastKey) {
     try {
       await ctx.sock.sendMessage(ctx.jid, { text, edit: lastKey });
@@ -158,7 +168,7 @@ async function sendOrEdit(ctx, run, text) {
     } catch {}
   }
   const msg = await ctx.reply(text);
-  run.state.lastMessageKey = msg.key;
+  state.lastMessageKey = msg.key;
   du.saveRun(run);
 }
 
