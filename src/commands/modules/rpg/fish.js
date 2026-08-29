@@ -1,6 +1,8 @@
 import { userModel, walletModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 const FISH = [
   { name: 'Botol Plastik', reward: [5, 20], exp: 1, emoji: '🧴', rate: 18 },
   { name: 'Sepatu Bekas', reward: [10, 50], exp: 2, emoji: '👟', rate: 14 },
@@ -38,7 +40,7 @@ export default {
   aliases: ['fishing', 'pancing', 'mancing'],
   category: 'rpg',
   description: 'Pancing ikan untuk dapat uang',
-  cooldown: 120_000,
+  cooldown: 3 * 60 * 60 * 1000,
 
   async execute(ctx) {
     userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -49,10 +51,10 @@ export default {
 
     fishingUsers.add(ctx.sender);
     try {
-      await ctx.reply('🎣 Kamu mulai memancing... sabar ya, tunggu sebentar~');
+      const statusMsg = await ctx.reply('🎣 Kamu mulai memancing... sabar ya, tunggu sebentar~');
 
-      const delay = 60_000 + Math.floor(Math.random() * 45_000);
-      await new Promise((r) => setTimeout(r, delay));
+      const delay = 5000 + Math.floor(Math.random() * 3000);
+      await sleep(delay);
 
       const catchResult = pickFish();
       const reward = Math.floor(
@@ -69,7 +71,8 @@ export default {
       let text = `🎣 *Fishing!*\n\n${catchResult.emoji} Kamu dapat: *${catchResult.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${catchResult.exp} EXP`;
       if (leveledUp)
         text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
-      await ctx.reply(text);
+
+      await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
     } finally {
       fishingUsers.delete(ctx.sender);
     }

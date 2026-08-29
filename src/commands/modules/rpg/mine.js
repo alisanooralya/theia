@@ -1,6 +1,8 @@
 import { userModel, walletModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 const MINERALS = [
   { name: 'Batu Bara', reward: [100, 300], exp: 5, emoji: '🪨', rate: 40 },
   { name: 'Bijih Besi', reward: [300, 700], exp: 10, emoji: '⛏️', rate: 28 },
@@ -26,7 +28,7 @@ export default {
   aliases: ['mining', 'tambang'],
   category: 'rpg',
   description: 'Menambang mineral untuk dapat uang',
-  cooldown: 3_600_000,
+  cooldown: 3 * 60 * 60 * 1000,
 
   async execute(ctx) {
     userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -37,10 +39,10 @@ export default {
 
     miningUsers.add(ctx.sender);
     try {
-      await ctx.reply('⛏️ Kamu mulai menambang... sabar ya, tunggu sebentar~');
+      const statusMsg = await ctx.reply('⛏️ Kamu mulai menambang... sabar ya, tunggu sebentar~');
 
-      const delay = 60_000 + Math.floor(Math.random() * 60_000);
-      await new Promise((r) => setTimeout(r, delay));
+      const delay = 5000 + Math.floor(Math.random() * 3000);
+      await sleep(delay);
 
       const mineral = pickMineral();
       const reward = Math.floor(
@@ -54,7 +56,8 @@ export default {
       let text = `⛏️ *Mining!*\n\n${mineral.emoji} Kamu dapat: *${mineral.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${mineral.exp} EXP`;
       if (leveledUp)
         text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
-      await ctx.reply(text);
+
+      await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
     } finally {
       miningUsers.delete(ctx.sender);
     }
