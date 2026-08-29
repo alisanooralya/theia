@@ -140,14 +140,7 @@ export default {
 
       const raidData = raid.getRaidInfo();
       if (!raidData || !raidData.isLive) {
-        const now = new Date();
-        const day = now.getDay();
-        const diff = day === 0 ? 7 : 7 - day;
-        const nextSunday = new Date(now);
-        nextSunday.setDate(now.getDate() + diff);
-        nextSunday.setHours(0, 0, 0, 0);
-        const timeStr = nextSunday.toLocaleDateString('id-ID', { weekday: 'long', hour: '2-digit', minute: '2-digit' });
-        return ctx.reply(`⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *${timeStr}*\n\nKetik \`.raid help\` untuk info.`);
+        return ctx.reply(`⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *Minggu 00:00*\n\nKetik \`.raid help\` untuk info.`);
       }
 
       const participant = raidModel.getParticipant(raidData.raid.id, ctx.sender);
