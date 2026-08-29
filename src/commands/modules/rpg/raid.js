@@ -81,7 +81,7 @@ export default {
     try {
       userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (sub === 'help' || sub === 'bantuan') {
+      if (sub === 'help') {
         return ctx.reply(helpText());
       }
 
@@ -95,7 +95,7 @@ export default {
         return ctx.reply(`✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk menyerang boss.`);
       }
 
-      if (sub === 'attack' || sub === 'serang') {
+      if (sub === 'attack') {
         const result = raid.attack(ctx.sender);
         const lines = [
           '⚔️ *ATTACK RESULT*',
@@ -140,7 +140,12 @@ export default {
 
       const raidData = raid.getRaidInfo();
       if (!raidData || !raidData.isLive) {
-        const nextSunday = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000));
+        const now = new Date();
+        const day = now.getDay();
+        const diff = day === 0 ? 7 : 7 - day;
+        const nextSunday = new Date(now);
+        nextSunday.setDate(now.getDate() + diff);
+        nextSunday.setHours(0, 0, 0, 0);
         const timeStr = nextSunday.toLocaleDateString('id-ID', { weekday: 'long', hour: '2-digit', minute: '2-digit' });
         return ctx.reply(`⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *${timeStr}*\n\nKetik \`.raid help\` untuk info.`);
       }
