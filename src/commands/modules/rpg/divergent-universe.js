@@ -170,9 +170,9 @@ export default {
   cooldown: 2_000,
 
   async execute(ctx) {
-    if (ctx.isPrivate && !ctx.isOwner()) {
+    if (!ctx.isPrivate) {
       return ctx.fail(
-        'Divergent Universe tidak dapat dimainkan melalui private chat. Gunakan command ini di grup. Private chat hanya tersedia untuk owner.'
+        'Divergent Universe hanya bisa dimainkan di private chat.'
       );
     }
     const sub = ctx.args[0]?.toLowerCase() || 'help';
@@ -202,8 +202,7 @@ export default {
           'Cash/koin dan EXP hanya diberikan setelah semua node clear.',
           'Stat profil kamu (`.profile`: ATK/DEF/HP/SPD) TIDAK mempengaruhi DU — fitur ini hanya menggunakan stat dasar yang diberikan sistem Divergent Universe.',
           `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
-          'Setiap grup hanya dapat memiliki satu pemain dengan run DU aktif.',
-          'DU tidak tersedia di private chat, kecuali untuk owner.',
+          'DU hanya tersedia di private chat.',
         ].join('\n'));
       }
 
