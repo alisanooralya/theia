@@ -6,7 +6,6 @@ import {
   walletModel,
   userModel,
 } from '#storage/models/index.js';
-import { artifactService } from '#features/rpg/artifact.js';
 import { logger } from '#helpers/logger.js';
 
 const RAID_BOSS_NAME = 'Raid Boss';
@@ -17,23 +16,9 @@ const BREAKTIME_DURATION = 60 * 60 * 1000;
 const HP_RECOVERY_STOP = 80;
 const HP_RECOVERY_BREAKTIME = 200;
 const CRIT_MULT = 1.5;
+const ATTACK_INTERVAL = 30_000;
 
-function getWeekSunday() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? 0 : 7 - day;
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() + diff);
-  sunday.setHours(0, 0, 0, 0);
-  return sunday.getTime();
-}
-
-function getNextSunday() {
-  const thisSunday = getWeekSunday();
-  const now = Date.now();
-  if (now < thisSunday) return thisSunday;
-  return thisSunday + 7 * 24 * 60 * 60 * 1000;
-}
+const activeAttacks = new Map();
 
 function calcDamage(atk, critRate) {
   const isCrit = Math.random() * 100 < critRate;
@@ -42,26 +27,6 @@ function calcDamage(atk, critRate) {
     dmg: Math.floor(isCrit ? baseDmg * CRIT_MULT : baseDmg),
     crit: isCrit,
   };
-}
-
-function simulateBattle(userStats, bossAtk) {
-  let userHp = RAID_USER_HP;
-  let bossHp = 0;
-  const rounds = [];
-  let totalUserDmg = 0;
-
-  for (let i = 0; i < 100; i++) {
-    const userDmg = calcDamage(userStats.atk, userStats.critRate);
-    totalUserDmg += userDmg.dmg;
-    rounds.push({ round: i + 1, userDmg: userDmg.dmg, crit: userDmg.crit });
-
-    const bossDmg = calcDamage(bossAtk, 5);
-    userHp = Math.max(0, userHp - bossDmg.dmg);
-
-    if (userHp <= 0) break;
-  }
-
-  return { userHp, totalUserDmg, rounds, userDied: userHp <= 0 };
 }
 
 function getUserRaidStats(jid) {
@@ -90,7 +55,6 @@ function getUserRaidStats(jid) {
   return {
     atk: baseAtk + artifactAtk,
     critRate: baseCritRate + artifactCritRate,
-    def: base?.def ?? 20,
   };
 }
 
@@ -140,7 +104,11 @@ class RaidService {
     return { raid, participant };
   }
 
-  attack(jid) {
+  startAttackLoop(jid, sock, jidChat) {
+    if (activeAttacks.has(jid)) {
+      throw new Error('Kamu sudah sedang menyerang!');
+    }
+
     const raid = raidModel.getActive();
     if (!raid || raid.status !== 'active') {
       throw new Error('Tidak ada raid aktif.');
@@ -166,39 +134,94 @@ class RaidService {
     }
 
     const userStats = getUserRaidStats(jid);
-    const bossAtk = 150;
-    const battleResult = simulateBattle(userStats, bossAtk);
 
-    const damageDealt = battleResult.totalUserDmg;
-    const actualDamage = Math.min(damageDealt, raid.boss_hp);
-    const newBossHp = Math.max(0, raid.boss_hp - actualDamage);
-    const newParticipantHp = battleResult.userHp;
+    const interval = setInterval(async () => {
+      try {
+        const currentRaid = raidModel.getActive();
+        if (!currentRaid || currentRaid.status !== 'active') {
+          this.stopAttackLoop(jid);
+          return;
+        }
 
-    let newStatus = participant.status;
-    let breaktimeUntil = 0;
+        const p = raidModel.getParticipant(currentRaid.id, jid);
+        if (!p || p.status === 'stopped' || p.status === 'breaktime') {
+          this.stopAttackLoop(jid);
+          return;
+        }
 
-    if (battleResult.userDied) {
-      newStatus = 'breaktime';
-      breaktimeUntil = now + BREAKTIME_DURATION;
+        if (currentRaid.boss_hp <= 0) {
+          this.stopAttackLoop(jid);
+          return;
+        }
+
+        const userDmg = calcDamage(userStats.atk, userStats.critRate);
+        const bossDmg = calcDamage(150, 5);
+        const actualDamage = Math.min(userDmg.dmg, currentRaid.boss_hp);
+        const newBossHp = Math.max(0, currentRaid.boss_hp - actualDamage);
+        const newHp = Math.max(0, p.hp - bossDmg.dmg);
+
+        let newStatus = p.status;
+        let breaktimeUntil = 0;
+
+        if (newHp <= 0) {
+          newStatus = 'breaktime';
+          breaktimeUntil = Date.now() + BREAKTIME_DURATION;
+        }
+
+        raidModel.updateBoss(currentRaid.id, newBossHp, newBossHp <= 0 ? 'cleared' : currentRaid.status);
+        raidModel.updateParticipant(currentRaid.id, jid, {
+          hp: newHp,
+          damage: p.damage + actualDamage,
+          status: newStatus,
+          breaktimeUntil,
+        });
+
+        const critText = userDmg.crit ? ' 💥CRIT!' : '';
+        const msg = `⚔️ *${userDmg.dmg}${critText}* | HP Boss: *${newBossHp.toLocaleString()}* | HP Kamu: *${newHp}/2400*`;
+
+        if (sock && jidChat) {
+          await sock.sendMessage(jidChat, { text: msg }).catch(() => {});
+        }
+
+        if (newHp <= 0) {
+          this.stopAttackLoop(jid);
+          if (sock && jidChat) {
+            const mentionJid = [jid];
+            await sock.sendMessage(jidChat, {
+              text: `💔 @${jid.split('@')[0]} HP habis! Masuk Breaktime 1 jam...`,
+              mentions: mentionJid,
+            }).catch(() => {});
+          }
+        }
+
+        if (newBossHp <= 0) {
+          this.stopAttackLoop(jid);
+          if (sock && jidChat) {
+            await sock.sendMessage(jidChat, {
+              text: '🎉 *RAID BOSS MATI!* Raid selesai!',
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        logger.warn({ err: err.message }, '[RaidAttackLoop] error');
+        this.stopAttackLoop(jid);
+      }
+    }, ATTACK_INTERVAL);
+
+    activeAttacks.set(jid, interval);
+    return true;
+  }
+
+  stopAttackLoop(jid) {
+    const interval = activeAttacks.get(jid);
+    if (interval) {
+      clearInterval(interval);
+      activeAttacks.delete(jid);
     }
+  }
 
-    raidModel.updateBoss(raid.id, newBossHp, newBossHp <= 0 ? 'cleared' : raid.status);
-    raidModel.updateParticipant(raid.id, jid, {
-      hp: newParticipantHp,
-      damage: participant.damage + actualDamage,
-      status: newStatus,
-      breaktimeUntil,
-    });
-
-    return {
-      damage: actualDamage,
-      totalDamage: participant.damage + actualDamage,
-      userHp: newParticipantHp,
-      bossHp: newBossHp,
-      userDied: battleResult.userDied,
-      bossDied: newBossHp <= 0,
-      rounds: battleResult.rounds,
-    };
+  isAttacking(jid) {
+    return activeAttacks.has(jid);
   }
 
   stop(jid) {
@@ -211,6 +234,8 @@ class RaidService {
     if (!participant) {
       throw new Error('Kamu belum join raid.');
     }
+
+    this.stopAttackLoop(jid);
 
     raidModel.updateParticipant(raid.id, jid, {
       hp: participant.hp,
@@ -319,6 +344,11 @@ class RaidService {
   endRaid() {
     const raid = raidModel.getActive();
     if (!raid) return null;
+
+    for (const [jid] of activeAttacks) {
+      this.stopAttackLoop(jid);
+    }
+
     raidModel.updateBoss(raid.id, raid.boss_hp, 'ended');
     return raid;
   }

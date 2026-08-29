@@ -3,8 +3,6 @@ import { raidModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import { userModel } from '#storage/models/index.js';
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
 function bar(value, max, size = 10) {
   const filled = Math.max(0, Math.min(size, Math.round((value / max) * size)));
   return '█'.repeat(filled) + '░'.repeat(size - filled);
@@ -17,14 +15,16 @@ function formatTime(ms) {
 }
 
 function statusText(raidData, participant) {
-  const { raid, participants, remaining, isLive } = raidData;
+  const { raid, participants, remaining } = raidData;
   const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
   const status = participant?.status === 'stopped' ? 'Stopped'
     : participant?.status === 'breaktime' ? 'Breaktime'
-      : 'Active';
+      : raidService.isAttacking(participant?.jid) ? 'Attacking'
+        : 'Active';
 
-  const nextSunday = new Date(Date.now() + remaining);
-  const timeStr = nextSunday.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const endDate = new Date(raid.end_at);
+  const timeStr = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = endDate.toLocaleDateString('id-ID', { weekday: 'long' });
 
   return [
     '⚔️ *RAID STATUS*',
@@ -41,7 +41,7 @@ function statusText(raidData, participant) {
     `Participant: *${participants.length}*`,
     `Total Damage: *${F.formatNumber(totalDamage)}*`,
     `Sisa Waktu: *${formatTime(remaining)}*`,
-    `Selesai: *${timeStr}*`,
+    `Selesai: *${dateStr} ${timeStr}*`,
   ].join('\n');
 }
 
@@ -53,8 +53,8 @@ function helpText() {
     '',
     '`.raid` - Lihat status raid',
     '`.raid join` - Join raid',
-    '`.raid attack` - Serang boss',
-    '`.raid stop` - Berhenti menyerang (HP recovery)',
+    '`.raid attack` - Mulai serang boss (looping tiap 30 detik)',
+    '`.raid stop` - Berhenti menyerang',
     '`.raid resume` - Lanjut menyerang',
     '`.raid claim` - Klaim reward (jika raid selesai)',
     '`.raid coin` - Lihat Raid Coin kamu',
@@ -62,11 +62,14 @@ function helpText() {
     '*Info:*',
     '- Raid aktif setiap Minggu',
     '- HP kamu: 2400 (fixed)',
+    '- Attack looping tiap 30 detik sampai HP habis atau stop',
     '- Jika kalah, masuk Breaktime 1 jam',
     '- Reward berdasarkan kontribusi damage',
     '- Raid Coin bisa dipakai di Raid Shop',
   ].join('\n');
 }
+
+let raidService = null;
 
 export default {
   name: 'raid',
@@ -81,53 +84,42 @@ export default {
     try {
       userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (sub === 'help') {
+      if (!raidService) {
+        const mod = await import('#features/rpg/raid.js');
+        raidService = mod.raidService;
+      }
+
+      if (sub === 'help' || sub === 'bantuan') {
         return ctx.reply(helpText());
       }
 
       if (sub === 'coin') {
-        const coins = raid.getRaidCoin(ctx.sender);
+        const coins = raidService.getRaidCoin(ctx.sender);
         return ctx.reply(`💠 *Raid Coin:* ${coins}`);
       }
 
       if (sub === 'join') {
-        const { raid: raidData, participant } = raid.join(ctx.sender);
-        return ctx.reply(`✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk menyerang boss.`);
+        const { raid: raidData, participant } = raidService.join(ctx.sender);
+        return ctx.reply(`✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`);
       }
 
-      if (sub === 'attack') {
-        const result = raid.attack(ctx.sender);
-        const lines = [
-          '⚔️ *ATTACK RESULT*',
-          '',
-          `Damage: *${F.formatNumber(result.damage)}*${result.rounds[0]?.crit ? ' (CRIT!)' : ''}`,
-          `HP Kamu: *${result.userHp}/2400*`,
-          `Boss HP: *${F.formatNumber(result.bossHp)} / ${F.formatNumber(500000)}*`,
-          `Total Damage: *${F.formatNumber(result.totalDamage)}*`,
-        ];
-
-        if (result.userDied) {
-          lines.push('', '💔 HP habis! Masuk Breaktime 1 jam...');
-        }
-        if (result.bossDied) {
-          lines.push('', '🎉 *RAID BOSS MATI! raid Selesai!*');
-        }
-
-        return ctx.reply(lines.join('\n'));
+      if (sub === 'attack' || sub === 'serang') {
+        raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
+        return ctx.reply('⚔️ Menyerang boss! Damage akan muncul tiap 30 detik.\nKetik `.raid stop` untuk berhenti.');
       }
 
       if (sub === 'stop') {
-        raid.stop(ctx.sender);
-        return ctx.reply('🛑 Raid dihentikan. HP akan recovery. Ketik `.raid resume` untuk lanjut.');
+        raidService.stop(ctx.sender);
+        return ctx.reply('🛑 Penyerangan dihentikan. HP akan recovery. Ketik `.raid attack` untuk lanjut.');
       }
 
       if (sub === 'resume') {
-        raid.resume(ctx.sender);
-        return ctx.reply('⚔️ Raid dilanjutkan! Ketik `.raid attack` untuk menyerang.');
+        raidService.resume(ctx.sender);
+        return ctx.reply('⚔️ Raid dilanjutkan! Ketik `.raid attack` untuk mulai menyerang.');
       }
 
       if (sub === 'claim') {
-        const result = raid.claimReward(ctx.sender);
+        const result = raidService.claimReward(ctx.sender);
         return ctx.reply([
           '🎁 *RAID REWARD*',
           '',
@@ -138,7 +130,7 @@ export default {
         ].join('\n'));
       }
 
-      const raidData = raid.getRaidInfo();
+      const raidData = raidService.getRaidInfo();
       if (!raidData || !raidData.isLive) {
         return ctx.reply(`⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *Minggu 00:00*\n\nKetik \`.raid help\` untuk info.`);
       }
