@@ -3,54 +3,204 @@ import {
   registerPendingBattle,
   BATTLE_CONFIRM_TTL,
 } from '#features/combat/battle-pending.js';
+import {
+  createBattle,
+  startBattle,
+  finishBattle,
+  cancelBattle,
+  isInBattle,
+} from '#features/combat/battle-state.js';
 import { userModel, statsModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
+import { sleep } from '#helpers/formatter.js';
 import { phoneToJid } from '#helpers/identifier.js';
+import { logger } from '#helpers/logger.js';
 
-export async function runBattle(ctx, challenger, target) {
+const HP_BAR_LEN = 10;
+
+function displayName(jid) {
+  const u = userModel.findById(jid);
+  return u?.push_name || jid.split('@')[0];
+}
+
+function hpBar(hp, max) {
+  const ratio = max > 0 ? clamp(hp / max, 0, 1) : 0;
+  const filled = Math.round(ratio * HP_BAR_LEN);
+  return '█'.repeat(filled) + '░'.repeat(HP_BAR_LEN - filled);
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function padName(name, width) {
+  if (name.length >= width) return name.slice(0, width);
+  return name + ' '.repeat(width - name.length);
+}
+
+function buildStartText(aName, aHp, aMax, dName, dHp, dMax) {
+  return [
+    `╭────── ⚔️ DUEL ──────╮`,
+    `│`,
+    `│ 👤 ${aName}`,
+    `│ ❤️ ${F.formatNumber(aHp)} / ${F.formatNumber(aMax)}  ${hpBar(aHp, aMax)}`,
+    `│`,
+    `│        VS`,
+    `│`,
+    `│ 👤 ${dName}`,
+    `│ ❤️ ${F.formatNumber(dHp)} / ${F.formatNumber(dMax)}  ${hpBar(dHp, dMax)}`,
+    `│`,
+    `│ ⚔️ Battle starting...`,
+    `╰─────────────────────╯`,
+  ].join('\n');
+}
+
+function buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap) {
+  const lines = [
+    `╭────── ⚔️ DUEL ──────╮`,
+    `│`,
+    `│ 👤 ${padName(aName, 10)} ❤️ ${F.formatNumber(aHp)}`,
+    `│ 👤 ${padName(dName, 10)} ❤️ ${F.formatNumber(dHp)}`,
+    `│`,
+  ];
+  if (snap.eventLine) lines.push(`│ ${snap.eventLine}`);
+  if (snap.momentumLine) lines.push(`│ ${snap.momentumLine}`);
+  lines.push(`╰─────────────────────╯`);
+  return lines.join('\n');
+}
+
+function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax) {
+  if (result.draw) {
+    return [
+      `╭────── 🏆 DUEL RESULT ──────╮`,
+      `│`,
+      `│ 👤 ${padName(aName, 10)} ❤️ ${F.formatNumber(aHp)}`,
+      `│ 👤 ${padName(dName, 10)} ❤️ ${F.formatNumber(dHp)}`,
+      `│`,
+      `│ ⚖️ Battle berakhir seri!`,
+      `│`,
+      `╰─────────────────────────────╯`,
+    ].join('\n');
+  }
+
+  const winName = result.winner === result.attackerJid ? aName : dName;
+  const loseName = result.loser === result.attackerJid ? aName : dName;
+  const winnerHp =
+    result.winner === result.attackerJid ? result.attackerFinalHp : result.defenderFinalHp;
+
+  const lines = [
+    `╭────── 🏆 DUEL RESULT ──────╮`,
+    `│`,
+    `│ 👤 ${padName(winName, 10)} ❤️ ${F.formatNumber(winnerHp)}`,
+    `│ 👤 ${padName(loseName, 10)} 💀 0`,
+    `│`,
+  ];
+
+  if (result.counts.crit > 0)
+    lines.push(`│ 💥 Critical Hits: ${result.counts.crit}`);
+  if (result.counts.counter > 0)
+    lines.push(`│ ⚡ Counters: ${result.counts.counter}`);
+  if (result.counts.block > 0)
+    lines.push(`│ 🛡️ Blocks: ${result.counts.block}`);
+
+  lines.push(`│`, `│ 🏆 ${winName} wins!`, `│`, `│ 🪙 +${F.formatNumber(result.reward.cash)} Coin`, `│`, `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`, `╰─────────────────────────────╯`);
+
+  return lines.join('\n');
+}
+
+function buildHighlightsText(result, aName, dName) {
+  if (!result.highlights.length) return '';
+  const lines = [`⚔️ *Battle Highlights*`, ''];
+  for (const h of result.highlights.slice(0, 5)) {
+    lines.push(h.replace(/@\d+/g, (m) => {
+      const jid = `${m.slice(1)}@s.whatsapp.net`;
+      return displayName(jid);
+    }));
+  }
+  return lines.join('\n');
+}
+
+export async function runBattle(ctx, challenger, target, battleId) {
   const aStats = statsModel.ensure(challenger);
   const dStats = statsModel.ensure(target);
   if (aStats.hp <= 0) return ctx.reply('❤️ HP kamu 0! Pakai `!heal` dulu.');
   if (dStats.hp <= 0)
     return ctx.reply('❤️ HP lawan sedang 0, tunggu dia heal dulu.');
 
+  if (!startBattle(battleId)) {
+    cancelBattle(battleId);
+    return ctx.reply('❌ Battle tidak bisa dimulai (salah satu player sedang dalam battle lain).');
+  }
+
+  const aName = displayName(challenger);
+  const dName = displayName(target);
+  const aMax = aStats.max_hp;
+  const dMax = dStats.max_hp;
+
+  let battleMsg;
   try {
     await ctx.react('⚔️');
-    const result = battleService.fight(challenger, target);
-    const roundLines = result.rounds
-      .slice(0, 3)
-      .map((r) => {
-        const evts = r.events
-          .map((e) => {
-            if (e.type === 'dodge') return `  💨 @${e.by.split('@')[0]} dodge!`;
-            const icon = e.type === 'crit' ? '💥' : '⚔️';
-            return `  ${icon} @${e.by.split('@')[0]} hit *${F.formatNumber(e.dmg)}*${e.type === 'crit' ? ' CRIT!' : ''}`;
-          })
-          .join('\n');
-        return `*Ronde ${r.round}*\n${evts}\n  ❤️ ${r.aHp} vs ${r.dHp}`;
-      })
-      .join('\n\n');
-
-    const text = [
-      `⚔️ *BATTLE RESULT!*`,
-      '',
-      roundLines,
-      result.rounds.length > 3
-        ? `\n  _...${result.rounds.length - 3} ronde lagi..._`
-        : '',
-      '',
-      `🏆 *Menang: @${result.winner.split('@')[0]}*`,
-      `💀 Kalah : @${result.loser.split('@')[0]}`,
-      '',
-      `🎁 Reward pemenang:`,
-      `  🪙 +${F.formatNumber(result.reward.cash)}`,
-      `  ⭐ +${result.reward.exp} EXP`,
-      `💸 @${result.loser.split('@')[0]} kehilangan 🪙${F.formatNumber(result.reward.loserLoss)}`,
-    ].join('\n');
-
-    await ctx.reply(text, { mentions: [result.winner, result.loser] });
+    const startText = buildStartText(aName, aStats.hp, aMax, dName, dStats.hp, dMax);
+    battleMsg = await ctx.send(startText);
   } catch (err) {
-    await ctx.reply(`❌ ${err.message}`);
+    cancelBattle(battleId);
+    logger.error({ err }, '[Battle] failed to send initial message');
+    return ctx.reply(`❌ Gagal memulai battle: ${err.message}`);
+  }
+
+  const msgKey = battleMsg?.key;
+  const mentions = [challenger, target];
+
+  const edit = async (text) => {
+    if (!msgKey) return;
+    try {
+      await ctx.sock.enqueueSend(
+        ctx.jid,
+        { text, edit: msgKey, mentions },
+        {},
+        { bypass: true }
+      );
+    } catch (err) {
+      logger.warn({ err }, '[Battle] message edit failed');
+    }
+  };
+
+  let result;
+  try {
+    result = battleService.fight(challenger, target);
+    result.attackerJid = challenger;
+  } catch (err) {
+    cancelBattle(battleId);
+    await edit(`╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle dibatalkan\n│ ${err.message}\n╰─────────────────────╯`);
+    return;
+  }
+
+  const snaps = result.snapshots.filter((s) => s.label !== 'Final');
+  for (const snap of snaps) {
+    const aHp = snap.aHp;
+    const dHp = snap.dHp;
+    const snapText = buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap);
+    await edit(snapText);
+    await sleep(1400);
+  }
+
+  const finalText = buildResultText(
+    result,
+    aName,
+    dName,
+    result.attackerFinalHp,
+    aMax,
+    result.defenderFinalHp,
+    dMax
+  );
+  await edit(finalText);
+
+  finishBattle(battleId);
+
+  const highlights = buildHighlightsText(result, aName, dName);
+  if (highlights) {
+    await sleep(900);
+    await ctx.send(highlights, { mentions });
   }
 }
 
@@ -76,6 +226,11 @@ export default {
     if (targetJid === ctx.sender)
       ctx.fail('❌ Tidak bisa battle sama diri sendiri.');
 
+    if (isInBattle(ctx.sender))
+      ctx.fail('❌ Kamu sedang berada dalam battle lain.');
+    if (isInBattle(targetJid))
+      ctx.fail('❌ Lawan sedang berada dalam battle lain.');
+
     userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     const target = userModel.findById(targetJid);
     if (!target) ctx.fail('❌ User tersebut belum terdaftar.');
@@ -88,6 +243,13 @@ export default {
 
     await ctx.react('⚔️');
 
+    let battleId;
+    try {
+      battleId = createBattle(ctx.sender, targetJid);
+    } catch (err) {
+      return ctx.fail(`❌ ${err.message}`);
+    }
+
     const confirmMsg = await ctx.reply(
       `⚔️ *Konfirmasi Battle*\n\n@${ctx.sender.split('@')[0]} menantang @${targetJid.split('@')[0]} untuk duel!\n\nBalas pesan ini dengan *yes* untuk menerima tantangan.`,
       { mentions: [ctx.sender, targetJid] }
@@ -97,6 +259,7 @@ export default {
       challenger: ctx.sender,
       target: targetJid,
       jid: ctx.jid,
+      battleId,
       expires: Date.now() + BATTLE_CONFIRM_TTL,
     });
 

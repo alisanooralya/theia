@@ -4,6 +4,7 @@ import {
   getPendingBattle,
   clearPendingBattle,
 } from '#features/combat/battle-pending.js';
+import { getBattleStatus } from '#features/combat/battle-state.js';
 import SETTINGS from '#environment/settings.js';
 
 export default {
@@ -26,8 +27,16 @@ export default {
 
     clearPendingBattle(quotedId);
 
+    if (pending.battleId && getBattleStatus(pending.battleId) === 'cancelled') {
+      return false;
+    }
+
+    if (!pending.battleId) {
+      return false;
+    }
+
     const ctx = buildContext(parsed, sock);
-    await runBattle(ctx, pending.challenger, pending.target);
+    await runBattle(ctx, pending.challenger, pending.target, pending.battleId);
     return false;
   },
 };
