@@ -23,8 +23,8 @@ function statusText(raidData, participant) {
         : 'Active';
 
   const endDate = new Date(raid.end_at);
-  const timeStr = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  const dateStr = endDate.toLocaleDateString('id-ID', { weekday: 'long' });
+  const timeStr = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+  const dateStr = endDate.toLocaleDateString('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' });
 
   return [
     '⚔️ *RAID STATUS*',

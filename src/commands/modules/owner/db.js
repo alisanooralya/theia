@@ -34,8 +34,8 @@ export default {
             `HP: ${F.formatNumber(active.boss_hp)} / ${F.formatNumber(active.boss_max_hp)}`,
             `Participants: ${participants.length}`,
             `Total Damage: ${F.formatNumber(totalDmg)}`,
-            `Start: ${new Date(active.start_at).toLocaleString('id-ID')}`,
-            `End: ${new Date(active.end_at).toLocaleString('id-ID')}`,
+            `Start: ${new Date(active.start_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
+            `End: ${new Date(active.end_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}`,
           ].join('\n'));
         }
 
