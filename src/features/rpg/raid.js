@@ -327,8 +327,8 @@ class RaidService {
       .reduce((sum, p) => sum + p.damage, 0);
     const contributionRatio = participant.damage / Math.max(1, totalDamage);
 
-    const baseCash = 5000;
-    const baseExp = 100;
+    const baseCash = 4000;
+    const baseExp = 60;
     const cashReward = Math.floor(baseCash * contributionRatio * 10);
     const expReward = Math.floor(baseExp * contributionRatio * 10);
     const raidCoinReward = Math.max(1, Math.floor(contributionRatio * 20));
