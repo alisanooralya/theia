@@ -21,8 +21,6 @@ export default {
     if (!items.length) return ctx.reply('📦 Inventory kosong.');
 
     const catOrder = [
-      'weapon',
-      'armor',
       'consumable',
       'material',
       'special',
@@ -40,7 +38,7 @@ export default {
       text += `*[${cat.toUpperCase()}]*\n`;
       for (const i of grouped[cat]) {
         const emoji = RARITY_EMOJI[i.rarity] ?? '⬜';
-        text += `  ${emoji} *${i.name}* ×${i.quantity}\n`;
+        text += `  ${emoji} *${i.name}* ×${i.quantity} \`${i.item_id}\`\n`;
       }
       text += '\n';
     }
@@ -48,7 +46,7 @@ export default {
     for (const [cat, list] of Object.entries(grouped)) {
       if (catOrder.includes(cat)) continue;
       text += `*[${cat.toUpperCase()}]*\n`;
-      for (const i of list) text += `  *${i.name}* ×${i.quantity}\n`;
+      for (const i of list) text += `  *${i.name}* ×${i.quantity} \`${i.item_id}\`\n`;
     }
 
     await ctx.reply(text.trimEnd());
