@@ -176,7 +176,7 @@ export default {
   name: 'du',
   aliases: ['divergent', 'divergentuniverse'],
   category: 'rpg',
-  description: 'Jelajahi Divergent Universe dengan difficulty easy/medium/hard',
+  description: 'Jelajahi Divergent Universe',
   cooldown: 2_000,
 
   async execute(ctx) {
