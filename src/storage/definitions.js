@@ -209,6 +209,33 @@ export function createSchema() {
       updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
     );
 
+    CREATE TABLE IF NOT EXISTS raids (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      boss_name   TEXT    NOT NULL DEFAULT 'Raid Boss',
+      boss_hp     INTEGER NOT NULL DEFAULT 500000,
+      boss_max_hp INTEGER NOT NULL DEFAULT 500000,
+      status      TEXT    NOT NULL DEFAULT 'pending',
+      start_at    INTEGER NOT NULL DEFAULT 0,
+      end_at      INTEGER NOT NULL DEFAULT 0,
+      created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+
+    CREATE TABLE IF NOT EXISTS raid_participants (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      raid_id     INTEGER NOT NULL REFERENCES raids(id) ON DELETE CASCADE,
+      jid         TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+      hp          INTEGER NOT NULL DEFAULT 2400,
+      max_hp      INTEGER NOT NULL DEFAULT 2400,
+      damage      INTEGER NOT NULL DEFAULT 0,
+      status      TEXT    NOT NULL DEFAULT 'active',
+      breaktime_until INTEGER NOT NULL DEFAULT 0,
+      reward_claimed INTEGER NOT NULL DEFAULT 0,
+      created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+      UNIQUE(raid_id, jid)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_artifacts_owner      ON artifacts(owner_jid);
     CREATE INDEX IF NOT EXISTS idx_artifacts_slot       ON artifacts(owner_jid, slot);
 
@@ -288,6 +315,9 @@ export function createSchema() {
   } catch {}
   try {
     db.exec('ALTER TABLE divergent_runs ADD COLUMN chat_jid TEXT');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN raid_coin INTEGER NOT NULL DEFAULT 0');
   } catch {}
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_divergent_runs_active_chat

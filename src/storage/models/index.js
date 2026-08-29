@@ -13,3 +13,4 @@ export { divergentRunModel } from './divergent-run.js';
 export { divergentUsageModel } from './divergent-usage.js';
 export { relicModel } from './relic.js';
 export { artifactModel } from './artifact.js';
+export { raidModel } from './raid.js';
