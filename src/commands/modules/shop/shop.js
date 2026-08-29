@@ -1,5 +1,5 @@
 import { shopService } from '#features/economy/shop.js';
-import { walletModel } from '#storage/models/index.js';
+import { walletModel, userModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
 const RARITY_EMOJI = {
