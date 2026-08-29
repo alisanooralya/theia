@@ -40,7 +40,7 @@ export default {
         }
 
         if (action === 'end' || action === 'stop') {
-          const ended = raid.endRaid();
+          const ended = await raid.endRaid(ctx.sock, ctx.jid);
           if (!ended) return ctx.reply('❌ Tidak ada raid aktif.');
           return ctx.reply(`✅ Raid #${ended.id} diakhiri.`);
         }

@@ -5,6 +5,9 @@ class RaidModel {
   _findActive = lazyPrepare(
     "SELECT * FROM raids WHERE status = 'active' ORDER BY id DESC LIMIT 1"
   );
+  _findEnded = lazyPrepare(
+    "SELECT * FROM raids WHERE status IN ('ended', 'cleared') ORDER BY id DESC LIMIT 1"
+  );
   _findById = lazyPrepare('SELECT * FROM raids WHERE id = ?');
   _insert = lazyPrepare(`
     INSERT INTO raids (boss_name, boss_hp, boss_max_hp, status, start_at, end_at)
@@ -41,6 +44,10 @@ class RaidModel {
 
   getActive() {
     return this._findActive().get() ?? null;
+  }
+
+  getEnded() {
+    return this._findEnded().get() ?? null;
   }
 
   getById(id) {

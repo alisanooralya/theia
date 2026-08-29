@@ -55,9 +55,7 @@ function helpText() {
     '`.raid join` - Join raid',
     '`.raid attack` - Mulai serang boss (looping tiap 30 detik)',
     '`.raid stop` - Berhenti menyerang',
-    '`.raid resume` - Lanjut menyerang',
     '`.raid claim` - Klaim reward (jika raid selesai)',
-    '`.raid coin` - Lihat Raid Coin kamu',
     '',
     '*Info:*',
     '- Raid aktif setiap Minggu',
@@ -93,11 +91,6 @@ export default {
         return ctx.reply(helpText());
       }
 
-      if (sub === 'coin') {
-        const coins = raidService.getRaidCoin(ctx.sender);
-        return ctx.reply(`💠 *Raid Coin:* ${coins}`);
-      }
-
       if (sub === 'join') {
         const { raid: raidData, participant } = raidService.join(ctx.sender);
         return ctx.reply(`✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`);
@@ -111,11 +104,6 @@ export default {
       if (sub === 'stop') {
         raidService.stop(ctx.sender);
         return ctx.reply('🛑 Penyerangan dihentikan. HP akan recovery. Ketik `.raid attack` untuk lanjut.');
-      }
-
-      if (sub === 'resume') {
-        raidService.resume(ctx.sender);
-        return ctx.reply('⚔️ Raid dilanjutkan! Ketik `.raid attack` untuk mulai menyerang.');
       }
 
       if (sub === 'claim') {

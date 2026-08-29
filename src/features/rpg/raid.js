@@ -7,6 +7,7 @@ import {
   userModel,
 } from '#storage/models/index.js';
 import { logger } from '#helpers/logger.js';
+import { F } from '#helpers/index.js';
 
 const RAID_BOSS_NAME = 'Raid Boss';
 const RAID_BOSS_HP = 500_000;
@@ -190,8 +191,25 @@ class RaidService {
         if (newBossHp <= 0) {
           this.stopAttackLoop(jid);
           if (sock && jidChat) {
+            const participants = raidModel.getParticipants(currentRaid.id);
+            const mentionJid = participants.map(p => p.jid);
+            const contributionList = participants
+              .map((p, i) => `${i + 1}. @${p.jid.split('@')[0]} — *${F.formatNumber(p.damage)}* damage`)
+              .join('\n');
+            const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
+
             await sock.sendMessage(jidChat, {
-              text: '🎉 *RAID BOSS MATI!* Raid selesai!',
+              text: [
+                '🎉 *RAID BOSS MATI!*',
+                '',
+                `Total Damage: *${F.formatNumber(totalDamage)}*`,
+                '',
+                '*Kontribusi:*',
+                contributionList,
+                '',
+                'Ketik `.raid claim` untuk klaim reward!',
+              ].join('\n'),
+              mentions: mentionJid,
             }).catch(() => {});
           }
         }
@@ -297,7 +315,7 @@ class RaidService {
   }
 
   claimReward(jid) {
-    const raid = raidModel.getActive();
+    const raid = raidModel.getActive() || raidModel.getEnded();
     if (!raid) throw new Error('Tidak ada raid.');
 
     const participant = raidModel.getParticipant(raid.id, jid);
@@ -334,7 +352,7 @@ class RaidService {
     return raidModel.getRaidCoin(jid);
   }
 
-  endRaid() {
+  async endRaid(sock, chatId) {
     const raid = raidModel.getActive();
     if (!raid) return null;
 
@@ -343,6 +361,32 @@ class RaidService {
     }
 
     raidModel.updateBoss(raid.id, raid.boss_hp, 'ended');
+
+    if (sock && chatId) {
+      const participants = raidModel.getParticipants(raid.id);
+      if (participants.length > 0) {
+        const mentionJid = participants.map(p => p.jid);
+        const contributionList = participants
+          .map((p, i) => `${i + 1}. @${p.jid.split('@')[0]} — *${F.formatNumber(p.damage)}* damage`)
+          .join('\n');
+        const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
+
+        await sock.sendMessage(chatId, {
+          text: [
+            '🎉 *RAID BOSS MATI!*',
+            '',
+            `Total Damage: *${F.formatNumber(totalDamage)}*`,
+            '',
+            '*Kontribusi:*',
+            contributionList,
+            '',
+            'Ketik `.raid claim` untuk klaim reward!',
+          ].join('\n'),
+          mentions: mentionJid,
+        }).catch(() => {});
+      }
+    }
+
     return raid;
   }
 }

@@ -1,9 +1,12 @@
 import { raidModel } from '#storage/models/index.js';
+import { raidService } from '#features/rpg/raid.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
 
 let statusInterval = null;
 let recoveryInterval = null;
+let storedSock = null;
+let storedChatId = null;
 
 function bar(value, max, size = 10) {
   const filled = Math.max(0, Math.min(size, Math.round((value / max) * size)));
@@ -38,6 +41,10 @@ function buildStatusText(raid, participants) {
 
 export default {
   name: 'raid-status',
+  processMessage(parsed, sock) {
+    if (sock) storedSock = sock;
+    if (parsed?.jid) storedChatId = parsed.jid;
+  },
   async init() {
     statusInterval = setInterval(() => {
       try {
@@ -45,7 +52,7 @@ export default {
         if (!raid || raid.status !== 'active') return;
 
         if (Date.now() >= raid.end_at) {
-          raidModel.updateBoss(raid.id, raid.boss_hp, 'ended');
+          raidService.endRaid(storedSock, storedChatId);
           logger.info('[RaidStatus] Raid ended due to time');
           return;
         }
@@ -102,5 +109,7 @@ export default {
     if (recoveryInterval) clearInterval(recoveryInterval);
     statusInterval = null;
     recoveryInterval = null;
+    storedSock = null;
+    storedChatId = null;
   },
 };
