@@ -73,7 +73,7 @@ export default {
   aliases: ['raids'],
   category: 'rpg',
   description: 'Raid Boss mingguan',
-  cooldown: 5_000,
+  cooldown: 5_000, groupOnly: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase() || 'status';

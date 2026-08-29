@@ -9,7 +9,7 @@ export default {
   name: 'leaderboard',
   aliases: ['lb', 'ranking'],
   category: 'general',
-  description: 'Leaderboard: level, kekayaan, atau PvP',
+  description: 'level, kekayaan, atau PvP',
   cooldown: 10_000,
 
   async execute(ctx) {

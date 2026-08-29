@@ -5,7 +5,7 @@ export default {
   name: 'groupset',
   aliases: ['gset', 'grpset'],
   category: 'group',
-  description: 'Atur pengaturan grup (antilink, mute, dll)',
+  description: 'Atur pengaturan grup',
   cooldown: 5_000,
   groupOnly: true,
   adminOnly: true,
