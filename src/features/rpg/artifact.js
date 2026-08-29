@@ -252,7 +252,16 @@ class ArtifactService {
 
     if (targetLevel === artifact.level) {
       const nextCost = LEVELING_COSTS[artifact.level];
-      throw new Error(`Butuh ${nextCost.coins} koin untuk upgrade. Kamu hanya punya ${wallet?.cash ?? 0}.`);
+      const walletCash = wallet?.cash ?? 0;
+      const userExp = user?.exp ?? 0;
+      const reasons = [];
+      if (walletCash < nextCost.coins) {
+        reasons.push(`koin tidak cukup (butuh ${nextCost.coins}, punya ${walletCash})`);
+      }
+      if (nextCost.exp > 0 && userExp < nextCost.exp) {
+        reasons.push(`EXP tidak cukup (butuh ${nextCost.exp}, punya ${userExp})`);
+      }
+      throw new Error(`Gagal upgrade: ${reasons.join(' & ')}.`);
     }
 
     const fromLevel = artifact.level;
