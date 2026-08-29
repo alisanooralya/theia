@@ -155,7 +155,7 @@ class RaidService {
         }
 
         const userDmg = calcDamage(userStats.atk, userStats.critRate);
-        const bossDmg = calcDamage(150, 5);
+        const bossDmg = calcDamage(120, 5);
         const actualDamage = Math.min(userDmg.dmg, currentRaid.boss_hp);
         const newBossHp = Math.max(0, currentRaid.boss_hp - actualDamage);
         const newHp = Math.max(0, p.hp - bossDmg.dmg);
@@ -175,13 +175,6 @@ class RaidService {
           status: newStatus,
           breaktimeUntil,
         });
-
-        const critText = userDmg.crit ? ' 💥CRIT!' : '';
-        const msg = `⚔️ *${userDmg.dmg}${critText}* | HP Boss: *${newBossHp.toLocaleString()}* | HP Kamu: *${newHp}/2400*`;
-
-        if (sock && jidChat) {
-          await sock.sendMessage(jidChat, { text: msg }).catch(() => {});
-        }
 
         if (newHp <= 0) {
           this.stopAttackLoop(jid);
