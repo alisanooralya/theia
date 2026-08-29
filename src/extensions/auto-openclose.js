@@ -13,10 +13,10 @@ function wibParts() {
   const now = new Date()
   const hour = (now.getUTCHours() + WIB_OFFSET) % 24
   const hhmm = `${String(hour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`
-  const dayKey = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
-    .toISOString()
-    .slice(0, 10)
-  return { hhmm, dayKey }
+  const wibDate = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
+  const dayKey = wibDate.toISOString().slice(0, 10)
+  const day = wibDate.getUTCDay()
+  return { hhmm, dayKey, day }
 }
 
 async function applyState(jid, wantClosed) {
@@ -46,7 +46,8 @@ export default {
   init() {
     timer = setInterval(() => {
       try {
-        const { hhmm, dayKey } = wibParts()
+        const { hhmm, dayKey, day } = wibParts()
+        if (day === 0) return
         if (hhmm === CLOSE_TIME) {
           const key = `${dayKey}:close`
           if (lastKey !== key) {
