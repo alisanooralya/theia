@@ -121,7 +121,7 @@ class RaidService {
     }
 
     if (participant.status === 'stopped') {
-      throw new Error('Kamu sedang dalam mode Stop. Ketik `.raid resume` untuk melanjutkan.');
+      throw new Error('Kamu sedang dalam mode Stop. Ketik `.raid attack` untuk melanjutkan.');
     }
 
     const now = Date.now();

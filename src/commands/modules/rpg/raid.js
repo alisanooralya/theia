@@ -53,14 +53,13 @@ function helpText() {
     '',
     '`.raid` - Lihat status raid',
     '`.raid join` - Join raid',
-    '`.raid attack` - Mulai serang boss (looping tiap 30 detik)',
+    '`.raid attack` - Mulai serang boss',
     '`.raid stop` - Berhenti menyerang',
     '`.raid claim` - Klaim reward (jika raid selesai)',
     '',
     '*Info:*',
     '- Raid aktif setiap Minggu',
     '- HP kamu: 2400 (fixed)',
-    '- Attack looping tiap 30 detik sampai HP habis atau stop',
     '- Jika kalah, masuk Breaktime 1 jam',
     '- Reward berdasarkan kontribusi damage',
     '- Raid Coin bisa dipakai di Raid Shop',
@@ -74,7 +73,7 @@ export default {
   aliases: ['raids'],
   category: 'rpg',
   description: 'Raid Boss mingguan',
-  cooldown: 3_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase() || 'status';
@@ -98,7 +97,7 @@ export default {
 
       if (sub === 'attack' || sub === 'serang') {
         raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
-        return ctx.reply('⚔️ Menyerang boss! Damage akan muncul tiap 30 detik.\nKetik `.raid stop` untuk berhenti.');
+        return ctx.reply('⚔️ Menyerang boss!\nKetik `.raid stop` untuk berhenti.');
       }
 
       if (sub === 'stop') {
