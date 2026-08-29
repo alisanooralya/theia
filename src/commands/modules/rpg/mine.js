@@ -28,7 +28,7 @@ export default {
   aliases: ['mining', 'tambang'],
   category: 'rpg',
   description: 'Menambang mineral untuk dapat uang',
-  cooldown: 3 * 60 * 60 * 1000,
+  cooldown: 60 * 60 * 1000,
 
   async execute(ctx) {
     userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -41,7 +41,7 @@ export default {
     try {
       const statusMsg = await ctx.reply('⛏️ Kamu mulai menambang... sabar ya, tunggu sebentar~');
 
-      const delay = 5000 + Math.floor(Math.random() * 3000);
+      const delay = 4000 + Math.floor(Math.random() * 3000);
       await sleep(delay);
 
       const mineral = pickMineral();

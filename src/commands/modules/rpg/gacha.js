@@ -38,7 +38,7 @@ export default {
   aliases: ['gacha'],
   category: 'rpg',
   description: 'Gacha item dan artifact',
-  cooldown: 5_000,
+  cooldown: 60 * 1_000,
 
   async execute(ctx) {
     const rawCount = ctx.args[0];
@@ -53,7 +53,7 @@ export default {
 
       const statusMsg = await ctx.reply('🌠 Sedang melakukan gacha...');
 
-      await sleep(1600);
+      await sleep(1200);
 
       const results = gacha.pull(ctx.sender, count);
       const text = formatResults(results);

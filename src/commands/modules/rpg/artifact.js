@@ -22,9 +22,8 @@ function artifactListText(jid) {
   if (!artifacts.length) return 'Kamu belum memiliki artifact.';
   const lines = artifacts.map((a) => {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
-    const mainStatName = artifact.statNames[a.main_stat] || a.main_stat;
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
-    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainStatName}: ${mainFormatted}${equipped}`;
+    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}`;
   });
   return lines.join('\n');
 }
