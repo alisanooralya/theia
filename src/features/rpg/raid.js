@@ -13,8 +13,9 @@ const RAID_BOSS_NAME = 'Raid Boss';
 const RAID_BOSS_HP = 500_000;
 const RAID_USER_HP = 2400;
 const RAID_DURATION = 24 * 60 * 60 * 1000;
-const BREAKTIME_DURATION = 60 * 1000;
-const HP_RECOVERY_PER_MINUTE = 200;
+const BREAKTIME_DURATION = 60 * 60 * 1000;
+const HP_RECOVERY_STOP = 80;
+const HP_RECOVERY_BREAKTIME = 200;
 const CRIT_MULT = 1.5;
 
 function getWeekSunday() {
@@ -252,7 +253,7 @@ class RaidService {
     const now = Date.now();
 
     if (participant.status === 'breaktime' && participant.breaktime_until <= now) {
-      const newHp = Math.min(RAID_USER_HP, participant.hp + HP_RECOVERY_PER_MINUTE);
+      const newHp = Math.min(RAID_USER_HP, participant.hp + HP_RECOVERY_BREAKTIME);
       const fullyHealed = newHp >= RAID_USER_HP;
       raidModel.updateParticipant(raid.id, jid, {
         hp: fullyHealed ? RAID_USER_HP : newHp,
@@ -264,7 +265,7 @@ class RaidService {
     }
 
     if (participant.status === 'stopped') {
-      const newHp = Math.min(RAID_USER_HP, participant.hp + HP_RECOVERY_PER_MINUTE);
+      const newHp = Math.min(RAID_USER_HP, participant.hp + HP_RECOVERY_STOP);
       raidModel.updateParticipant(raid.id, jid, {
         hp: newHp,
         damage: participant.damage,

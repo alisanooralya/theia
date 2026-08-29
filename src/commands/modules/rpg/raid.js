@@ -62,7 +62,7 @@ function helpText() {
     '*Info:*',
     '- Raid aktif setiap Minggu',
     '- HP kamu: 2400 (fixed)',
-    '- Jika kalah, masuk Breaktime 1 menit',
+    '- Jika kalah, masuk Breaktime 1 jam',
     '- Reward berdasarkan kontribusi damage',
     '- Raid Coin bisa dipakai di Raid Shop',
   ].join('\n');
@@ -107,7 +107,7 @@ export default {
         ];
 
         if (result.userDied) {
-          lines.push('', '💔 HP habis! Masuk Breaktime 1 menit...');
+          lines.push('', '💔 HP habis! Masuk Breaktime 1 jam...');
         }
         if (result.bossDied) {
           lines.push('', '🎉 *RAID BOSS MATI! raid Selesai!*');

@@ -68,12 +68,13 @@ export default {
         for (const p of participants) {
           if (p.status === 'breaktime' || p.status === 'stopped') {
             const now = Date.now();
-            let newHp = Math.min(2400, p.hp + 200);
+            const recoveryRate = p.status === 'breaktime' ? 200 : 80;
+            let newHp = Math.min(2400, p.hp + recoveryRate);
             let newStatus = p.status;
             let breaktimeUntil = p.breaktime_until;
 
             if (p.status === 'breaktime' && p.breaktime_until <= now) {
-              newHp = Math.min(2400, p.hp + 200);
+              newHp = Math.min(2400, p.hp + recoveryRate);
               if (newHp >= 2400) {
                 newStatus = 'active';
                 breaktimeUntil = 0;
