@@ -16,9 +16,9 @@ export default {
     const hp = stats?.hp ?? 0;
 
     let price;
-    if (hp < 400) price = 1500;
-    else if (hp > 1000) price = 750;
-    else price = 1000;
+    if (hp < 400) price = 1700;
+    else if (hp > 1000) price = 890;
+    else price = 1200;
 
     try {
       walletModel.addCash(ctx.sender, -price);

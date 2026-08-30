@@ -36,7 +36,6 @@ const CAT_ICONS = {
   shop: '🛒',
   group: '👥',
   owner: '👑',
-  downloader: '📥',
   utility: '🔧',
 };
 

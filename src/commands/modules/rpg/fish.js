@@ -53,7 +53,7 @@ export default {
     try {
       const statusMsg = await ctx.reply('🎣 Kamu mulai memancing... sabar ya, tunggu sebentar~');
 
-      const delay = 4000 + Math.floor(Math.random() * 3000);
+      const delay = 3000 + Math.floor(Math.random() * 3000);
       await sleep(delay);
 
       const catchResult = pickFish();

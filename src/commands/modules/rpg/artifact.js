@@ -24,7 +24,7 @@ function artifactListText(jid) {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
     const subEntries = Object.entries(a.substats || {});
-    const subLine = subEntries.length ? '\n' + subEntries.map(([stat, value]) => `${artifact.statNames[stat]} +${value}`).join('\n') : '';
+    const subLine = subEntries.length ? '\n' + subEntries.map(([stat, value]) => `${artifact.statNames[stat]} +${value}`).join('\n') + '\n' : '';
     return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n`;
   });
   return lines.join('\n');

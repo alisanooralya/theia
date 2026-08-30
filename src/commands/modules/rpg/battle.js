@@ -107,7 +107,7 @@ function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap)
     lines.push(`│`);
   }
 
-  lines.push(`│ 🏆 ${winName} wins!`, `│`, `│ 🪙 +${F.formatNumber(result.reward.cash)} Coin`, `│`, `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`, `╰─────────────────────────────╯`);
+  lines.push(`│ 🏆 ${winName} wins 🪙 +${F.formatNumber(result.reward.cash)} Coin`, `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`, `╰─────────────────────────────╯`);
 
   return lines.join('\n');
 }
@@ -201,8 +201,7 @@ export default {
   aliases: ['fight', 'lawan', 'duel'],
   category: 'rpg',
   description: 'Tantang user lain untuk battle',
-  cooldown: 120_000,
-  isProblem: true,
+  cooldown: 300_000,
 
   async execute(ctx) {
     const targetJid =
