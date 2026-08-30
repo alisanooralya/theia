@@ -9,6 +9,9 @@ import { artifactService } from '#features/rpg/artifact.js';
 const CRIT_MULT = 1.5;
 const HEAL_AFTER_PCT = 0.2;
 const REWARD_CASH = 2_000;
+const LOSER_LOSS = 1_500;
+const STREAK_MULT_STEP = 0.5;
+const STREAK_MULT_MAX = 3;
 const REWARD_EXP_WIN = 80;
 const REWARD_EXP_LOSS = 20;
 
@@ -75,14 +78,16 @@ class BattleService {
     const loser = draw ? null : sim.loser;
 
     let rewardCash = REWARD_CASH;
-    let loserLoss = Math.floor(rewardCash / 2);
+    let loserLoss = LOSER_LOSS;
     let rewarded = false;
 
     if (!draw) {
       const winnerStreakBefore = statsModel.find(winner)?.win_streak ?? 0;
-      if (winnerStreakBefore > 0)
-        rewardCash = Math.floor(REWARD_CASH * (1.5 + Math.random() * 0.2));
-      loserLoss = Math.floor(rewardCash / 2);
+      const streakMult = Math.min(
+        1 + winnerStreakBefore * STREAK_MULT_STEP,
+        STREAK_MULT_MAX
+      );
+      rewardCash = Math.floor(REWARD_CASH * streakMult);
     }
 
     db.transaction(() => {
