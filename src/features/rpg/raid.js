@@ -8,6 +8,7 @@ import {
 } from '#storage/models/index.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
+import SETTINGS from '#environment/settings.js';
 
 const RAID_BOSS_NAME = 'Raid Boss';
 const RAID_BOSS_HP = 500_000;
@@ -19,7 +20,55 @@ const HP_RECOVERY_BREAKTIME = 200;
 const CRIT_MULT = 1.5;
 const ATTACK_INTERVAL = 30_000;
 
+const TZ = SETTINGS.timezone || 'Asia/Jakarta';
+const TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
+const RAID_START_WEEKDAY = 0;
+const RAID_START_HOUR = 1;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 const activeAttacks = new Map();
+
+function toZoned(ms) {
+  return ms + TZ_OFFSET_MS;
+}
+function fromZoned(zms) {
+  return zms - TZ_OFFSET_MS;
+}
+
+function getRaidStartForWeek(ms) {
+  const z = toZoned(ms);
+  const d = new Date(z);
+  const day = d.getUTCDay();
+  let candidate = Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate() - day,
+    RAID_START_HOUR,
+    0,
+    0
+  );
+  if (candidate > z) candidate -= WEEK_MS;
+  return fromZoned(candidate);
+}
+
+function getNextRaidStart(ms) {
+  const start = getRaidStartForWeek(ms);
+  return start + WEEK_MS;
+}
+
+function isWithinRaidWindow(ms) {
+  const start = getRaidStartForWeek(ms);
+  return ms >= start && ms < start + RAID_DURATION;
+}
+
+function formatSchedule(ms) {
+  return new Date(ms).toLocaleString('id-ID', {
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: TZ,
+  });
+}
 
 function calcDamage(atk, critRate) {
   const isCrit = Math.random() * 100 < critRate;
@@ -63,6 +112,10 @@ class RaidService {
   getRaidInfo() {
     const active = raidModel.getActive();
     if (active && active.status === 'active') {
+      if (Date.now() >= active.end_at) {
+        this.endRaid(null, null);
+        return null;
+      }
       const now = Date.now();
       const remaining = Math.max(0, active.end_at - now);
       const participants = raidModel.getParticipants(active.id);
@@ -73,28 +126,80 @@ class RaidService {
         isLive: true,
       };
     }
+    if (isWithinRaidWindow(Date.now())) {
+      const raid = this.createScheduledRaid();
+      const participants = raidModel.getParticipants(raid.id);
+      return {
+        raid,
+        participants,
+        remaining: Math.max(0, raid.end_at - Date.now()),
+        isLive: true,
+      };
+    }
     return null;
   }
 
-  createRaid() {
+  createScheduledRaid() {
     const now = Date.now();
-    const endAt = now + RAID_DURATION;
-    const raid = raidModel.create(RAID_BOSS_NAME, RAID_BOSS_HP, now, endAt);
+    const startAt = getRaidStartForWeek(now);
+    const endAt = startAt + RAID_DURATION;
+    const raid = raidModel.create(RAID_BOSS_NAME, RAID_BOSS_HP, startAt, endAt);
+    logger.info({ startAt, endAt }, '[Raid] scheduled raid created');
     return raid;
+  }
+
+  createRaid() {
+    const existing = raidModel.getActive();
+    if (existing && existing.status === 'active' && Date.now() < existing.end_at) {
+      return existing;
+    }
+    if (isWithinRaidWindow(Date.now())) {
+      return this.createScheduledRaid();
+    }
+    return this.createScheduledRaid();
   }
 
   startRaid() {
     const existing = raidModel.getActive();
-    if (existing && existing.status === 'active') {
+    if (existing && existing.status === 'active' && Date.now() < existing.end_at) {
       return existing;
     }
-    return this.createRaid();
+    return this.createScheduledRaid();
+  }
+
+  ensureScheduledRaid() {
+    const existing = raidModel.getActive();
+    if (existing && existing.status === 'active') {
+      if (Date.now() >= existing.end_at) {
+        this.endRaid(null, null);
+        return { created: false, raid: null };
+      }
+      return { created: false, raid: existing };
+    }
+    if (isWithinRaidWindow(Date.now())) {
+      const raid = this.createScheduledRaid();
+      return { created: true, raid };
+    }
+    return { created: false, raid: null };
+  }
+
+  getScheduleInfo() {
+    const now = Date.now();
+    const within = isWithinRaidWindow(now);
+    const currentStart = getRaidStartForWeek(now);
+    return {
+      isLive: within,
+      currentStart,
+      currentEnd: currentStart + RAID_DURATION,
+      nextStart: getNextRaidStart(now),
+      duration: RAID_DURATION,
+    };
   }
 
   join(jid) {
     let raid = raidModel.getActive();
-    if (!raid || raid.status !== 'active') {
-      raid = this.createRaid();
+    if (!raid || raid.status !== 'active' || Date.now() >= raid.end_at) {
+      raid = this.createScheduledRaid();
     }
 
     let participant = raidModel.getParticipant(raid.id, jid);

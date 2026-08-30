@@ -5,6 +5,7 @@ import { F } from '#helpers/index.js';
 
 let statusInterval = null;
 let recoveryInterval = null;
+let scheduleInterval = null;
 let storedSock = null;
 let storedChatId = null;
 
@@ -46,6 +47,26 @@ export default {
     if (parsed?.jid) storedChatId = parsed.jid;
   },
   async init() {
+    scheduleInterval = setInterval(() => {
+      try {
+        const result = raidService.ensureScheduledRaid();
+        if (result.created && result.raid && storedSock && storedChatId) {
+          storedSock.sendMessage(storedChatId, {
+            text: [
+              '⚔️ *RAID DIMULAI!*',
+              '',
+              `Boss: *${result.raid.boss_name}*`,
+              `HP: *${F.formatNumber(result.raid.boss_hp)}*`,
+              '',
+              'Ketik `.raid join` lalu `.raid attack` untuk ikut!',
+            ].join('\n'),
+          }).catch(() => {});
+        }
+      } catch (err) {
+        logger.warn({ err: err.message }, '[RaidSchedule] failed');
+      }
+    }, 60 * 1000);
+
     statusInterval = setInterval(() => {
       try {
         const raid = raidModel.getActive();
@@ -102,11 +123,13 @@ export default {
       }
     }, 60 * 1000);
 
-    logger.info('[Raid] Initialized — status hourly, recovery every minute');
+    logger.info('[Raid] Initialized — schedule per minute, status hourly, recovery every minute');
   },
   async destroy() {
+    if (scheduleInterval) clearInterval(scheduleInterval);
     if (statusInterval) clearInterval(statusInterval);
     if (recoveryInterval) clearInterval(recoveryInterval);
+    scheduleInterval = null;
     statusInterval = null;
     recoveryInterval = null;
     storedSock = null;

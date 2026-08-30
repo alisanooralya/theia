@@ -14,12 +14,21 @@ function formatTime(ms) {
   return `${hours}j ${minutes}m`;
 }
 
+function formatScheduleLocal(ms) {
+  return new Date(ms).toLocaleString('id-ID', {
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  });
+}
+
 function statusText(raidData, participant) {
   const { raid, participants, remaining } = raidData;
   const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
   const status = participant?.status === 'stopped' ? 'Stopped'
     : participant?.status === 'breaktime' ? 'Breaktime'
-      : raidService.isAttacking(participant?.jid) ? 'Attacking'
+      : isAttacking(participant?.jid) ? 'Attacking'
         : 'Active';
 
   const endDate = new Date(raid.end_at);
@@ -58,7 +67,7 @@ function helpText() {
     '`.raid claim` - Klaim reward (jika raid selesai)',
     '',
     '*Info:*',
-    '- Raid aktif setiap Minggu',
+    '- Raid aktif setiap Minggu 01:00 WIB',
     '- HP kamu: 2400 (fixed)',
     '- Jika kalah, masuk Breaktime 1 jam',
     '- Reward berdasarkan kontribusi damage',
@@ -67,6 +76,7 @@ function helpText() {
 }
 
 let raidService = null;
+let isAttacking = () => false;
 
 export default {
   name: 'raid',
@@ -84,6 +94,7 @@ export default {
       if (!raidService) {
         const mod = await import('#features/rpg/raid.js');
         raidService = mod.raidService;
+        isAttacking = (jid) => raidService.isAttacking(jid);
       }
 
       if (sub === 'help' || sub === 'bantuan') {
@@ -119,7 +130,10 @@ export default {
 
       const raidData = raidService.getRaidInfo();
       if (!raidData || !raidData.isLive) {
-        return ctx.reply(`⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *Minggu 00:00*\n\nKetik \`.raid help\` untuk info.`);
+        const sched = raidService.getScheduleInfo();
+        return ctx.reply(
+          `⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *${formatScheduleLocal(sched.nextStart)}*\n\nKetik \`.raid help\` untuk info.`
+        );
       }
 
       const participant = raidModel.getParticipant(raidData.raid.id, ctx.sender);
