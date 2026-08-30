@@ -25,12 +25,12 @@ export default {
 
     if (
       !sub ||
-      !['antilink', 'mute', 'nsfw', 'antitoxic', 'greeting', 'openclose'].includes(sub) ||
+      !['antilink', 'mute', 'nsfw', 'antitoxic', 'greeting', 'openclose', 'raid'].includes(sub) ||
       !['on', 'off'].includes(value)
     ) {
       const g = groupModel.find(jid);
       return ctx.reply(
-        `*Pengaturan Grup*\n\n📎 Antilink: ${g?.antilink ? '✅' : '❌'}\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🔞 NSFW: ${g?.nsfw ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <antilink/mute/nsfw/antitoxic/greeting/openclose> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`
+        `*Pengaturan Grup*\n\n📎 Antilink: ${g?.antilink ? '✅' : '❌'}\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🔞 NSFW: ${g?.nsfw ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n⚔️ Raid: ${g?.raid ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <antilink/mute/nsfw/antitoxic/greeting/openclose/raid> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}\n\nℹ️ Raid: notifikasi mulai/selesai raid akan dikirim ke grup ini.`
       );
     }
 

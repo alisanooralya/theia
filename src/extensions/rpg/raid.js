@@ -50,17 +50,19 @@ export default {
     scheduleInterval = setInterval(() => {
       try {
         const result = raidService.ensureScheduledRaid();
-        if (result.created && result.raid && storedSock && storedChatId) {
-          storedSock.sendMessage(storedChatId, {
-            text: [
-              '⚔️ *RAID DIMULAI!*',
-              '',
-              `Boss: *${result.raid.boss_name}*`,
-              `HP: *${F.formatNumber(result.raid.boss_hp)}*`,
-              '',
-              'Ketik `.raid join` lalu `.raid attack` untuk ikut!',
-            ].join('\n'),
-          }).catch(() => {});
+        if (result.created && result.raid && storedSock) {
+          const startText = [
+            '⚔️ *RAID DIMULAI!*',
+            '',
+            `Boss: *${result.raid.boss_name}*`,
+            `HP: *${F.formatNumber(result.raid.boss_hp)}*`,
+            '',
+            'Ketik `.raid join` lalu `.raid attack` untuk ikut!',
+          ].join('\n');
+          const sent = raidService.broadcast(storedSock, startText);
+          if (sent.length === 0 && storedChatId) {
+            storedSock.sendMessage(storedChatId, { text: startText }).catch(() => {});
+          }
         }
       } catch (err) {
         logger.warn({ err: err.message }, '[RaidSchedule] failed');

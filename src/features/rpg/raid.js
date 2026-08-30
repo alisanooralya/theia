@@ -5,6 +5,7 @@ import {
   artifactModel,
   walletModel,
   userModel,
+  groupModel,
 } from '#storage/models/index.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
@@ -303,19 +304,22 @@ class RaidService {
               .join('\n');
             const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
 
+            const text = [
+              '🎉 *RAID BOSS MATI!*',
+              '',
+              `Total Damage: *${F.formatNumber(totalDamage)}*`,
+              '',
+              '*Kontribusi:*',
+              contributionList,
+              '',
+              'Ketik `.raid claim` untuk klaim reward!',
+            ].join('\n');
+
             await sock.sendMessage(jidChat, {
-              text: [
-                '🎉 *RAID BOSS MATI!*',
-                '',
-                `Total Damage: *${F.formatNumber(totalDamage)}*`,
-                '',
-                '*Kontribusi:*',
-                contributionList,
-                '',
-                'Ketik `.raid claim` untuk klaim reward!',
-              ].join('\n'),
+              text,
               mentions: mentionJid,
             }).catch(() => {});
+            this.broadcast(sock, text, { exclude: [jidChat] });
           }
         }
       } catch (err) {
@@ -457,6 +461,17 @@ class RaidService {
     return raidModel.getRaidCoin(jid);
   }
 
+  broadcast(sock, text, { exclude = [] } = {}) {
+    if (!sock) return [];
+    const targets = groupModel
+      .getRaidGroups()
+      .filter((jid) => !exclude.includes(jid));
+    for (const target of targets) {
+      sock.sendMessage(target, { text }).catch(() => {});
+    }
+    return targets;
+  }
+
   async endRaid(sock, chatId) {
     const raid = raidModel.getActive();
     if (!raid) return null;
@@ -467,7 +482,7 @@ class RaidService {
 
     raidModel.updateBoss(raid.id, raid.boss_hp, 'ended');
 
-    if (sock && chatId) {
+    if (sock) {
       const participants = raidModel.getParticipants(raid.id);
       if (participants.length > 0) {
         const mentionJid = participants.map(p => p.jid);
@@ -476,19 +491,24 @@ class RaidService {
           .join('\n');
         const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
 
-        await sock.sendMessage(chatId, {
-          text: [
-            '🎉 *RAID BOSS MATI!*',
-            '',
-            `Total Damage: *${F.formatNumber(totalDamage)}*`,
-            '',
-            '*Kontribusi:*',
-            contributionList,
-            '',
-            'Ketik `.raid claim` untuk klaim reward!',
-          ].join('\n'),
-          mentions: mentionJid,
-        }).catch(() => {});
+        const text = [
+          '🎉 *RAID BOSS MATI!*',
+          '',
+          `Total Damage: *${F.formatNumber(totalDamage)}*`,
+          '',
+          '*Kontribusi:*',
+          contributionList,
+          '',
+          'Ketik `.raid claim` untuk klaim reward!',
+        ].join('\n');
+
+        const targets = groupModel.getRaidGroups();
+        const chats = targets.length > 0 ? targets : chatId ? [chatId] : [];
+        for (const chat of chats) {
+          await sock
+            .sendMessage(chat, { text, mentions: mentionJid })
+            .catch(() => {});
+        }
       }
     }
 

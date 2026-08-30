@@ -3,6 +3,7 @@ import { lazyPrepare } from '#storage/lazy.js';
 
 class GroupModel {
   _find = lazyPrepare('SELECT * FROM groups WHERE jid = ?');
+  _findRaidGroups = lazyPrepare('SELECT jid FROM groups WHERE raid = 1');
   _ensure = lazyPrepare(`
     INSERT INTO groups (jid, name) VALUES (@jid, @name)
     ON CONFLICT(jid) DO UPDATE SET name = excluded.name, updated_at = unixepoch()
@@ -29,6 +30,7 @@ class GroupModel {
       'antitoxic',
       'greeting',
       'openclose',
+      'raid',
     ];
     const updates = Object.entries(fields)
       .filter(([k]) => allowed.includes(k))
@@ -54,6 +56,10 @@ class GroupModel {
   }
   getPrefix(jid) {
     return this._find().get(jid)?.prefix ?? null;
+  }
+
+  getRaidGroups() {
+    return this._findRaidGroups().all().map((r) => r.jid);
   }
 }
 
