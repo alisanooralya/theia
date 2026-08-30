@@ -33,12 +33,24 @@ const STAT_FORMAT = {
 };
 
 const MAIN_STAT_SCALING = {
-  hp: { 0: 50, 20: 300 },
-  atk: { 0: 10, 20: 56 },
-  hp_percent: { 0: 2, 20: 18 },
-  atk_percent: { 0: 2, 20: 18 },
-  def_percent: { 0: 2, 20: 18 },
-  crit_rate: { 0: 2, 20: 16 },
+  flower: { hp: { 1: 430, 20: 4780 } },
+  feather: { atk: { 1: 28, 20: 232 } },
+  sands: {
+    hp_percent: { 1: 70, 20: 466 },
+    atk_percent: { 1: 70, 20: 466 },
+    def_percent: { 1: 70, 20: 466 },
+  },
+  goblet: {
+    hp_percent: { 1: 87, 20: 583 },
+    atk_percent: { 1: 87, 20: 583 },
+    def_percent: { 1: 87, 20: 583 },
+  },
+  circlet: {
+    hp_percent: { 1: 70, 20: 466 },
+    atk_percent: { 1: 70, 20: 466 },
+    def_percent: { 1: 70, 20: 466 },
+    crit_rate: { 1: 47, 20: 450 },
+  },
 };
 
 const SUBSTAT_VALUES = {
@@ -91,11 +103,12 @@ function weightedRandom(values, weights) {
   return values[values.length - 1];
 }
 
-function interpolateMainStat(stat, level) {
-  const scale = MAIN_STAT_SCALING[stat];
+function interpolateMainStat(slot, stat, level) {
+  const slotScale = MAIN_STAT_SCALING[slot];
+  const scale = slotScale?.[stat];
   if (!scale) return 0;
-  const ratio = level / 20;
-  return Math.floor(scale[0] + (scale[20] - scale[0]) * ratio);
+  const ratio = (level - 1) / 19;
+  return Math.floor(scale[1] + (scale[20] - scale[1]) * ratio);
 }
 
 function randomName(slot) {
@@ -145,7 +158,7 @@ class ArtifactService {
       ? config.mainStat[Math.floor(Math.random() * config.mainStat.length)]
       : config.mainStat;
     const level = 1;
-    const mainValue = interpolateMainStat(mainStat, level);
+    const mainValue = interpolateMainStat(slot, mainStat, level);
     const substats = {};
     if (config.substats) {
       const available = [...ALL_SUBSTATS];
@@ -271,7 +284,7 @@ class ArtifactService {
         userModel.addExp(jid, -totalCostExp);
       }
       artifact.level = targetLevel;
-      artifact.main_value = interpolateMainStat(artifact.main_stat, artifact.level);
+      artifact.main_value = interpolateMainStat(artifact.slot, artifact.main_stat, artifact.level);
       for (let lv = fromLevel + 1; lv <= targetLevel; lv++) {
         if (UPGRADE_MILESTONES.includes(lv)) {
           const subKeys = Object.keys(artifact.substats);
