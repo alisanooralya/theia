@@ -24,7 +24,7 @@ function artifactListText(jid) {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
     const subEntries = Object.entries(a.substats || {});
-    const subLine = subEntries.length ? '\n' subEntries.map(([stat, value]) => `${artifact.statNames[stat]} +${value}`).join('\n') : '';
+    const subLine = subEntries.length ? '\n' + subEntries.map(([stat, value]) => `${artifact.statNames[stat]} +${value}`).join('\n') : '';
     return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n`;
   });
   return lines.join('\n');
@@ -106,7 +106,6 @@ export default {
           return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
         }
         const result = artifact.smelt(ctx.sender, userId);
-        const formatted = artifact.formatArtifactFull(result.artifact);
         return ctx.reply(`🔥 Artifact *${result.artifact.name}* (${result.artifact.slot}) Lv.${result.artifact.level} berhasil dilebur!\n+${result.coinsEarned} koin`);
       }
 

@@ -17,6 +17,7 @@ const SLOTS = {
 const STAT_NAMES = {
   hp: 'HP',
   atk: 'ATK',
+  def: 'DEF',
   hp_percent: 'HP%',
   atk_percent: 'ATK%',
   def_percent: 'DEF%',
@@ -26,6 +27,7 @@ const STAT_NAMES = {
 const STAT_FORMAT = {
   hp: (v) => `+${v} HP`,
   atk: (v) => `+${v} ATK`,
+  def: (v) => `+${v} DEF`,
   hp_percent: (v) => `+${(v / 10).toFixed(1)}% HP`,
   atk_percent: (v) => `+${(v / 10).toFixed(1)}% ATK`,
   def_percent: (v) => `+${(v / 10).toFixed(1)}% DEF`,
@@ -62,6 +64,8 @@ const SUBSTAT_VALUES = {
 const ALL_SUBSTATS = ['hp', 'atk', 'def'];
 
 const UPGRADE_MILESTONES = [4, 8, 12, 16, 20];
+
+const SMELT_BASE_VALUE = 200;
 
 function substatUpgradeFor(stat, fromLevel) {
   const v = SUBSTAT_VALUES[stat];
@@ -334,7 +338,7 @@ class ArtifactService {
       const cost = LEVELING_COSTS[lv];
       if (cost) totalSpent += cost.coins;
     }
-    const coinsEarned = Math.floor(totalSpent * 0.7);
+    const coinsEarned = SMELT_BASE_VALUE + Math.floor(totalSpent * 0.7);
 
     artifactModel.delete(artifact.id);
 
