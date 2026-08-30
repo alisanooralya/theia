@@ -75,8 +75,6 @@ export function createSchema() {
       prefix      TEXT,
       welcome     INTEGER NOT NULL DEFAULT 0,
       welcome_msg TEXT    NOT NULL DEFAULT '',
-      antilink    INTEGER NOT NULL DEFAULT 0,
-      nsfw        INTEGER NOT NULL DEFAULT 0,
       mute        INTEGER NOT NULL DEFAULT 0,
       antitoxic   INTEGER NOT NULL DEFAULT 0,
       greeting    INTEGER NOT NULL DEFAULT 1,
@@ -293,6 +291,12 @@ export function createSchema() {
   } catch {}
   try {
     db.exec('ALTER TABLE groups ADD COLUMN raid INTEGER NOT NULL DEFAULT 0');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE groups DROP COLUMN antilink');
+  } catch {}
+  try {
+    db.exec('ALTER TABLE groups DROP COLUMN nsfw');
   } catch {}
   try {
     db.exec('ALTER TABLE users ADD COLUMN daily_streak INTEGER NOT NULL DEFAULT 0');

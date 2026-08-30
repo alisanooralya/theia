@@ -24,8 +24,6 @@ class GroupModel {
       'prefix',
       'welcome',
       'welcome_msg',
-      'antilink',
-      'nsfw',
       'mute',
       'antitoxic',
       'greeting',
@@ -44,12 +42,6 @@ class GroupModel {
 
   isMuted(jid) {
     return (this._find().get(jid)?.mute ?? 0) === 1;
-  }
-  isNsfw(jid) {
-    return (this._find().get(jid)?.nsfw ?? 0) === 1;
-  }
-  hasAntilink(jid) {
-    return (this._find().get(jid)?.antilink ?? 0) === 1;
   }
   hasAntitoxic(jid) {
     return (this._find().get(jid)?.antitoxic ?? 0) === 1;
