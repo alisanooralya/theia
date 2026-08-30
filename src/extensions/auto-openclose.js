@@ -4,19 +4,18 @@ import { logger } from '#helpers/logger.js'
 
 const WIB_OFFSET = 7
 const TICK_MS = 30_000
-const CLOSE_TIME = '23:00'
-const OPEN_TIME = '05:00'
+const CLOSE_MIN = 23 * 60
+const OPEN_MIN = 5 * 60
 let timer = null
-let lastKey = null
+let lastCloseKey = null
+let lastOpenKey = null
 
-function wibParts() {
+function wibMinutes() {
   const now = new Date()
-  const hour = (now.getUTCHours() + WIB_OFFSET) % 24
-  const hhmm = `${String(hour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`
-  const wibDate = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
-  const dayKey = wibDate.toISOString().slice(0, 10)
-  const day = wibDate.getUTCDay()
-  return { hhmm, dayKey, day }
+  const wib = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
+  const dayKey = wib.toISOString().slice(0, 10)
+  const minutes = wib.getUTCHours() * 60 + wib.getUTCMinutes()
+  return { minutes, dayKey }
 }
 
 async function applyState(jid, wantClosed) {
@@ -33,7 +32,7 @@ async function applyState(jid, wantClosed) {
   }
 }
 
-async function runForHour(wantClosed) {
+async function runForGroups(wantClosed) {
   const groups = db.prepare('SELECT jid FROM groups WHERE openclose = 1').all()
   for (const { jid } of groups) {
     await applyState(jid, wantClosed)
@@ -46,30 +45,29 @@ export default {
   init() {
     timer = setInterval(() => {
       try {
-        const { hhmm, dayKey, day } = wibParts()
-        if (day === 0) return
-        if (hhmm === CLOSE_TIME) {
-          const key = `${dayKey}:close`
-          if (lastKey !== key) {
-            lastKey = key
-            runForHour(true).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] close failed'))
+        const { minutes, dayKey } = wibMinutes()
+        if (minutes >= CLOSE_MIN) {
+          if (lastCloseKey !== dayKey) {
+            lastCloseKey = dayKey
+            runForGroups(true).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] close failed'))
           }
-        } else if (hhmm === OPEN_TIME) {
-          const key = `${dayKey}:open`
-          if (lastKey !== key) {
-            lastKey = key
-            runForHour(false).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] open failed'))
+        } else if (minutes >= OPEN_MIN) {
+          if (lastOpenKey !== dayKey) {
+            lastOpenKey = dayKey
+            runForGroups(false).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] open failed'))
           }
         }
       } catch (err) {
         logger.warn({ err: err.message }, '[AutoOpenClose] tick failed')
       }
     }, TICK_MS)
-    logger.info('[AutoOpenClose] Initialized — close 18:30, open 20:00 WIB')
+    logger.info('[AutoOpenClose] Initialized — close 23:00, open 05:00 WIB')
   },
 
   destroy() {
     if (timer) clearInterval(timer)
     timer = null
+    lastCloseKey = null
+    lastOpenKey = null
   },
 }

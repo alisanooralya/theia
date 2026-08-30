@@ -4,18 +4,17 @@ import { logger } from '#helpers/logger.js';
 
 const WIB_OFFSET = 7;
 const TICK_MS = 30_000;
-const GREET_TIME = '07:00';
+const GREET_MIN = 7 * 60;
+const GREET_WINDOW = 60;
 let timer = null;
 let lastSentKey = null;
 
-function wibParts() {
+function wibMinutes() {
   const now = new Date();
-  const hour = (now.getUTCHours() + WIB_OFFSET) % 24;
-  const hhmm = `${String(hour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
-  const dayKey = new Date(now.getTime() + WIB_OFFSET * 3_600_000)
-    .toISOString()
-    .slice(0, 10);
-  return { hhmm, dayKey };
+  const wib = new Date(now.getTime() + WIB_OFFSET * 3_600_000);
+  const dayKey = wib.toISOString().slice(0, 10);
+  const minutes = wib.getUTCHours() * 60 + wib.getUTCMinutes();
+  return { minutes, dayKey };
 }
 
 async function sendGoodMorning() {
@@ -41,8 +40,8 @@ export default {
   init() {
     timer = setInterval(() => {
       try {
-        const { hhmm, dayKey } = wibParts();
-        if (hhmm === GREET_TIME && lastSentKey !== dayKey) {
+        const { minutes, dayKey } = wibMinutes();
+        if (minutes >= GREET_MIN && minutes < GREET_MIN + GREET_WINDOW && lastSentKey !== dayKey) {
           lastSentKey = dayKey;
           sendGoodMorning().catch((err) =>
             logger.warn({ err: err.message }, '[GoodMorning] failed')
@@ -58,5 +57,6 @@ export default {
   destroy() {
     if (timer) clearInterval(timer);
     timer = null;
+    lastSentKey = null;
   },
 };
