@@ -29,7 +29,7 @@ function artifactListText(jid) {
           .map(([stat, value]) => `${artifact.statNames[stat]} +${value}`)
           .join(', ')
       : '';
-    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${subLine}${equipped}`;
+    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n\n`;
   });
   return lines.join('\n');
 }
