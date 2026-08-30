@@ -307,11 +307,15 @@ class RelicService {
     } else if (relic.level > 5) {
       cerelia = 1;
     }
-    walletModel.addCash(jid, coins);
-    if (cerelia > 0) {
-      inventoryModel.add(jid, 'cerelia', cerelia);
-    }
-    relicModel.delete(relic.id);
+
+    db.transaction(() => {
+      walletModel.addCash(jid, coins);
+      if (cerelia > 0) {
+        inventoryModel.add(jid, 'cerelia', cerelia);
+      }
+      relicModel.delete(relic.id);
+    })();
+
     return { coins, cerelia, relic };
   }
 
