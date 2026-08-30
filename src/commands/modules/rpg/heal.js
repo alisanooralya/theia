@@ -14,11 +14,13 @@ export default {
 
     const stats = statsModel.find(ctx.sender);
     const hp = stats?.hp ?? 0;
+    const maxHp = stats?.max_hp ?? 0;
+    const missing = Math.max(0, maxHp - hp);
+    if (missing <= 0) {
+      return ctx.fail('❤️ HP kamu sudah penuh.');
+    }
 
-    let price;
-    if (hp < 400) price = 1700;
-    else if (hp > 1000) price = 890;
-    else price = 1200;
+    const price = Math.ceil(missing / 100) * 100;
 
     try {
       walletModel.addCash(ctx.sender, -price);
