@@ -24,12 +24,8 @@ function artifactListText(jid) {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
     const subEntries = Object.entries(a.substats || {});
-    const subLine = subEntries.length
-      ? ' | ' + subEntries
-          .map(([stat, value]) => `${artifact.statNames[stat]} +${value}`)
-          .join(', ')
-      : '';
-    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n\n`;
+    const subLine = subEntries.length ? '\n' subEntries.map(([stat, value]) => `${artifact.statNames[stat]} +${value}`).join('\n') : '';
+    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n`;
   });
   return lines.join('\n');
 }
@@ -48,7 +44,6 @@ function helpText() {
     '*Slot:* 🌸 Flower | 🪶 Feather | ⏳ Sands | 🏆 Goblet | 👑 Circlet',
     '*Level Max:* 20',
     '*Substat:* Hanya Sands, Goblet, Circlet',
-    '*Smelt:* Dapat 70% koin yang dihabiskan untuk upgrade',
   ].join('\n');
 }
 
