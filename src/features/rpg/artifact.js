@@ -63,11 +63,17 @@ const ALL_SUBSTATS = ['hp', 'atk', 'def'];
 
 const UPGRADE_MILESTONES = [4, 8, 12, 16, 20];
 
-function interpolateSubstat(stat, level) {
+function substatUpgradeFor(stat, fromLevel) {
   const v = SUBSTAT_VALUES[stat];
   if (!v) return 0;
-  const ratio = (level - 1) / 19;
-  return Math.floor(v.min + (v.max - v.min) * ratio);
+  const nextMilestone = UPGRADE_MILESTONES.find((m) => m >= fromLevel) ?? 20;
+  const prevMilestone = [...UPGRADE_MILESTONES].reverse().find((m) => m < nextMilestone) ?? 1;
+  const steps = UPGRADE_MILESTONES.length;
+  const stepFrom = UPGRADE_MILESTONES.indexOf(nextMilestone);
+  const stepSize = Math.floor((v.max - v.min) / steps);
+  const remainder = (v.max - v.min) - stepSize * steps;
+  const extra = stepFrom < remainder ? 1 : 0;
+  return stepSize + extra;
 }
 
 const LEVELING_COSTS = {
@@ -292,15 +298,13 @@ class ArtifactService {
       }
       artifact.level = targetLevel;
       artifact.main_value = interpolateMainStat(artifact.slot, artifact.main_stat, artifact.level);
-      let crossedMilestone = false;
       for (let lv = fromLevel + 1; lv <= targetLevel; lv++) {
         if (UPGRADE_MILESTONES.includes(lv)) {
-          crossedMilestone = true;
-        }
-      }
-      if (crossedMilestone) {
-        for (const key of Object.keys(artifact.substats)) {
-          artifact.substats[key] = interpolateSubstat(key, targetLevel);
+          const subKeys = Object.keys(artifact.substats);
+          if (subKeys.length > 0) {
+            const key = subKeys[Math.floor(Math.random() * subKeys.length)];
+            artifact.substats[key] += substatUpgradeFor(key, lv);
+          }
         }
       }
       artifactModel.update(artifact);
