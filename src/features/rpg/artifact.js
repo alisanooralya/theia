@@ -321,15 +321,12 @@ class ArtifactService {
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
 
     const inventory = artifactModel.getInventory(jid);
+    let unequipNeeded = false;
     if (inventory) {
       const slotKey = `${artifact.slot}_id`;
       if (inventory[slotKey] === artifact.id) {
         inventory[slotKey] = null;
-        artifactModel.setInventory(
-          jid,
-          inventory.flower_id, inventory.feather_id,
-          inventory.sands_id, inventory.goblet_id, inventory.circlet_id
-        );
+        unequipNeeded = true;
       }
     }
 
@@ -340,11 +337,19 @@ class ArtifactService {
     }
     const coinsEarned = SMELT_BASE_VALUE + Math.floor(totalSpent * 0.7);
 
-    artifactModel.delete(artifact.id);
-
-    if (coinsEarned > 0) {
-      walletModel.addCash(jid, coinsEarned);
-    }
+    db.transaction(() => {
+      if (unequipNeeded) {
+        artifactModel.setInventory(
+          jid,
+          inventory.flower_id, inventory.feather_id,
+          inventory.sands_id, inventory.goblet_id, inventory.circlet_id
+        );
+      }
+      artifactModel.delete(artifact.id);
+      if (coinsEarned > 0) {
+        walletModel.addCash(jid, coinsEarned);
+      }
+    })();
 
     return { artifact, coinsEarned };
   }
