@@ -21,9 +21,7 @@ class GroupModel {
   update(jid, fields) {
     const allowed = [
       'name',
-      'prefix',
       'welcome',
-      'welcome_msg',
       'mute',
       'antitoxic',
       'greeting',

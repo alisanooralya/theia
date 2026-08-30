@@ -72,9 +72,7 @@ export function createSchema() {
     CREATE TABLE IF NOT EXISTS groups (
       jid         TEXT    PRIMARY KEY,
       name        TEXT    NOT NULL DEFAULT '',
-      prefix      TEXT,
       welcome     INTEGER NOT NULL DEFAULT 0,
-      welcome_msg TEXT    NOT NULL DEFAULT '',
       mute        INTEGER NOT NULL DEFAULT 0,
       antitoxic   INTEGER NOT NULL DEFAULT 0,
       greeting    INTEGER NOT NULL DEFAULT 1,
