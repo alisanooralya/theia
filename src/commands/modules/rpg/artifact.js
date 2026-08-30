@@ -23,7 +23,13 @@ function artifactListText(jid) {
   const lines = artifacts.map((a) => {
     const equipped = artifactModel.isEquipped(a.id) ? ' *[Equipped]*' : '';
     const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
-    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}`;
+    const subEntries = Object.entries(a.substats || {});
+    const subLine = subEntries.length
+      ? ' | ' + subEntries
+          .map(([stat, value]) => `${artifact.statNames[stat]} +${value}`)
+          .join(', ')
+      : '';
+    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${subLine}${equipped}`;
   });
   return lines.join('\n');
 }
@@ -34,7 +40,6 @@ function helpText() {
     '',
     '`.artifact` - Lihat artifact terpasang & inventory',
     '`.artifact list` - Lihat semua artifact di inventory',
-    '`.artifact detail <id>` - Lihat detail artifact',
     '`.artifact equip <id>` - Pasang artifact berdasarkan ID',
     '`.artifact unequip <slot>` - Lepas artifact dari slot',
     '`.artifact levelup <id>` - Naikkan level artifact',
@@ -69,19 +74,6 @@ export default {
         const artifacts = artifact.getArtifacts(ctx.sender);
         const header = `*ARTIFACT INVENTORY* (${artifacts.length})`;
         return ctx.reply(`${header}\n\n${list}`);
-      }
-
-      if (sub === 'detail') {
-        const userId = Number.parseInt(ctx.args[1], 10);
-        if (!Number.isInteger(userId) || userId < 1) {
-          return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
-        }
-        const a = artifact.getArtifact(ctx.sender, userId);
-        if (!a) return ctx.fail('Artifact tidak ditemukan.');
-        const full = artifact.formatArtifactFull(a);
-        const cost = artifact.getUpgradeCost(a);
-        const costText = cost ? `\nUpgrade: ${cost.coins} koin${cost.exp > 0 ? ` + ${cost.exp} EXP` : ''}` : '\nArtifact sudah max level!';
-        return ctx.reply(full + costText);
       }
 
       if (sub === 'equip') {
