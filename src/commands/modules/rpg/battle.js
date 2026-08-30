@@ -69,7 +69,9 @@ function buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap) {
   return lines.join('\n');
 }
 
-function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax) {
+function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap) {
+  const resolveName = (jid) => mentionMap[jid] ?? displayName(jid);
+
   if (result.draw) {
     return [
       `╭────── 🏆 DUEL RESULT ──────╮`,
@@ -83,10 +85,12 @@ function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax) {
     ].join('\n');
   }
 
-  const winName = result.winner === result.attackerJid ? aName : dName;
-  const loseName = result.loser === result.attackerJid ? aName : dName;
+  const winJid = result.winner;
+  const loseJid = result.loser;
+  const winName = winJid === result.attackerJid ? aName : dName;
+  const loseName = loseJid === result.attackerJid ? aName : dName;
   const winnerHp =
-    result.winner === result.attackerJid ? result.attackerFinalHp : result.defenderFinalHp;
+    winJid === result.attackerJid ? result.attackerFinalHp : result.defenderFinalHp;
 
   const lines = [
     `╭────── 🏆 DUEL RESULT ──────╮`,
@@ -96,27 +100,15 @@ function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax) {
     `│`,
   ];
 
-  if (result.counts.crit > 0)
-    lines.push(`│ 💥 Critical Hits: ${result.counts.crit}`);
-  if (result.counts.counter > 0)
-    lines.push(`│ ⚡ Counters: ${result.counts.counter}`);
-  if (result.counts.block > 0)
-    lines.push(`│ 🛡️ Blocks: ${result.counts.block}`);
-
-  lines.push(`│`, `│ 🏆 ${winName} wins!`, `│`, `│ 🪙 +${F.formatNumber(result.reward.cash)} Coin`, `│`, `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`, `╰─────────────────────────────╯`);
-
-  return lines.join('\n');
-}
-
-function buildHighlightsText(result, aName, dName) {
-  if (!result.highlights.length) return '';
-  const lines = [`⚔️ *Battle Highlights*`, ''];
-  for (const h of result.highlights.slice(0, 5)) {
-    lines.push(h.replace(/@\d+/g, (m) => {
-      const jid = `${m.slice(1)}@s.whatsapp.net`;
-      return displayName(jid);
-    }));
+  if (result.highlights.length) {
+    for (const h of result.highlights.slice(0, 5)) {
+      lines.push(`│ ${h.replace(/@\d+/g, (m) => resolveName(`${m.slice(1)}@s.whatsapp.net`))}`);
+    }
+    lines.push(`│`);
   }
+
+  lines.push(`│ 🏆 ${winName} wins!`, `│`, `│ 🪙 +${F.formatNumber(result.reward.cash)} Coin`, `│`, `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`, `╰─────────────────────────────╯`);
+
   return lines.join('\n');
 }
 
@@ -137,11 +129,17 @@ export async function runBattle(ctx, challenger, target, battleId) {
   const aMax = aStats.max_hp;
   const dMax = dStats.max_hp;
 
+  const mentionMap = {
+    [challenger]: `@${challenger.split('@')[0]}`,
+    [target]: `@${target.split('@')[0]}`,
+  };
+  const mentions = [challenger, target];
+
   let battleMsg;
   try {
     await ctx.react('⚔️');
     const startText = buildStartText(aName, aStats.hp, aMax, dName, dStats.hp, dMax);
-    battleMsg = await ctx.send(startText);
+    battleMsg = await ctx.send(startText, { mentions });
   } catch (err) {
     cancelBattle(battleId);
     logger.error({ err }, '[Battle] failed to send initial message');
@@ -149,7 +147,6 @@ export async function runBattle(ctx, challenger, target, battleId) {
   }
 
   const msgKey = battleMsg?.key;
-  const mentions = [challenger, target];
 
   const edit = async (text) => {
     if (!msgKey) return;
@@ -191,17 +188,12 @@ export async function runBattle(ctx, challenger, target, battleId) {
     result.attackerFinalHp,
     aMax,
     result.defenderFinalHp,
-    dMax
+    dMax,
+    mentionMap
   );
   await edit(finalText);
 
   finishBattle(battleId);
-
-  const highlights = buildHighlightsText(result, aName, dName);
-  if (highlights) {
-    await sleep(900);
-    await ctx.send(highlights, { mentions });
-  }
 }
 
 export default {
