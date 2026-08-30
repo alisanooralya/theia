@@ -177,14 +177,9 @@ export default {
   aliases: ['divergent', 'divergentuniverse'],
   category: 'rpg',
   description: 'Jelajahi Divergent Universe',
-  cooldown: 2_000,
+  cooldown: 2_000, isProblem: true,
 
   async execute(ctx) {
-    if (!ctx.isPrivate) {
-      return ctx.fail(
-        'Divergent Universe hanya bisa dimainkan di private chat.'
-      );
-    }
     const sub = ctx.args[0]?.toLowerCase() || 'help';
 
     try {
