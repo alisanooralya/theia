@@ -54,14 +54,21 @@ const MAIN_STAT_SCALING = {
 };
 
 const SUBSTAT_VALUES = {
-  hp: { base: 3, upgrade: 5 },
-  atk: { base: 1, upgrade: 2 },
-  def: { base: 1, upgrade: 2 },
+  atk: { min: 12, max: 34 },
+  hp: { min: 48, max: 74 },
+  def: { min: 69, max: 121 },
 };
 
 const ALL_SUBSTATS = ['hp', 'atk', 'def'];
 
 const UPGRADE_MILESTONES = [4, 8, 12, 16, 20];
+
+function interpolateSubstat(stat, level) {
+  const v = SUBSTAT_VALUES[stat];
+  if (!v) return 0;
+  const ratio = (level - 1) / 19;
+  return Math.floor(v.min + (v.max - v.min) * ratio);
+}
 
 const LEVELING_COSTS = {
   1: { coins: 500, exp: 0 },
@@ -166,7 +173,7 @@ class ArtifactService {
       for (let i = 0; i < count && available.length > 0; i++) {
         const idx = Math.floor(Math.random() * available.length);
         const stat = available.splice(idx, 1)[0];
-        substats[stat] = SUBSTAT_VALUES[stat].base;
+        substats[stat] = SUBSTAT_VALUES[stat].min;
       }
     }
     const name = randomName(slot);
@@ -285,13 +292,15 @@ class ArtifactService {
       }
       artifact.level = targetLevel;
       artifact.main_value = interpolateMainStat(artifact.slot, artifact.main_stat, artifact.level);
+      let crossedMilestone = false;
       for (let lv = fromLevel + 1; lv <= targetLevel; lv++) {
         if (UPGRADE_MILESTONES.includes(lv)) {
-          const subKeys = Object.keys(artifact.substats);
-          if (subKeys.length > 0) {
-            const key = subKeys[Math.floor(Math.random() * subKeys.length)];
-            artifact.substats[key] += SUBSTAT_VALUES[key].upgrade;
-          }
+          crossedMilestone = true;
+        }
+      }
+      if (crossedMilestone) {
+        for (const key of Object.keys(artifact.substats)) {
+          artifact.substats[key] = interpolateSubstat(key, targetLevel);
         }
       }
       artifactModel.update(artifact);
