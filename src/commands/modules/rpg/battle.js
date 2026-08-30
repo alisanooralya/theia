@@ -178,7 +178,7 @@ export async function runBattle(ctx, challenger, target, battleId) {
     const dHp = snap.dHp;
     const snapText = buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap);
     await edit(snapText);
-    await sleep(1400);
+    await sleep(2700);
   }
 
   const finalText = buildResultText(
