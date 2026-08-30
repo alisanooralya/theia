@@ -10,7 +10,7 @@ export default {
   name: 'use',
   aliases: ['pakai', 'makan', 'consume'],
   category: 'rpg',
-  description: 'Pakai item consumable (food, buff), bisa beberapa sekaligus',
+  description: 'Pakai item consumable (food, buff)',
   cooldown: 3_000,
 
   async execute(ctx) {
