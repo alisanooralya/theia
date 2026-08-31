@@ -12,7 +12,7 @@ const CRIMES = [
     exp: 25,
     successChance: 0.55,
     caughtChance: 0.3,
-    prisonMs: 10 * 60 * 1000,
+    prisonMs: 4 * 60 * 60 * 1000,
   },
   {
     name: 'hacker',
@@ -22,7 +22,7 @@ const CRIMES = [
     exp: 35,
     successChance: 0.4,
     caughtChance: 0.45,
-    prisonMs: 25 * 60 * 1000,
+    prisonMs: 12 * 60 * 60 * 1000,
   },
   {
     name: 'copet',
@@ -32,7 +32,7 @@ const CRIMES = [
     exp: 15,
     successChance: 0.75,
     caughtChance: 0.15,
-    prisonMs: 5 * 60 * 1000,
+    prisonMs: 4 * 60 * 60 * 1000,
   },
   {
     name: 'judi online',
@@ -46,7 +46,7 @@ const CRIMES = [
     caughtChance: 0.18,
     jackpotReward: [15000, 30000],
     loseCost: [500, 2000],
-    prisonMs: 15 * 60 * 1000,
+    prisonMs: 12 * 60 * 60 * 1000,
   },
   {
     name: 'skimming ATM',
@@ -56,7 +56,7 @@ const CRIMES = [
     exp: 40,
     successChance: 0.35,
     caughtChance: 0.5,
-    prisonMs: 40 * 60 * 1000,
+    prisonMs: 24 * 60 * 60 * 1000,
   },
 ];
 
@@ -122,6 +122,7 @@ export default {
     if (outcome === 'success' || outcome === 'jackpot') {
       const range = outcome === 'jackpot' ? crime.jackpotReward : crime.reward;
       const reward = randInt(range[0], range[1]);
+
       await walletModel.reward(ctx.sender, reward, `crime: ${crime.name}`);
       const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, crime.exp);
       const label = outcome === 'jackpot' ? 'JACKPOT!' : 'Berhasil!';
@@ -139,6 +140,7 @@ export default {
       const lose = randInt(crime.loseCost[0], crime.loseCost[1]);
       const wallet = await walletModel.find(ctx.sender);
       const actualLose = Math.min(lose, wallet?.cash ?? 0);
+
       if (actualLose > 0) await walletModel.addCash(ctx.sender, -actualLose);
       let text = `${title}\n\nKalah dalam judi online!\n🪙 -${F.formatNumber(actualLose)} Coin`;
       if (actualLose === 0) text += `\nUntungnya kamu tidak punya uang untuk dibawa kalah. 😅`;
@@ -167,7 +169,6 @@ export default {
       return;
     }
 
-    // fail
     const text = `${title}\n\nGagal melakukan aksi.\nUntungnya kamu berhasil kabur. 💨`;
     await sendResult(ctx, firstMsg.key, text);
   },
