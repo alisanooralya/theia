@@ -14,6 +14,11 @@ export const sql = postgres(DATABASE_URL, {
   idle_timeout: 20,
   connect_timeout: 10,
   ssl: { rejectUnauthorized: false },
+  onnotice: (notice) => {
+    const severity = notice?.severity ?? '';
+    if (severity === 'NOTICE' || severity === 'INFO') return;
+    logger.warn({ err: notice }, 'Database notice');
+  },
 });
 
 export function configureDatabase() {
