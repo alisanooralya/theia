@@ -75,5 +75,4 @@ const ITEMS = [
 ];
 
 await itemModel.bulkUpsert(ITEMS);
-logger.info(`Seeded ${ITEMS.length} items`);
 logger.info('Seed complete — run: npm run dev');

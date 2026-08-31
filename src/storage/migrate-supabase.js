@@ -4,11 +4,6 @@ import { mkdirSync } from 'fs';
 import { sql } from '#storage/connection.js';
 import { logger } from '#helpers/logger.js';
 
-// Script migrasi data dari SQLite lama (data/database.db) ke Supabase/Postgres.
-// Jalankan: npm run db:supabase
-// Sebelumnya pastikan supabaseDbUrl sudah diisi di src/environment/config.js
-// dan skema sudah dibuat (npm run db:migrate).
-
 const SOURCE = resolve('./data/database.db');
 const TABLES = [
   'users',
@@ -39,7 +34,6 @@ function quoteIdent(name) {
 }
 
 function inferCast(table, col) {
-  // Postgres COUNT(*) returns bigint -> string by postgres.js; not relevant here.
   return null;
 }
 

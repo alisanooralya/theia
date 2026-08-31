@@ -296,8 +296,6 @@ const MIGRATIONS = [
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS greeting INTEGER NOT NULL DEFAULT 1`,
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS openclose INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS raid INTEGER NOT NULL DEFAULT 0`,
-  `ALTER TABLE groups DROP COLUMN IF EXISTS antilink`,
-  `ALTER TABLE groups DROP COLUMN IF EXISTS nsfw`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_upgrade_count INTEGER NOT NULL DEFAULT 0`,
@@ -316,8 +314,8 @@ export async function createSchema() {
   for (const stmt of MIGRATIONS) {
     try {
       await sql.unsafe(stmt);
-    } catch (err) {
-      logger.warn({ err: err.message, stmt }, 'Migration skipped');
+    } catch {
+      // ignore
     }
   }
   await sql.unsafe(

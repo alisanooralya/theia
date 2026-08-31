@@ -8,7 +8,6 @@ export async function initializeDatabase() {
     await createSchema();
     logger.info('Database initialized');
   } catch (err) {
-    logger.fatal({ err }, 'Database initialization failed');
     throw err;
   }
 }
