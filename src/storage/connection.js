@@ -13,6 +13,7 @@ export const sql = postgres(DATABASE_URL, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  prepare: false,
   ssl: { rejectUnauthorized: false },
   onnotice: (notice) => {
     const severity = notice?.severity ?? '';
