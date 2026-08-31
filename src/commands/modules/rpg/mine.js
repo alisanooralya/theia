@@ -4,12 +4,12 @@ import { F } from '#helpers/index.js';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const MINERALS = [
-  { name: 'Batu Bara', reward: [100, 300], exp: 5, emoji: '🪨', rate: 40 },
-  { name: 'Bijih Besi', reward: [300, 700], exp: 10, emoji: '⛏️', rate: 28 },
-  { name: 'Tembaga', reward: [500, 1200], exp: 15, emoji: '🟤', rate: 18 },
-  { name: 'Perak', reward: [1000, 2500], exp: 25, emoji: '🥈', rate: 9 },
-  { name: 'Emas', reward: [3000, 6000], exp: 50, emoji: '🥇', rate: 4 },
-  { name: 'Berlian', reward: [5000, 10000], exp: 80, emoji: '💎', rate: 1 },
+  { name: 'Batu Bara', reward: [130, 380], exp: 5, emoji: '🪨', rate: 40 },
+  { name: 'Bijih Besi', reward: [380, 900], exp: 10, emoji: '⛏️', rate: 28 },
+  { name: 'Tembaga', reward: [650, 1500], exp: 15, emoji: '🟤', rate: 18 },
+  { name: 'Perak', reward: [1300, 3200], exp: 25, emoji: '🥈', rate: 9 },
+  { name: 'Emas', reward: [3800, 7700], exp: 50, emoji: '🥇', rate: 4 },
+  { name: 'Berlian', reward: [6500, 13000], exp: 80, emoji: '💎', rate: 1 },
 ];
 
 function pickMineral() {
