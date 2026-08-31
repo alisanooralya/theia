@@ -6,7 +6,7 @@ export default {
   name: 'heal',
   aliases: ['sembuh', 'recover'],
   category: 'rpg',
-  description: 'Heal HP kamu ke maksimum',
+  description: 'Heal HP (semakin banyak bayar, semakin banyak HP)',
   cooldown: 12 * 60 * 60 * 1000,
 
   async execute(ctx) {
@@ -15,9 +15,10 @@ export default {
       statsModel.ensure(ctx.sender),
     ]);
 
-    const [stats, pStats] = await Promise.all([
+    const [stats, pStats, wallet] = await Promise.all([
       statsModel.find(ctx.sender),
       artifactService.getPlayerStats(ctx.sender),
+      walletModel.find(ctx.sender),
     ]);
     const hp = stats?.hp ?? 0;
     const maxHp = pStats.hp;
@@ -26,20 +27,32 @@ export default {
       return ctx.fail('❤️ HP kamu sudah penuh.');
     }
 
-    const price = Math.ceil(missing / 100) * 100;
+    // Harga penuh untuk heal 100% (pembulatan ke atas per 100 HP).
+    const fullPrice = Math.ceil(missing / 100) * 100;
+    const coinsPerHp = fullPrice / missing;
 
-    try {
-      await walletModel.addCash(ctx.sender, -price);
-    } catch {
+    const cash = wallet?.cash ?? 0;
+    const healable = Math.min(missing, Math.floor(cash / coinsPerHp));
+    if (healable <= 0) {
       return ctx.fail(
-        `❌ Cash tidak cukup untuk heal. Butuh 🪙${F.formatNumber(price)}.`
+        `❌ Cash tidak cukup untuk heal. Butuh 🪙${F.formatNumber(fullPrice)} untuk HP penuh.`
       );
     }
 
-    await statsModel.setHp(ctx.sender, maxHp);
-    const after = await statsModel.find(ctx.sender);
-    await ctx.reply(
-      `❤️ *Heal berhasil!* (-🪙${F.formatNumber(price)})\nHP penuh: ${after.hp}/${maxHp}`
-    );
+    const cost = Math.ceil(healable * coinsPerHp);
+    await walletModel.addCash(ctx.sender, -cost);
+
+    const newHp = Math.min(maxHp, hp + healable);
+    await statsModel.setHp(ctx.sender, newHp);
+
+    if (newHp >= maxHp) {
+      await ctx.reply(
+        `❤️ *Heal berhasil!* (-🪙${F.formatNumber(cost)})\nHP penuh: ${newHp}/${maxHp}`
+      );
+    } else {
+      await ctx.reply(
+        `❤️ *Heal berhasil!* (-🪙${F.formatNumber(cost)})\nHP: ${newHp}/${maxHp}\n💡 Kamu belum full HP. Coba lagi jika punya cukup cash (butuh 🪙${F.formatNumber(fullPrice - cost)} lagi).`
+      );
+    }
   },
 };
