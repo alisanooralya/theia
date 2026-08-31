@@ -1,6 +1,6 @@
 import { logger } from '#helpers/logger.js';
 
-const RATE_LIMIT_MS = 3_000;
+const RATE_LIMIT_MS = 800;
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1_000;
 
@@ -23,12 +23,11 @@ function makeDedupKey(jid, content, options) {
 }
 
 export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
-  let chain = Promise.resolve();
-  let lastSentAt = 0;
   let pending = 0;
 
   const groups = new Map();
   const order = [];
+  const lastSentAt = new Map();
   let cursor = -1;
   const pendingDedup = new Map();
 
@@ -84,14 +83,16 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
         continue;
       }
 
+      // Rate limit is per-chat, so a reply in one group doesn't delay others.
       const now = Date.now();
-      const wait = Math.max(0, lastSentAt + rateLimitMs - now);
+      const lastForJid = lastSentAt.get(task.jid) ?? 0;
+      const wait = Math.max(0, lastForJid + rateLimitMs - now);
       if (wait > 0) await sleep(wait);
 
       const { jid, content, options, dedupKey } = task;
       try {
         const result = await sendFn(jid, content, options);
-        lastSentAt = Date.now();
+        lastSentAt.set(jid, Date.now());
         pending--;
         if (dedupKey) pendingDedup.delete(dedupKey);
         task.resolve(result);
