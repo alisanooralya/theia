@@ -3,6 +3,7 @@ import {
   inventoryModel,
   itemModel,
 } from '#storage/models/index.js';
+import { artifactService } from '#features/rpg/artifact.js';
 
 const BUFF_DURATION = 3_600_000;
 
@@ -54,11 +55,13 @@ export default {
 
     if (data.heal) {
       const stats = await statsModel.find(ctx.sender);
-      if (stats.hp >= stats.max_hp) ctx.fail('❤️ HP kamu sudah penuh!');
+      const pStats = await artifactService.getPlayerStats(ctx.sender);
+      const maxHp = pStats.hp;
+      if (stats.hp >= maxHp) ctx.fail('❤️ HP kamu sudah penuh!');
       const before = stats.hp;
-      await statsModel.addHp(ctx.sender, data.heal * count);
-      const after = (await statsModel.find(ctx.sender)).hp;
-      msg = `❤️ HP +${after - before} (${after}/${stats.max_hp})`;
+      const after = Math.min(maxHp, before + data.heal * count);
+      await statsModel.setHp(ctx.sender, after);
+      msg = `❤️ HP +${after - before} (${after}/${maxHp})`;
     } else if (data.atk) {
       await statsModel.applyBuff(ctx.sender, {
         atk: data.atk * count,

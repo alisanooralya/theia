@@ -1,4 +1,5 @@
 import { battleService } from '#features/combat/battle.js';
+import { artifactService } from '#features/rpg/artifact.js';
 import {
   registerPendingBattle,
   BATTLE_CONFIRM_TTL,
@@ -133,8 +134,10 @@ export async function runBattle(ctx, challenger, target, battleId) {
 
   const aName = await displayName(challenger);
   const dName = await displayName(target);
-  const aMax = aStats.max_hp;
-  const dMax = dStats.max_hp;
+  const aEff = await artifactService.getPlayerStats(challenger);
+  const dEff = await artifactService.getPlayerStats(target);
+  const aMax = aEff.hp;
+  const dMax = dEff.hp;
 
   const mentionMap = {
     [challenger]: `@${challenger.split('@')[0]}`,

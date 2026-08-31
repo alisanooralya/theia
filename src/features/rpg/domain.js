@@ -78,7 +78,7 @@ class DomainService {
 
     const player = {
       hp: base.hp,
-      max_hp: base.max_hp,
+      max_hp: pStats.hp,
       atk: effAtk,
       def: effDef,
       critRate: pStats.critRate / 100,

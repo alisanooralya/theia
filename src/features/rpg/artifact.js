@@ -214,6 +214,14 @@ class ArtifactService {
     return artifactModel.getInventory(jid);
   }
 
+  async _clampHp(jid) {
+    const pStats = await this.getPlayerStats(jid);
+    const s = await statsModel.find(jid);
+    if (s && s.hp > pStats.hp) {
+      await statsModel.setHp(jid, pStats.hp);
+    }
+  }
+
   async equip(jid, userId) {
     const artifact = await artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
@@ -227,6 +235,7 @@ class ArtifactService {
       inventory.flower_id, inventory.feather_id,
       inventory.sands_id, inventory.goblet_id, inventory.circlet_id
     );
+    await this._clampHp(jid);
     return artifact;
   }
 
@@ -243,6 +252,7 @@ class ArtifactService {
       inventory.flower_id, inventory.feather_id,
       inventory.sands_id, inventory.goblet_id, inventory.circlet_id
     );
+    await this._clampHp(jid);
     return artifactModel.findById(artifactId);
   }
 
@@ -351,6 +361,8 @@ class ArtifactService {
         await walletModel.addCash(jid, coinsEarned, t);
       }
     });
+
+    if (unequipNeeded) await this._clampHp(jid);
 
     return { artifact, coinsEarned };
   }

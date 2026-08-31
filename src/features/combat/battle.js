@@ -57,7 +57,7 @@ class BattleService {
     const attacker = {
       jid: attackerJid,
       hp: aBase.hp,
-      max_hp: aBase.max_hp,
+      max_hp: aStats.hp,
       atk: effAtk(aBase, aStats),
       def: effDef(aBase, aStats),
       critRate: clamp(aStats.critRate / 100, 0, 0.95),
@@ -65,7 +65,7 @@ class BattleService {
     const defender = {
       jid: defenderJid,
       hp: dBase.hp,
-      max_hp: dBase.max_hp,
+      max_hp: dStats.hp,
       atk: effAtk(dBase, dStats),
       def: effDef(dBase, dStats),
       critRate: clamp(dStats.critRate / 100, 0, 0.95),
@@ -95,7 +95,14 @@ class BattleService {
       await statsModel.setHp(attackerJid, Math.max(0, sim.aFinalHp), t);
       await statsModel.setHp(defenderJid, Math.max(0, sim.dFinalHp), t);
       if (!draw) {
-        await statsModel.addHp(winner, Math.floor(aBase.max_hp * HEAL_AFTER_PCT), t);
+        const winnerMax = winner === attackerJid ? aStats.hp : dStats.hp;
+        const winnerHp = winner === attackerJid ? sim.aFinalHp : sim.dFinalHp;
+        const healAfter = Math.floor(winnerMax * HEAL_AFTER_PCT);
+        await statsModel.setHp(
+          winner,
+          Math.min(winnerMax, winnerHp + healAfter),
+          t
+        );
         await statsModel.recordWin(winner, t);
         await statsModel.recordLoss(loser, t);
         await walletModel.reward(winner, rewardCash, 'battle win', t);
