@@ -1,5 +1,4 @@
 import { initializeDatabase } from '#storage/initializer.js';
-import { db } from '#storage/connection.js';
 import { logger } from '#helpers/logger.js';
 
 await initializeDatabase();
@@ -75,6 +74,6 @@ const ITEMS = [
   },
 ];
 
-itemModel.bulkUpsert(ITEMS);
+await itemModel.bulkUpsert(ITEMS);
 logger.info(`Seeded ${ITEMS.length} items`);
 logger.info('Seed complete — run: npm run dev');

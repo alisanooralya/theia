@@ -6,7 +6,7 @@
  *   1. `permission: 'owner'` in the registry (checked by the agent loop), and
  *   2. server-side `assertOwner(ctx)` inside execute() (defense in depth).
  */
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import { userModel } from '#storage/models/index.js';
 import { phoneToJid } from '#helpers/identifier.js';
 import { F } from '#helpers/index.js';
@@ -29,19 +29,25 @@ export const ownerTools = [
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
       assertOwner(ctx);
+      const [users] = await sql`SELECT COUNT(*)::int AS c FROM users`;
+      const [groups] = await sql`SELECT COUNT(*)::int AS c FROM groups`;
+      const [premium] = await sql`SELECT COUNT(*)::int AS c FROM users WHERE premium = 1`;
+      const [banned] = await sql`SELECT COUNT(*)::int AS c FROM users WHERE banned = 1`;
+      const [transactions] = await sql`SELECT COUNT(*)::int AS c FROM transactions`;
+      const [items] = await sql`SELECT COUNT(*)::int AS c FROM items`;
+      let quests = 0;
+      try {
+        const [q] = await sql`SELECT COUNT(*)::int AS c FROM quests`;
+        quests = q?.c ?? 0;
+      } catch {}
       const counts = {
-        users: db.prepare('SELECT COUNT(*) as c FROM users').get()?.c ?? 0,
-        groups: db.prepare('SELECT COUNT(*) as c FROM groups').get()?.c ?? 0,
-        premium:
-          db.prepare('SELECT COUNT(*) as c FROM users WHERE premium = 1').get()
-            ?.c ?? 0,
-        banned:
-          db.prepare('SELECT COUNT(*) as c FROM users WHERE banned = 1').get()
-            ?.c ?? 0,
-        transactions:
-          db.prepare('SELECT COUNT(*) as c FROM transactions').get()?.c ?? 0,
-        items: db.prepare('SELECT COUNT(*) as c FROM items').get()?.c ?? 0,
-        quests: db.prepare('SELECT COUNT(*) as c FROM quests').get()?.c ?? 0,
+        users: users?.c ?? 0,
+        groups: groups?.c ?? 0,
+        premium: premium?.c ?? 0,
+        banned: banned?.c ?? 0,
+        transactions: transactions?.c ?? 0,
+        items: items?.c ?? 0,
+        quests,
       };
       return { success: true, data: counts };
     },
@@ -80,7 +86,7 @@ export const ownerTools = [
       }
       const targetJid = phoneToJid(phone);
       if (args.action === 'remove') {
-        userModel.removePremium(targetJid);
+        await userModel.removePremium(targetJid);
         return {
           success: true,
           message: `Premium ${phone} dicabut.`,
@@ -89,8 +95,8 @@ export const ownerTools = [
       }
       if (args.action === 'add') {
         const days = Math.max(1, Math.floor(Number(args.days) || 30));
-        userModel.ensure(targetJid);
-        userModel.setPremium(targetJid, days * 24 * 60 * 60 * 1000);
+        await userModel.ensure(targetJid);
+        await userModel.setPremium(targetJid, days * 24 * 60 * 60 * 1000);
         return {
           success: true,
           message: `Premium ${phone} aktif selama ${days} hari.`,
@@ -131,7 +137,7 @@ export const ownerTools = [
       if (targetJid === ctx.userId)
         return { success: false, error: 'Tidak bisa ban diri sendiri.' };
       if (args.action === 'unban') {
-        userModel.unban(targetJid);
+        await userModel.unban(targetJid);
         return {
           success: true,
           message: `${phone} berhasil di-unban.`,
@@ -139,8 +145,8 @@ export const ownerTools = [
         };
       }
       if (args.action === 'ban') {
-        userModel.ensure(targetJid);
-        userModel.ban(targetJid);
+        await userModel.ensure(targetJid);
+        await userModel.ban(targetJid);
         return {
           success: true,
           message: `${phone} berhasil di-ban.`,

@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import { getSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 
@@ -20,7 +20,7 @@ function wibMinutes() {
 async function sendGoodMorning() {
   const sock = getSocket();
   if (!sock) return;
-  const groups = db.prepare('SELECT jid FROM groups WHERE greeting = 1').all();
+  const groups = await sql`SELECT jid FROM groups WHERE greeting = 1`;
   for (const { jid } of groups) {
     try {
       const meta = await sock.groupMetadata(jid);

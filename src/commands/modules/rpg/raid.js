@@ -89,7 +89,7 @@ export default {
     const sub = ctx.args[0]?.toLowerCase() || 'status';
 
     try {
-      userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+      await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
       if (!raidService) {
         const mod = await import('#features/rpg/raid.js');
@@ -102,22 +102,22 @@ export default {
       }
 
       if (sub === 'join') {
-        const { raid: raidData, participant } = raidService.join(ctx.sender);
+        const { raid: raidData, participant } = await raidService.join(ctx.sender);
         return ctx.reply(`✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`);
       }
 
       if (sub === 'attack' || sub === 'serang') {
-        raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
+        await raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
         return ctx.reply('⚔️ Menyerang boss!\nKetik `.raid stop` untuk berhenti.');
       }
 
       if (sub === 'stop') {
-        raidService.stop(ctx.sender);
+        await raidService.stop(ctx.sender);
         return ctx.reply('🛑 Penyerangan dihentikan. HP akan recovery. Ketik `.raid attack` untuk lanjut.');
       }
 
       if (sub === 'claim') {
-        const result = raidService.claimReward(ctx.sender);
+        const result = await raidService.claimReward(ctx.sender);
         return ctx.reply([
           '🎁 *RAID REWARD*',
           '',
@@ -128,7 +128,7 @@ export default {
         ].join('\n'));
       }
 
-      const raidData = raidService.getRaidInfo();
+      const raidData = await raidService.getRaidInfo();
       if (!raidData || !raidData.isLive) {
         const sched = raidService.getScheduleInfo();
         return ctx.reply(
@@ -136,7 +136,7 @@ export default {
         );
       }
 
-      const participant = raidModel.getParticipant(raidData.raid.id, ctx.sender);
+      const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
       return ctx.reply(statusText(raidData, participant));
     } catch (error) {
       return ctx.fail(error.message);

@@ -15,18 +15,18 @@ export default {
     const prefix = SETTINGS.prefix || '.';
     const isAfkCmd =
       text === `${prefix}afk` || text.startsWith(`${prefix}afk `);
-    const isMuted = parsed.isGroup && groupModel.isMuted(parsed.jid);
+    const isMuted = parsed.isGroup && await groupModel.isMuted(parsed.jid);
 
-    userModel.ensure(jid, { pushName: parsed.pushName || '' });
+    await userModel.ensure(jid, { pushName: parsed.pushName || '' });
 
-    const existing = afkModel.get(jid);
+    const existing = await afkModel.get(jid);
 
     if (existing && !isAfkCmd) {
       const durMs = Date.now() - existing.started_at * 1000;
       const hours = Math.floor(durMs / HOUR_MS);
       const coins = hours * COIN_PER_HOUR;
-      if (coins > 0) walletModel.reward(jid, coins, 'afk');
-      afkModel.remove(jid);
+      if (coins > 0) await walletModel.reward(jid, coins, 'afk');
+      await afkModel.remove(jid);
       await sock
         .sendMessage(
           parsed.jid,
@@ -45,7 +45,7 @@ export default {
     if (isAfkCmd) {
       if (isMuted) return true;
       const reason = text.slice(`${prefix}afk`.length).trim();
-      afkModel.set(jid, reason);
+      await afkModel.set(jid, reason);
       await sock
         .sendMessage(
           parsed.jid,
@@ -63,10 +63,10 @@ export default {
     if (parsed.mentions?.length && !isMuted) {
       for (const m of parsed.mentions) {
         if (m === jid) continue;
-        const a = afkModel.get(m);
+        const a = await afkModel.get(m);
         if (a) {
           const durMs = Date.now() - a.started_at * 1000;
-          const name = userModel.findById(m)?.push_name || m.split('@')[0];
+          const name = (await userModel.findById(m))?.push_name || m.split('@')[0];
           await sock
             .sendMessage(parsed.jid, {
               text:

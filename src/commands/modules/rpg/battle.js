@@ -18,8 +18,8 @@ import { logger } from '#helpers/logger.js';
 
 const HP_BAR_LEN = 10;
 
-function displayName(jid) {
-  const u = userModel.findById(jid);
+async function displayName(jid) {
+  const u = await userModel.findById(jid);
   return u?.push_name || jid.split('@')[0];
 }
 
@@ -69,8 +69,8 @@ function buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap) {
   return lines.join('\n');
 }
 
-function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap) {
-  const resolveName = (jid) => mentionMap[jid] ?? displayName(jid);
+async function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap) {
+  const resolveName = async (jid) => mentionMap[jid] ?? await displayName(jid);
 
   if (result.draw) {
     return [
@@ -101,8 +101,15 @@ function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap)
   ];
 
   if (result.highlights.length) {
+    const resolveMap = {};
     for (const h of result.highlights.slice(0, 5)) {
-      lines.push(`│ ${h.replace(/@\d+/g, (m) => resolveName(`${m.slice(1)}@s.whatsapp.net`))}`);
+      for (const m of h.matchAll(/@(\d+)/g)) {
+        const jid = `${m[1]}@s.whatsapp.net`;
+        if (!(jid in resolveMap)) resolveMap[jid] = await resolveName(jid);
+      }
+    }
+    for (const h of result.highlights.slice(0, 5)) {
+      lines.push(`│ ${h.replace(/@\d+/g, (m) => resolveMap[`${m.slice(1)}@s.whatsapp.net`])}`);
     }
     lines.push(`│`);
   }
@@ -113,8 +120,8 @@ function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap)
 }
 
 export async function runBattle(ctx, challenger, target, battleId) {
-  const aStats = statsModel.ensure(challenger);
-  const dStats = statsModel.ensure(target);
+  const aStats = await statsModel.ensure(challenger);
+  const dStats = await statsModel.ensure(target);
   if (aStats.hp <= 0) return ctx.reply('❤️ HP kamu 0! Pakai `!heal` dulu.');
   if (dStats.hp <= 0)
     return ctx.reply('❤️ HP lawan sedang 0, tunggu dia heal dulu.');
@@ -124,8 +131,8 @@ export async function runBattle(ctx, challenger, target, battleId) {
     return ctx.reply('❌ Battle tidak bisa dimulai (salah satu player sedang dalam battle lain).');
   }
 
-  const aName = displayName(challenger);
-  const dName = displayName(target);
+  const aName = await displayName(challenger);
+  const dName = await displayName(target);
   const aMax = aStats.max_hp;
   const dMax = dStats.max_hp;
 
@@ -164,7 +171,7 @@ export async function runBattle(ctx, challenger, target, battleId) {
 
   let result;
   try {
-    result = battleService.fight(challenger, target);
+    result = await battleService.fight(challenger, target);
     result.attackerJid = challenger;
   } catch (err) {
     cancelBattle(battleId);
@@ -181,7 +188,7 @@ export async function runBattle(ctx, challenger, target, battleId) {
     await sleep(2700);
   }
 
-  const finalText = buildResultText(
+  const finalText = await buildResultText(
     result,
     aName,
     dName,
@@ -222,12 +229,12 @@ export default {
     if (isInBattle(targetJid))
       ctx.fail('❌ Lawan sedang berada dalam battle lain.');
 
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-    const target = userModel.findById(targetJid);
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    const target = await userModel.findById(targetJid);
     if (!target) ctx.fail('❌ User tersebut belum terdaftar.');
 
-    const aStats = statsModel.ensure(ctx.sender);
-    const dStats = statsModel.ensure(targetJid);
+    const aStats = await statsModel.ensure(ctx.sender);
+    const dStats = await statsModel.ensure(targetJid);
     if (aStats.hp <= 0) return ctx.fail('❤️ HP kamu 0! Pakai `!heal` dulu.');
     if (dStats.hp <= 0)
       return ctx.fail('❤️ HP lawan sedang 0, tunggu dia heal dulu.');

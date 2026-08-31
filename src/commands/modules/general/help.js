@@ -1,7 +1,6 @@
 import os from 'os';
 import { jidNormalizedUser } from 'baileys';
 import { commandRegistry } from '#commands/registry.js';
-import { botConfigModel } from '#storage/models/index.js';
 import SETTINGS from '#environment/settings.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
@@ -50,9 +49,8 @@ export default {
     const categories = commandRegistry.getCategories();
     const privileged = await isPrivileged(ctx);
     const hidden = privileged ? [] : ['owner', 'group'];
-    const prefix = botConfigModel.get('bot_prefix') || SETTINGS.prefix;
-    const botName = botConfigModel.get('bot_name') || SETTINGS.botName;
-    const footerText = botConfigModel.get('footer_text');
+    const prefix = SETTINGS.prefix;
+    const botName = SETTINGS.botName;
 
     let text = [
       `╭──┄  *DASHBOARD*  ┄──`,
@@ -85,7 +83,6 @@ export default {
       );
     }
 
-    if (footerText) sections.push(`_${footerText}_`);
     text += `\n${more.repeat(4001)}\n` + sections.join('\n');
 
     await ctx.reply(text);

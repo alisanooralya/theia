@@ -10,8 +10,8 @@ export default {
 
   async execute(ctx) {
     try {
-      userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-      const raidCoin = raid.getRaidCoin(ctx.sender);
+      await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+      const raidCoin = await raid.getRaidCoin(ctx.sender);
 
       return ctx.reply([
         '╭──── 🏪 *RAID SHOP* ────╮',

@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js'
+import { sql } from '#storage/connection.js'
 import { getSocket } from '#helpers/shutdown.js'
 import { logger } from '#helpers/logger.js'
 
@@ -33,7 +33,7 @@ async function applyState(jid, wantClosed) {
 }
 
 async function runForGroups(wantClosed) {
-  const groups = db.prepare('SELECT jid FROM groups WHERE openclose = 1').all()
+  const groups = await sql`SELECT jid FROM groups WHERE openclose = 1`
   for (const { jid } of groups) {
     await applyState(jid, wantClosed)
   }

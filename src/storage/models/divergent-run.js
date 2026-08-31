@@ -1,80 +1,60 @@
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class DivergentRunModel {
-  _find = lazyPrepare('SELECT * FROM divergent_runs WHERE jid = ?');
-  _findActiveByChat = lazyPrepare(`
-    SELECT dr.*, u.push_name
-    FROM divergent_runs dr
-    LEFT JOIN users u ON u.jid = dr.jid
-    WHERE dr.chat_jid = ? AND dr.status = 'active'
-  `);
-  _create = lazyPrepare(`
-    INSERT INTO divergent_runs (jid, chat_jid, status, state)
-    VALUES (@jid, @chatJid, @status, @state)
-    ON CONFLICT(jid) DO UPDATE SET
-      chat_jid = excluded.chat_jid,
-      status = excluded.status,
-      state = excluded.state,
-      revision = divergent_runs.revision + 1,
-      created_at = unixepoch(),
-      updated_at = unixepoch()
-  `);
-  _save = lazyPrepare(`
-    UPDATE divergent_runs
-    SET status = @status, state = @state, revision = revision + 1,
-        updated_at = unixepoch()
-    WHERE jid = @jid AND revision = @revision
-  `);
-  _remove = lazyPrepare('DELETE FROM divergent_runs WHERE jid = ?');
-  _bindChat = lazyPrepare(`
-    UPDATE divergent_runs
-    SET chat_jid = @chatJid, revision = revision + 1,
-        updated_at = unixepoch()
-    WHERE jid = @jid AND status = 'active' AND chat_jid IS NULL
-  `);
-
-  find(jid) {
-    const row = this._find().get(jid);
-    if (!row) return null;
-    return { ...row, state: JSON.parse(row.state) };
+  async find(jid, client = sql) {
+    const rows = await client`SELECT * FROM divergent_runs WHERE jid = ${jid}`;
+    if (!rows[0]) return null;
+    return { ...rows[0], state: JSON.parse(rows[0].state) };
   }
 
-  findActiveByChat(chatJid) {
-    const row = this._findActiveByChat().get(chatJid);
-    if (!row) return null;
-    return { ...row, state: JSON.parse(row.state) };
+  async findActiveByChat(chatJid, client = sql) {
+    const rows = await client`
+      SELECT dr.*, u.push_name
+      FROM divergent_runs dr
+      LEFT JOIN users u ON u.jid = dr.jid
+      WHERE dr.chat_jid = ${chatJid} AND dr.status = 'active'
+    `;
+    if (!rows[0]) return null;
+    return { ...rows[0], state: JSON.parse(rows[0].state) };
   }
 
-  create(jid, chatJid, state, status = 'active') {
-    this._create().run({
-      jid,
-      chatJid,
-      status,
-      state: JSON.stringify(state),
-    });
-    return this.find(jid);
+  async create(jid, chatJid, state, status = 'active', client = sql) {
+    await client`
+      INSERT INTO divergent_runs (jid, chat_jid, status, state)
+      VALUES (${jid}, ${chatJid}, ${status}, ${JSON.stringify(state)})
+      ON CONFLICT (jid) DO UPDATE SET
+        chat_jid = EXCLUDED.chat_jid, status = EXCLUDED.status, state = EXCLUDED.state,
+        revision = divergent_runs.revision + 1,
+        created_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT,
+        updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+    `;
+    return this.find(jid, client);
   }
 
-  bindChat(jid, chatJid) {
-    this._bindChat().run({ jid, chatJid });
-    return this.find(jid);
+  async bindChat(jid, chatJid, client = sql) {
+    await client`
+      UPDATE divergent_runs
+      SET chat_jid = ${chatJid}, revision = revision + 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE jid = ${jid} AND status = 'active' AND chat_jid IS NULL
+    `;
+    return this.find(jid, client);
   }
 
-  save(run) {
-    const result = this._save().run({
-      jid: run.jid,
-      status: run.status,
-      state: JSON.stringify(run.state),
-      revision: run.revision,
-    });
-    if (result.changes !== 1) {
+  async save(run, client = sql) {
+    const result = await client`
+      UPDATE divergent_runs
+      SET status = ${run.status}, state = ${JSON.stringify(run.state)}, revision = revision + 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE jid = ${run.jid} AND revision = ${run.revision}
+      RETURNING jid
+    `;
+    if (result.length !== 1)
       throw new Error('Run telah berubah. Coba perintahnya sekali lagi.');
-    }
-    return this.find(run.jid);
+    return this.find(run.jid, client);
   }
 
-  remove(jid) {
-    return this._remove().run(jid).changes > 0;
+  async remove(jid, client = sql) {
+    const result = await client`DELETE FROM divergent_runs WHERE jid = ${jid} RETURNING jid`;
+    return result.length > 0;
   }
 }
 

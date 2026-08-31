@@ -16,7 +16,7 @@ export const userTools = [
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
-      const user = userModel.findById(ctx.userId);
+      const user = await userModel.findById(ctx.userId);
       if (!user)
         return { success: false, error: 'User belum terdaftar di database.' };
       return {
@@ -38,8 +38,8 @@ export const userTools = [
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
-      userModel.checkPremiumExpiry(ctx.userId);
-      const user = userModel.findById(ctx.userId);
+      await userModel.checkPremiumExpiry(ctx.userId);
+      const user = await userModel.findById(ctx.userId);
       if (!user)
         return { success: false, error: 'User belum terdaftar di database.' };
       const active = user.premium === 1;
@@ -61,7 +61,7 @@ export const userTools = [
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
-      const wallet = walletModel.find(ctx.userId);
+      const wallet = await walletModel.find(ctx.userId);
       if (!wallet)
         return { success: false, error: 'Wallet user belum terdaftar.' };
       return {
@@ -80,7 +80,7 @@ export const userTools = [
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
-      const items = inventoryModel.getAll(ctx.userId);
+      const items = await inventoryModel.getAll(ctx.userId);
       return {
         success: true,
         data: {

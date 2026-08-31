@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import {
   userModel,
   walletModel,
@@ -36,18 +36,18 @@ function clamp(n, min, max) {
 }
 
 class BattleService {
-  fight(attackerJid, defenderJid) {
-    userModel.ensure(attackerJid);
-    userModel.ensure(defenderJid);
-    const aBase = statsModel.ensure(attackerJid);
-    const dBase = statsModel.ensure(defenderJid);
+  async fight(attackerJid, defenderJid) {
+    await userModel.ensure(attackerJid);
+    await userModel.ensure(defenderJid);
+    const aBase = await statsModel.ensure(attackerJid);
+    const dBase = await statsModel.ensure(defenderJid);
 
     if (aBase.hp <= 0) throw new Error('HP kamu 0! Heal dulu sebelum battle.');
     if (dBase.hp <= 0) throw new Error('HP lawan sedang 0, tunggu dia heal.');
 
     const now = Math.floor(Date.now() / 1000);
-    const aStats = artifactService.getPlayerStats(attackerJid);
-    const dStats = artifactService.getPlayerStats(defenderJid);
+    const aStats = await artifactService.getPlayerStats(attackerJid);
+    const dStats = await artifactService.getPlayerStats(defenderJid);
 
     const effAtk = (base, s) =>
       base.buff_expire > now ? s.atk + (base.buff_atk || 0) : s.atk;
@@ -82,7 +82,8 @@ class BattleService {
     let rewarded = false;
 
     if (!draw) {
-      const winnerStreakBefore = statsModel.find(winner)?.win_streak ?? 0;
+      const winnerRow = await statsModel.find(winner);
+      const winnerStreakBefore = winnerRow?.win_streak ?? 0;
       const streakMult = Math.min(
         1 + winnerStreakBefore * STREAK_MULT_STEP,
         STREAK_MULT_MAX
@@ -90,25 +91,25 @@ class BattleService {
       rewardCash = Math.floor(REWARD_CASH * streakMult);
     }
 
-    db.transaction(() => {
-      statsModel.setHp(attackerJid, Math.max(0, sim.aFinalHp));
-      statsModel.setHp(defenderJid, Math.max(0, sim.dFinalHp));
+    await sql.begin(async (t) => {
+      await statsModel.setHp(attackerJid, Math.max(0, sim.aFinalHp), t);
+      await statsModel.setHp(defenderJid, Math.max(0, sim.dFinalHp), t);
       if (!draw) {
-        statsModel.addHp(winner, Math.floor(aBase.max_hp * HEAL_AFTER_PCT));
-        statsModel.recordWin(winner);
-        statsModel.recordLoss(loser);
-        walletModel.reward(winner, rewardCash, 'battle win');
-        const lw = walletModel.find(loser);
+        await statsModel.addHp(winner, Math.floor(aBase.max_hp * HEAL_AFTER_PCT), t);
+        await statsModel.recordWin(winner, t);
+        await statsModel.recordLoss(loser, t);
+        await walletModel.reward(winner, rewardCash, 'battle win', t);
+        const lw = await walletModel.find(loser, t);
         const deduct = Math.min(loserLoss, lw?.cash ?? 0);
-        if (deduct > 0) walletModel.addCash(loser, -deduct);
+        if (deduct > 0) await walletModel.addCash(loser, -deduct, t);
         const winnerBase = winner === attackerJid ? aBase : dBase;
         const expMult =
           winnerBase.buff_expire > now ? winnerBase.buff_exp_mult || 1 : 1;
-        userModel.addExp(winner, Math.floor(REWARD_EXP_WIN * expMult));
-        userModel.addExp(loser, REWARD_EXP_LOSS);
+        await userModel.addExp(winner, Math.floor(REWARD_EXP_WIN * expMult), t);
+        await userModel.addExp(loser, REWARD_EXP_LOSS, t);
         rewarded = true;
       }
-    })();
+    });
 
     return {
       draw,

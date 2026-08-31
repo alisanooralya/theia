@@ -39,8 +39,8 @@ export default {
       const config = domain.getDifficultyConfig(sub);
       if (!config) return ctx.fail('Difficulty tidak valid. Pilih: easy, medium, atau hard.');
 
-      userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-      statsModel.ensure(ctx.sender);
+      await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+      await statsModel.ensure(ctx.sender);
 
       await ctx.react('⚔️');
 
@@ -56,12 +56,12 @@ export default {
 
       await sleep(4000);
 
-      const result = domain.simulateBattle(ctx.sender, sub);
+      const result = await domain.simulateBattle(ctx.sender, sub);
 
       let finalText;
       if (result.won) {
-        const rewards = domain.grantRewards(ctx.sender, sub);
-        finalText = domain.formatVictory(config, rewards, result.rounds.length);
+        const rewards = await domain.grantRewards(ctx.sender, sub);
+        finalText = await domain.formatVictory(config, rewards, result.rounds.length);
       } else {
         finalText = domain.formatDefeat(config, result.rounds.length);
       }

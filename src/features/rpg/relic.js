@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import { relicModel, walletModel, userModel, inventoryModel } from '#storage/models/index.js';
 
 const SLOTS = {
@@ -93,8 +93,8 @@ function rollSubstats(count = 3) {
   return substats;
 }
 
-function getEquippedStats(jid) {
-  const inventory = relicModel.getInventory(jid);
+async function getEquippedStats(jid) {
+  const inventory = await relicModel.getInventory(jid);
   if (!inventory) return null;
   const stats = {
     hp_flat: 0,
@@ -108,7 +108,7 @@ function getEquippedStats(jid) {
   for (const slot of slots) {
     const relicId = inventory[`${slot}_id`];
     if (!relicId) continue;
-    const relic = relicModel.find(relicId);
+    const relic = await relicModel.find(relicId);
     if (!relic) continue;
     stats[relic.main_stat] += relic.main_value;
     for (const sub of relic.substats) {
@@ -193,28 +193,28 @@ class RelicService {
     return relicModel.getInventory(jid);
   }
 
-  equip(relicId, jid) {
-    const relic = relicModel.find(relicId);
+  async equip(relicId, jid) {
+    const relic = await relicModel.find(relicId);
     if (!relic) throw new Error('Relic tidak ditemukan.');
     if (relic.owner_jid !== jid) throw new Error('Relic bukan milikmu.');
-    const inventory = relicModel.getInventory(jid) || {
+    const inventory = (await relicModel.getInventory(jid)) || {
       head_id: null,
       hands_id: null,
       body_id: null,
       feet_id: null,
     };
     inventory[`${relic.slot}_id`] = relic.id;
-    relicModel.setInventory(jid, inventory.head_id, inventory.hands_id, inventory.body_id, inventory.feet_id);
+    await relicModel.setInventory(jid, inventory.head_id, inventory.hands_id, inventory.body_id, inventory.feet_id);
     return relic;
   }
 
-  unequip(slot, jid) {
-    const inventory = relicModel.getInventory(jid);
+  async unequip(slot, jid) {
+    const inventory = await relicModel.getInventory(jid);
     if (!inventory) throw new Error('Tidak ada relic yang terpasang.');
     const relicId = inventory[`${slot}_id`];
     if (!relicId) throw new Error(`Tidak ada relic di slot ${slot}.`);
     inventory[`${slot}_id`] = null;
-    relicModel.setInventory(jid, inventory.head_id, inventory.hands_id, inventory.body_id, inventory.feet_id);
+    await relicModel.setInventory(jid, inventory.head_id, inventory.hands_id, inventory.body_id, inventory.feet_id);
     return relicModel.find(relicId);
   }
 
@@ -227,17 +227,17 @@ class RelicService {
     return LEVELING_COSTS[relic.level];
   }
 
-  levelUp(relicId, jid) {
-    const relic = relicModel.find(relicId);
+  async levelUp(relicId, jid) {
+    const relic = await relicModel.find(relicId);
     if (!relic) throw new Error('Relic tidak ditemukan.');
     if (relic.owner_jid !== jid) throw new Error('Relic bukan milikmu.');
     if (!this.canLevelUp(relic)) throw new Error('Relic sudah mencapai level maksimum (15).');
 
-    const wallet = walletModel.find(jid);
-    const user = userModel.findById(jid);
+    const wallet = await walletModel.find(jid);
+    const user = await userModel.findById(jid);
     let coins = wallet?.cash ?? 0;
     let exp = user?.exp ?? 0;
-    let cereliaItem = inventoryModel.getItem(jid, 'cerelia');
+    const cereliaItem = await inventoryModel.getItem(jid, 'cerelia');
     let cerelia = cereliaItem?.quantity ?? 0;
     let totalCostCoins = 0;
     let totalCostExp = 0;
@@ -265,13 +265,13 @@ class RelicService {
     }
 
     const fromLevel = relic.level;
-    db.transaction(() => {
-      walletModel.addCash(jid, -totalCostCoins);
+    await sql.begin(async (t) => {
+      await walletModel.addCash(jid, -totalCostCoins, t);
       if (totalCostCerelia > 0) {
-        inventoryModel.remove(jid, 'cerelia', totalCostCerelia);
+        await inventoryModel.remove(jid, 'cerelia', totalCostCerelia, t);
       }
       if (totalCostExp > 0) {
-        userModel.addExp(jid, -totalCostExp);
+        await userModel.addExp(jid, -totalCostExp, t);
       }
       relic.level = targetLevel;
       relic.main_value = interpolateStat(relic.main_stat, relic.level);
@@ -284,16 +284,16 @@ class RelicService {
           sub.rolls += 1;
         }
       }
-      relicModel.update(relic);
-    })();
+      await relicModel.update(relic, t);
+    });
     return relic;
   }
 
-  smelt(relicId, jid) {
-    const relic = relicModel.find(relicId);
+  async smelt(relicId, jid) {
+    const relic = await relicModel.find(relicId);
     if (!relic) throw new Error('Relic tidak ditemukan.');
     if (relic.owner_jid !== jid) throw new Error('Relic bukan milikmu.');
-    const inventory = relicModel.getInventory(jid);
+    const inventory = await relicModel.getInventory(jid);
     if (inventory) {
       const equipped = ['head_id', 'hands_id', 'body_id', 'feet_id'].some(
         (key) => inventory[key] === relic.id
@@ -308,13 +308,13 @@ class RelicService {
       cerelia = 1;
     }
 
-    db.transaction(() => {
-      walletModel.addCash(jid, coins);
+    await sql.begin(async (t) => {
+      await walletModel.addCash(jid, coins, t);
       if (cerelia > 0) {
-        inventoryModel.add(jid, 'cerelia', cerelia);
+        await inventoryModel.add(jid, 'cerelia', cerelia, t);
       }
-      relicModel.delete(relic.id);
-    })();
+      await relicModel.delete(relic.id, t);
+    });
 
     return { coins, cerelia, relic };
   }
@@ -345,9 +345,9 @@ class RelicService {
     };
   }
 
-  formatRelicFull(relic) {
+  async formatRelicFull(relic) {
     const formatted = this.formatRelic(relic);
-    const equipped = relicModel.isEquipped(relic.id);
+    const equipped = await relicModel.isEquipped(relic.id);
     return [
       `*[${formatted.slot} Relic]* Lv.${relic.level}`,
       `Main: ${formatted.mainStat}`,

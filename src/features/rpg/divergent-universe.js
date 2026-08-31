@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import SETTINGS from '#environment/settings.js';
 import {
   divergentRunModel,
@@ -283,8 +283,8 @@ function maxHp(state) {
   return Math.max(50, state.baseMaxHp + (totalEffects(state).maxHp || 0));
 }
 
-function getRelicEffects(jid) {
-  const inventory = relicModel.getInventory(jid);
+async function getRelicEffects(jid) {
+  const inventory = await relicModel.getInventory(jid);
   if (!inventory) return {};
   const stats = {
     hp_flat: 0,
@@ -298,7 +298,7 @@ function getRelicEffects(jid) {
   for (const slot of slots) {
     const relicId = inventory[`${slot}_id`];
     if (!relicId) continue;
-    const relic = relicModel.find(relicId);
+    const relic = await relicModel.find(relicId);
     if (!relic) continue;
     stats[relic.main_stat] += relic.main_value;
     for (const sub of relic.substats) {
@@ -394,14 +394,15 @@ class DivergentUniverseService {
     return DIFFICULTY;
   }
 
-  getRun(jid, chatJid = null) {
-    const run = divergentRunModel.find(jid);
+  async getRun(jid, chatJid = null) {
+    const run = await divergentRunModel.find(jid);
     if (!run || !chatJid) return run;
     return this._assertRunChat(run, chatJid);
   }
 
-  getUsage(jid) {
-    const usage = normalizedUsage(divergentUsageModel.find(jid));
+  async getUsage(jid) {
+    const row = await divergentUsageModel.find(jid);
+    const usage = normalizedUsage(row);
     return {
       ...usage,
       dailyRemaining: Math.max(0, RUN_LIMIT.daily - usage.dailyCount),
@@ -409,28 +410,29 @@ class DivergentUniverseService {
     };
   }
 
-  start(jid, chatJid, metadata = {}, difficulty = 'medium') {
-    return db.transaction(() => this._start(jid, chatJid, metadata, difficulty))();
+  async start(jid, chatJid, metadata = {}, difficulty = 'medium') {
+    return sql.begin(async (t) => this._start(jid, chatJid, metadata, difficulty, t));
   }
 
-  _start(jid, chatJid, metadata = {}, difficulty = 'medium') {
+  async _start(jid, chatJid, metadata = {}, difficulty = 'medium', t) {
     if (!chatJid) throw new Error('Chat asal DU tidak valid.');
     if (!DIFFICULTY[difficulty]) {
       throw new Error('Difficulty tidak valid. Pilih easy, medium, atau hard.');
     }
-    userModel.ensure(jid, metadata);
-    statsModel.ensure(jid);
-    const current = divergentRunModel.find(jid);
+    await userModel.ensure(jid, metadata, t);
+    await statsModel.ensure(jid, t);
+    const current = await divergentRunModel.find(jid, t);
     if (current?.status === 'active') {
       throw new Error('Masih ada run aktif. Gunakan `.du status` atau `.du abandon`.');
     }
-    const chatRun = divergentRunModel.findActiveByChat(chatJid);
+    const chatRun = await divergentRunModel.findActiveByChat(chatJid, t);
     if (chatRun && chatRun.jid !== jid) {
       throw new Error(
         `Grup ini sedang dipakai oleh ${chatRun.push_name || 'pemain lain'} untuk menjalankan DU. Tunggu run tersebut selesai, gagal, atau ditinggalkan.`
       );
     }
-    const usage = normalizedUsage(divergentUsageModel.ensure(jid));
+    const usageRow = await divergentUsageModel.ensure(jid, t);
+    const usage = normalizedUsage(usageRow);
     if (usage.dailyCount >= RUN_LIMIT.daily) {
       throw new Error(
         `Batas harian DU tercapai (${usage.dailyCount}/${RUN_LIMIT.daily}). Coba lagi setelah reset pukul 00.00 ${SETTINGS.timezone}.`
@@ -441,7 +443,7 @@ class DivergentUniverseService {
         `Batas mingguan DU tercapai (${usage.weeklyCount}/${RUN_LIMIT.weekly}). Coba lagi setelah reset Senin pukul 00.00 ${SETTINGS.timezone}.`
       );
     }
-    const relicEffects = getRelicEffects(jid);
+    const relicEffects = await getRelicEffects(jid);
     const state = {
       path: null,
       nodeIndex: 0,
@@ -457,17 +459,17 @@ class DivergentUniverseService {
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
       relicEffects,
     };
-    const run = divergentRunModel.create(jid, chatJid, state);
-    divergentUsageModel.save(jid, {
+    const run = await divergentRunModel.create(jid, chatJid, state, 'active', t);
+    await divergentUsageModel.save(jid, {
       ...usage,
       dailyCount: usage.dailyCount + 1,
       weeklyCount: usage.weeklyCount + 1,
-    });
+    }, t);
     return run;
   }
 
-  choosePath(jid, chatJid, pathId) {
-    const run = this._activeRun(jid, chatJid);
+  async choosePath(jid, chatJid, pathId) {
+    const run = await this._activeRun(jid, chatJid);
     if (run.state.path) throw new Error('Path run ini sudah dipilih.');
     const path = String(pathId || '').toLowerCase();
     if (!PATHS[path]) throw new Error('Path tidak tersedia. Lihat daftar dengan `.du paths`.');
@@ -481,8 +483,8 @@ class DivergentUniverseService {
     return divergentRunModel.save(run);
   }
 
-  explore(jid, chatJid) {
-    const run = this._activeRun(jid, chatJid);
+  async explore(jid, chatJid) {
+    const run = await this._activeRun(jid, chatJid);
     const state = run.state;
     if (!state.path) throw new Error('Pilih Path dahulu dengan `.du path <nama>`.');
     if (state.pending) throw new Error('Selesaikan pilihan yang tertunda dengan `.du choose <nomor>`.');
@@ -498,12 +500,12 @@ class DivergentUniverseService {
     return divergentRunModel.save(run);
   }
 
-  choose(jid, chatJid, rawChoice) {
-    return db.transaction(() => this._choose(jid, chatJid, rawChoice))();
+  async choose(jid, chatJid, rawChoice) {
+    return sql.begin(async (t) => this._choose(jid, chatJid, rawChoice, t));
   }
 
-  _choose(jid, chatJid, rawChoice) {
-    const run = this._activeRun(jid, chatJid);
+  async _choose(jid, chatJid, rawChoice, t) {
+    const run = await this._activeRun(jid, chatJid);
     const state = run.state;
     const pending = state.pending;
     if (!pending || pending.type === 'path') {
@@ -533,19 +535,19 @@ class DivergentUniverseService {
     }
 
     if (state.nodeIndex >= state.nodes.length) {
-      this._finish(run);
+      await this._finish(run, t);
     }
-    return divergentRunModel.save(run);
+    return divergentRunModel.save(run, t);
   }
 
-  abandon(jid, chatJid) {
-    let run = divergentRunModel.find(jid);
+  async abandon(jid, chatJid) {
+    let run = await divergentRunModel.find(jid);
     if (!run || run.status !== 'active') return false;
-    run = this._assertRunChat(run, chatJid);
+    run = await this._assertRunChat(run, chatJid);
     run.status = 'abandoned';
     run.state.pending = null;
     run.state.lastResult = 'Run dihentikan tanpa reward akhir.';
-    divergentRunModel.save(run);
+    await divergentRunModel.save(run);
     return true;
   }
 
@@ -553,18 +555,18 @@ class DivergentUniverseService {
     return divergentRunModel.save(run);
   }
 
-  _activeRun(jid, chatJid) {
-    const run = divergentRunModel.find(jid);
+  async _activeRun(jid, chatJid) {
+    const run = await divergentRunModel.find(jid);
     if (!run || run.status !== 'active') {
       throw new Error('Tidak ada run aktif. Mulai dengan `.du start`.');
     }
     return this._assertRunChat(run, chatJid);
   }
 
-  _assertRunChat(run, chatJid) {
+  async _assertRunChat(run, chatJid) {
     if (!chatJid) throw new Error('Chat asal DU tidak valid.');
     if (!run.chat_jid) {
-      const chatRun = divergentRunModel.findActiveByChat(chatJid);
+      const chatRun = await divergentRunModel.findActiveByChat(chatJid);
       if (chatRun && chatRun.jid !== run.jid) {
         throw new Error('Grup ini sudah memiliki run DU aktif milik pemain lain.');
       }
@@ -853,7 +855,7 @@ class DivergentUniverseService {
     state.nodeIndex += 1;
   }
 
-  _finish(run) {
+  async _finish(run, t) {
     const state = run.state;
     const effects = totalEffects(state);
     const difficultyConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
@@ -873,17 +875,17 @@ class DivergentUniverseService {
     );
     const relicDrops = this._rollRelicDrops(state.difficulty);
     const relicIds = [];
-    db.transaction(() => {
-      walletModel.reward(run.jid, rewardCash, 'divergent universe clear');
-      userModel.addExp(run.jid, rewardExp);
+    await sql.begin(async (inner) => {
+      await walletModel.reward(run.jid, rewardCash, 'divergent universe clear', inner);
+      await userModel.addExp(run.jid, rewardExp, inner);
       if (cereliaAmount > 0) {
-        inventoryModel.add(run.jid, 'cerelia', cereliaAmount);
+        await inventoryModel.add(run.jid, 'cerelia', cereliaAmount, inner);
       }
       for (let i = 0; i < relicDrops; i++) {
-        const relic = this._generateRelic(run.jid);
+        const relic = await this._generateRelic(run.jid, inner);
         relicIds.push(relic.id);
       }
-    })();
+    });
     run.status = 'completed';
     state.finalReward = {
       cash: rewardCash,
@@ -897,7 +899,7 @@ class DivergentUniverseService {
     state.lastResult = `Divergent Universe ditaklukkan. Reward akhir: ${rewardCash} cash, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
   }
 
-  _generateRelic(jid) {
+  async _generateRelic(jid, t) {
     const slot = ['head', 'hands', 'body', 'feet'][Math.floor(Math.random() * 4)];
     const mainStats = {
       head: ['hp_flat'],
@@ -954,7 +956,7 @@ class DivergentUniverseService {
       main_value: mainValues[mainStat],
       substats,
       level: 1,
-    });
+    }, t);
   }
 
   _rollRelicDrops(difficulty) {

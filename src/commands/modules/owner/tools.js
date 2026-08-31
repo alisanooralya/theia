@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 
 export default {
   name: 'tools',
@@ -15,11 +15,14 @@ export default {
       const query = ctx.rawArgs.replace(/^(db|query)\s+/i, '');
       if (!query) ctx.fail('Usage: `!tools db <query>`');
       try {
-        const result = query.trim().toUpperCase().startsWith('SELECT')
-          ? db.prepare(query).all()
-          : db.prepare(query).run();
+        const isSelect = query.trim().toUpperCase().startsWith('SELECT');
+        const rows = await sql.unsafe(query);
         await ctx.reply(
-          `✅ Query OK:\n\`\`\`\n${JSON.stringify(result, null, 2).slice(0, 3000)}\n\`\`\``
+          `✅ Query OK:\n\`\`\`\n${JSON.stringify(
+            isSelect ? rows : { changes: rows.count ?? rows.length },
+            null,
+            2
+          ).slice(0, 3000)}\n\`\`\``
         );
       } catch (err) {
         await ctx.reply(`❌ ${err.message}`);

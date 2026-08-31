@@ -5,7 +5,7 @@ import { logger } from '#helpers/logger.js';
 export async function initializeDatabase() {
   try {
     configureDatabase();
-    createSchema();
+    await createSchema();
     logger.info('Database initialized');
   } catch (err) {
     logger.fatal({ err }, 'Database initialization failed');

@@ -43,7 +43,7 @@ export default {
   cooldown: 60 * 60 * 1000,
 
   async execute(ctx) {
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
     if (fishingUsers.has(ctx.sender)) {
       return ctx.fail('🎣 Kamu masih memancing, tunggu sampai selesai dulu!');
@@ -62,8 +62,8 @@ export default {
           Math.random() * (catchResult.reward[1] - catchResult.reward[0])
       );
 
-      walletModel.reward(ctx.sender, reward, `fish: ${catchResult.name}`);
-      const { leveledUp, newLevel } = userModel.addExp(
+      await walletModel.reward(ctx.sender, reward, `fish: ${catchResult.name}`);
+      const { leveledUp, newLevel } = await userModel.addExp(
         ctx.sender,
         catchResult.exp
       );

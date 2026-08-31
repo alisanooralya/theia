@@ -4,8 +4,8 @@ import { logger } from '#helpers/logger.js';
 export default {
   name: 'cooldown-cleaner',
 
-  init() {
-    this._run();
+  async init() {
+    await this._run();
     this._interval = setInterval(() => this._run(), 10 * 60 * 1000);
     logger.debug('[CooldownCleaner] Initialized');
   },
@@ -14,8 +14,8 @@ export default {
     clearInterval(this._interval);
   },
 
-  _run() {
-    const deleted = cooldownModel.cleanup();
+  async _run() {
+    const deleted = await cooldownModel.cleanup();
     if (deleted > 0)
       logger.debug(`[CooldownCleaner] Removed ${deleted} expired rows`);
   },

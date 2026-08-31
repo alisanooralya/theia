@@ -17,7 +17,7 @@ export default {
   cooldown: 5_000,
 
   async execute(ctx) {
-    const items = inventoryModel.getAll(ctx.sender);
+    const items = await inventoryModel.getAll(ctx.sender);
     if (!items.length) return ctx.reply('📦 Inventory kosong.');
 
     const catOrder = [

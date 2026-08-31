@@ -1,53 +1,38 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class ItemModel {
-  _findById = lazyPrepare('SELECT * FROM items WHERE id = ?');
-  _findAll = lazyPrepare('SELECT * FROM items ORDER BY category, name');
-  _findByCat = lazyPrepare(
-    'SELECT * FROM items WHERE category = ? ORDER BY price'
-  );
-  _shopItems = lazyPrepare(
-    'SELECT * FROM items WHERE price > 0 ORDER BY category, price'
-  );
-  _upsert = lazyPrepare(`
-    INSERT INTO items (id, name, description, category, price, sellable, stackable, rarity, data)
-      VALUES (@id, @name, @description, @category, @price, @sellable, @stackable, @rarity, @data)
-    ON CONFLICT(id) DO UPDATE SET
-      name=excluded.name, description=excluded.description, category=excluded.category,
-      price=excluded.price, sellable=excluded.sellable, stackable=excluded.stackable,
-      rarity=excluded.rarity, data=excluded.data
-  `);
-
-  findById(id) {
-    return this._findById().get(id) ?? null;
-  }
-  findAll() {
-    return this._findAll().all();
-  }
-  findByCategory(cat) {
-    return this._findByCat().all(cat);
-  }
-  shopItems() {
-    return this._shopItems().all();
+  async findById(id, client = sql) {
+    const rows = await client`SELECT * FROM items WHERE id = ${id}`;
+    return rows[0] ?? null;
   }
 
-  upsert(item) {
-    this._upsert().run({
-      id: item.id,
-      name: item.name,
-      description: item.description ?? '',
-      category: item.category ?? 'misc',
-      price: item.price ?? 0,
-      sellable: item.sellable ? 1 : 0,
-      stackable: item.stackable ? 1 : 0,
-      rarity: item.rarity ?? 'common',
-      data: JSON.stringify(item.data ?? {}),
+  async findAll(client = sql) {
+    return client`SELECT * FROM items ORDER BY category, name`;
+  }
+
+  async findByCategory(cat, client = sql) {
+    return client`SELECT * FROM items WHERE category = ${cat} ORDER BY price`;
+  }
+
+  async shopItems(client = sql) {
+    return client`SELECT * FROM items WHERE price > 0 ORDER BY category, price`;
+  }
+
+  async upsert(item, client = sql) {
+    await client`
+      INSERT INTO items (id, name, description, category, price, sellable, stackable, rarity, data)
+      VALUES (${item.id}, ${item.name}, ${item.description ?? ''}, ${item.category ?? 'misc'}, ${item.price ?? 0}, ${item.sellable ? 1 : 0}, ${item.stackable ? 1 : 0}, ${item.rarity ?? 'common'}, ${JSON.stringify(item.data ?? {})})
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name, description = EXCLUDED.description, category = EXCLUDED.category,
+        price = EXCLUDED.price, sellable = EXCLUDED.sellable, stackable = EXCLUDED.stackable,
+        rarity = EXCLUDED.rarity, data = EXCLUDED.data
+    `;
+  }
+
+  async bulkUpsert(items) {
+    await sql.begin(async (t) => {
+      for (const item of items) await this.upsert(item, t);
     });
-  }
-
-  bulkUpsert(items) {
-    db.transaction(() => items.forEach((i) => this.upsert(i)))();
   }
 }
 

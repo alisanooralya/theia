@@ -47,9 +47,9 @@ export default {
     if (parsed?.jid) storedChatId = parsed.jid;
   },
   async init() {
-    scheduleInterval = setInterval(() => {
+    scheduleInterval = setInterval(async () => {
       try {
-        const result = raidService.ensureScheduledRaid();
+        const result = await raidService.ensureScheduledRaid();
         if (result.created && result.raid && storedSock) {
           const startText = [
             '⚔️ *RAID DIMULAI!*',
@@ -59,7 +59,7 @@ export default {
             '',
             'Ketik `.raid join` lalu `.raid attack` untuk ikut!',
           ].join('\n');
-          const sent = raidService.broadcast(storedSock, startText);
+          const sent = await raidService.broadcast(storedSock, startText);
           if (sent.length === 0 && storedChatId) {
             storedSock.sendMessage(storedChatId, { text: startText }).catch(() => {});
           }
@@ -69,18 +69,18 @@ export default {
       }
     }, 60 * 1000);
 
-    statusInterval = setInterval(() => {
+    statusInterval = setInterval(async () => {
       try {
-        const raid = raidModel.getActive();
+        const raid = await raidModel.getActive();
         if (!raid || raid.status !== 'active') return;
 
         if (Date.now() >= raid.end_at) {
-          raidService.endRaid(storedSock, storedChatId);
+          await raidService.endRaid(storedSock, storedChatId);
           logger.info('[RaidStatus] Raid ended due to time');
           return;
         }
 
-        const participants = raidModel.getParticipants(raid.id);
+        const participants = await raidModel.getParticipants(raid.id);
         if (participants.length === 0) return;
 
         logger.info(`[RaidStatus] Raid HP: ${raid.boss_hp}, Participants: ${participants.length}`);
@@ -89,12 +89,12 @@ export default {
       }
     }, 60 * 60 * 1000);
 
-    recoveryInterval = setInterval(() => {
+    recoveryInterval = setInterval(async () => {
       try {
-        const raid = raidModel.getActive();
+        const raid = await raidModel.getActive();
         if (!raid || raid.status !== 'active') return;
 
-        const participants = raidModel.getParticipants(raid.id);
+        const participants = await raidModel.getParticipants(raid.id);
         for (const p of participants) {
           if (p.status === 'breaktime' || p.status === 'stopped') {
             const now = Date.now();
@@ -112,7 +112,7 @@ export default {
               }
             }
 
-            raidModel.updateParticipant(raid.id, p.jid, {
+            await raidModel.updateParticipant(raid.id, p.jid, {
               hp: newHp,
               damage: p.damage,
               status: newStatus,

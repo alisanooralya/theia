@@ -45,7 +45,7 @@ export default {
     const count = Number.parseInt(rawCount, 10);
 
     try {
-      userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+      await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
       if (!rawCount || !Number.isInteger(count) || (count !== 1 && count !== 10)) {
         return ctx.fail('Masukkan jumlah gacha: 1 atau 10.\nContoh: `.gacha 1` atau `.gacha 10`');
@@ -55,7 +55,7 @@ export default {
 
       await sleep(1200);
 
-      const results = gacha.pull(ctx.sender, count);
+      const results = await gacha.pull(ctx.sender, count);
       const text = formatResults(results);
 
       await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });

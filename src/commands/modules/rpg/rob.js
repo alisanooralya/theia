@@ -27,13 +27,13 @@ export default {
       return;
     }
 
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-    const target = userModel.findById(targetJid);
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    const target = await userModel.findById(targetJid);
     if (!target) ctx.fail('❌ User belum terdaftar.');
 
     try {
       await ctx.typing();
-      const result = robService.attempt(ctx.sender, targetJid);
+      const result = await robService.attempt(ctx.sender, targetJid);
       if (result.success) {
         await ctx.reply(
           `✅ *Berhasil merampok!*\n🪙 +${F.formatNumber(result.stolen)}\n🎯 Chance: ${result.chance}%`

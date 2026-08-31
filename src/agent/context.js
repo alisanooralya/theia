@@ -9,13 +9,13 @@ import { isOwnerJid } from '#helpers/owner.js';
 import { userModel } from '#storage/models/index.js';
 import { resolveLevel } from './permissions.js';
 
-export function buildAgentContext(parsed, sock) {
+export async function buildAgentContext(parsed, sock) {
   const userId = parsed.sender; // authenticated, from the message itself
   const isOwner =
     isOwnerJid(userId) || (parsed.senderAlt && isOwnerJid(parsed.senderAlt));
 
-  userModel.checkPremiumExpiry(userId);
-  const user = userModel.findById(userId) ?? null;
+  await userModel.checkPremiumExpiry(userId);
+  const user = (await userModel.findById(userId)) ?? null;
   const isPremium = user?.premium === 1;
 
   return {

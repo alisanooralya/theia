@@ -1,114 +1,83 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class ArtifactModel {
-  _find = lazyPrepare('SELECT * FROM artifacts WHERE owner_jid = ? AND user_id = ?');
-  _findById = lazyPrepare('SELECT * FROM artifacts WHERE id = ?');
-  _findByOwner = lazyPrepare('SELECT * FROM artifacts WHERE owner_jid = ? ORDER BY user_id ASC');
-  _findByOwnerAndSlot = lazyPrepare('SELECT * FROM artifacts WHERE owner_jid = ? AND slot = ? ORDER BY user_id ASC');
-  _nextUserId = lazyPrepare('SELECT COALESCE(MAX(user_id), 0) + 1 as next_id FROM artifacts WHERE owner_jid = ?');
-  _insert = lazyPrepare(`
-    INSERT INTO artifacts (owner_jid, user_id, name, slot, level, main_stat, main_value, substats)
-    VALUES (@owner_jid, @user_id, @name, @slot, @level, @main_stat, @main_value, @substats)
-  `);
-  _update = lazyPrepare(
-    'UPDATE artifacts SET level = @level, main_value = @main_value, substats = @substats, updated_at = unixepoch() WHERE id = @id'
-  );
-  _delete = lazyPrepare('DELETE FROM artifacts WHERE id = ?');
-  _count = lazyPrepare('SELECT COUNT(*) as count FROM artifacts WHERE owner_jid = ?');
-  _findInventory = lazyPrepare('SELECT * FROM artifact_inventory WHERE jid = ?');
-  _upsertInventory = lazyPrepare(`
-    INSERT INTO artifact_inventory (jid, flower_id, feather_id, sands_id, goblet_id, circlet_id)
-    VALUES (@jid, @flower_id, @feather_id, @sands_id, @goblet_id, @circlet_id)
-    ON CONFLICT(jid) DO UPDATE SET
-      flower_id = @flower_id, feather_id = @feather_id, sands_id = @sands_id,
-      goblet_id = @goblet_id, circlet_id = @circlet_id,
-      updated_at = unixepoch()
-  `);
-  _equippedCount = lazyPrepare(`
-    SELECT COUNT(*) as count FROM artifact_inventory
-    WHERE flower_id = ? OR feather_id = ? OR sands_id = ? OR goblet_id = ? OR circlet_id = ?
-  `);
-
-  find(ownerJid, userId) {
-    const row = this._find().get(ownerJid, userId);
-    if (row) row.substats = JSON.parse(row.substats);
-    return row ?? null;
+  async find(ownerJid, userId, client = sql) {
+    const rows = await client`SELECT * FROM artifacts WHERE owner_jid = ${ownerJid} AND user_id = ${userId}`;
+    if (!rows[0]) return null;
+    rows[0].substats = JSON.parse(rows[0].substats);
+    return rows[0];
   }
 
-  findById(id) {
-    const row = this._findById().get(id);
-    if (row) row.substats = JSON.parse(row.substats);
-    return row ?? null;
+  async findById(id, client = sql) {
+    const rows = await client`SELECT * FROM artifacts WHERE id = ${id}`;
+    if (!rows[0]) return null;
+    rows[0].substats = JSON.parse(rows[0].substats);
+    return rows[0];
   }
 
-  findByOwner(jid) {
-    return this._findByOwner().all(jid).map((row) => {
-      row.substats = JSON.parse(row.substats);
-      return row;
-    });
+  async findByOwner(jid, client = sql) {
+    const rows = await client`SELECT * FROM artifacts WHERE owner_jid = ${jid} ORDER BY user_id ASC`;
+    return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
-  findByOwnerAndSlot(jid, slot) {
-    return this._findByOwnerAndSlot().all(jid, slot).map((row) => {
-      row.substats = JSON.parse(row.substats);
-      return row;
-    });
+  async findByOwnerAndSlot(jid, slot, client = sql) {
+    const rows = await client`SELECT * FROM artifacts WHERE owner_jid = ${jid} AND slot = ${slot} ORDER BY user_id ASC`;
+    return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
-  create(data) {
-    const userId = this._nextUserId().get(data.owner_jid).next_id;
-    const result = this._insert().run({
-      owner_jid: data.owner_jid,
-      user_id: userId,
-      name: data.name || '',
-      slot: data.slot,
-      level: data.level ?? 1,
-      main_stat: data.main_stat,
-      main_value: data.main_value,
-      substats: JSON.stringify(data.substats || {}),
-    });
-    return this.findById(Number(result.lastInsertRowid));
+  async create(data, client = sql) {
+    const nextRows = await client`
+      SELECT COALESCE(MAX(user_id), 0) + 1 AS next_id FROM artifacts WHERE owner_jid = ${data.owner_jid}
+    `;
+    const userId = nextRows[0].next_id;
+    const result = await client`
+      INSERT INTO artifacts (owner_jid, user_id, name, slot, level, main_stat, main_value, substats)
+      VALUES (${data.owner_jid}, ${userId}, ${data.name || ''}, ${data.slot}, ${data.level ?? 1}, ${data.main_stat}, ${data.main_value}, ${JSON.stringify(data.substats || {})})
+      RETURNING id
+    `;
+    return this.findById(Number(result[0].id), client);
   }
 
-  update(artifact) {
-    this._update().run({
-      id: artifact.id,
-      level: artifact.level,
-      main_value: artifact.main_value,
-      substats: JSON.stringify(artifact.substats),
-    });
-    return this.find(artifact.id);
+  async update(artifact, client = sql) {
+    await client`
+      UPDATE artifacts SET level = ${artifact.level}, main_value = ${artifact.main_value}, substats = ${JSON.stringify(artifact.substats)}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE id = ${artifact.id}
+    `;
+    return this.findById(artifact.id, client);
   }
 
-  delete(id) {
-    return this._delete().run(id);
+  async delete(id, client = sql) {
+    const result = await client`DELETE FROM artifacts WHERE id = ${id} RETURNING id`;
+    return result.length;
   }
 
-  count(jid) {
-    return this._count().get(jid).count;
+  async count(jid, client = sql) {
+    const rows = await client`SELECT COUNT(*)::int AS count FROM artifacts WHERE owner_jid = ${jid}`;
+    return rows[0].count;
   }
 
-  getInventory(jid) {
-    return this._findInventory().get(jid) ?? null;
+  async getInventory(jid, client = sql) {
+    const rows = await client`SELECT * FROM artifact_inventory WHERE jid = ${jid}`;
+    return rows[0] ?? null;
   }
 
-  setInventory(jid, flowerId, featherId, sandsId, gobletId, circletId) {
-    return this._upsertInventory().run({
-      jid,
-      flower_id: flowerId,
-      feather_id: featherId,
-      sands_id: sandsId,
-      goblet_id: gobletId,
-      circlet_id: circletId,
-    });
+  async setInventory(jid, flowerId, featherId, sandsId, gobletId, circletId, client = sql) {
+    await client`
+      INSERT INTO artifact_inventory (jid, flower_id, feather_id, sands_id, goblet_id, circlet_id)
+      VALUES (${jid}, ${flowerId}, ${featherId}, ${sandsId}, ${gobletId}, ${circletId})
+      ON CONFLICT (jid) DO UPDATE SET
+        flower_id = EXCLUDED.flower_id, feather_id = EXCLUDED.feather_id,
+        sands_id = EXCLUDED.sands_id, goblet_id = EXCLUDED.goblet_id,
+        circlet_id = EXCLUDED.circlet_id,
+        updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+    `;
   }
 
-  isEquipped(artifactId) {
-    const result = this._equippedCount().get(
-      artifactId, artifactId, artifactId, artifactId, artifactId
-    );
-    return result.count > 0;
+  async isEquipped(artifactId, client = sql) {
+    const rows = await client`
+      SELECT COUNT(*)::int AS count FROM artifact_inventory
+      WHERE flower_id = ${artifactId} OR feather_id = ${artifactId} OR sands_id = ${artifactId} OR goblet_id = ${artifactId} OR circlet_id = ${artifactId}
+    `;
+    return rows[0].count > 0;
   }
 }
 

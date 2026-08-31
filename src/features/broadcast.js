@@ -34,8 +34,8 @@ class BroadcastService {
   }
 
   async toAllGroups(sock, content, opts = {}) {
-    const { db } = await import('#storage/connection.js');
-    const groups = db.prepare('SELECT jid FROM groups WHERE mute = 0').all();
+    const { sql } = await import('#storage/connection.js');
+    const groups = await sql`SELECT jid FROM groups WHERE mute = 0`;
     return this.send(
       sock,
       groups.map((g) => g.jid),
@@ -45,8 +45,8 @@ class BroadcastService {
   }
 
   async toAllUsers(sock, content, opts = {}) {
-    const { db } = await import('#storage/connection.js');
-    const users = db.prepare('SELECT jid FROM users WHERE banned = 0').all();
+    const { sql } = await import('#storage/connection.js');
+    const users = await sql`SELECT jid FROM users WHERE banned = 0`;
     return this.send(
       sock,
       users.map((u) => u.jid),

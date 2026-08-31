@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
@@ -130,7 +130,7 @@ export default {
 
   async processMessage(s, sock) {
     if (!s.isGroup || s.fromMe) return true;
-    if (!groupModel.hasAntitoxic(s.jid)) return true;
+    if (!(await groupModel.hasAntitoxic(s.jid))) return true;
 
     const text = s.text.toLowerCase() ?? '';
     if (!TOXIC_RE.test(text)) return true;
@@ -138,20 +138,17 @@ export default {
     try {
       await sock.sendMessage(s.jid, { delete: s.key });
 
-      db.prepare(
-        `INSERT INTO warns (jid, group_jid, reason, damage) VALUES (?, ?, ?, ?)`
-      ).run(s.sender, s.jid, 'Toxic', TOXIC_DAMAGE);
+      await sql`
+        INSERT INTO warns (jid, group_jid, reason, damage) VALUES (${s.sender}, ${s.jid}, 'Toxic', ${TOXIC_DAMAGE})
+      `;
 
-      const health = getHealth(s.sender, s.jid);
+      const health = await getHealth(s.sender, s.jid);
 
       if (health <= 0) {
         try {
           await sock.groupParticipantsUpdate(s.jid, [s.sender], 'remove');
         } catch {}
-        db.prepare(`DELETE FROM warns WHERE jid = ? AND group_jid = ?`).run(
-          s.sender,
-          s.jid
-        );
+        await sql`DELETE FROM warns WHERE jid = ${s.sender} AND group_jid = ${s.jid}`;
         await sock.sendMessage(s.jid, {
           text: `🚫 @${s.sender.split('@')[0]} terdeteksi toxic, health 0 dan di-kick!`,
           mentions: [s.sender],

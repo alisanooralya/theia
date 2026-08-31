@@ -87,7 +87,7 @@ export async function onGroupParticipantsUpdate(
   if (!id || !participants?.length) return;
 
   try {
-    const group = groupModel.find(id);
+    const group = await groupModel.find(id);
 
     if (action === 'add') {
       if (!group?.welcome) return;
@@ -95,7 +95,7 @@ export async function onGroupParticipantsUpdate(
 
       for (const participant of participants) {
         const jid = participant.phoneNumber || participant.id;
-        userModel.ensure(jid);
+        await userModel.ensure(jid);
 
         const caption = WELCOME_TEKS.replace(/%name/, `@${jid.split('@')[0]}`);
         const image = await readFile(WELCOME_IMAGE);

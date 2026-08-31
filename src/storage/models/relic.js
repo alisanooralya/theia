@@ -1,97 +1,70 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class RelicModel {
-  _find = lazyPrepare('SELECT * FROM relics WHERE id = ?');
-  _findByOwner = lazyPrepare('SELECT * FROM relics WHERE owner_jid = ? ORDER BY created_at DESC');
-  _findByOwnerAndSlot = lazyPrepare('SELECT * FROM relics WHERE owner_jid = ? AND slot = ? ORDER BY created_at DESC');
-  _insert = lazyPrepare(`
-    INSERT INTO relics (owner_jid, slot, main_stat, main_value, substats, level)
-    VALUES (@owner_jid, @slot, @main_stat, @main_value, @substats, @level)
-  `);
-  _update = lazyPrepare('UPDATE relics SET level = @level, main_value = @main_value, substats = @substats, updated_at = unixepoch() WHERE id = @id');
-  _delete = lazyPrepare('DELETE FROM relics WHERE id = ?');
-  _count = lazyPrepare('SELECT COUNT(*) as count FROM relics WHERE owner_jid = ?');
-  _findInventory = lazyPrepare('SELECT * FROM relic_inventory WHERE jid = ?');
-  _upsertInventory = lazyPrepare(`
-    INSERT INTO relic_inventory (jid, head_id, hands_id, body_id, feet_id)
-    VALUES (@jid, @head_id, @hands_id, @body_id, @feet_id)
-    ON CONFLICT(jid) DO UPDATE SET
-      head_id = @head_id, hands_id = @hands_id, body_id = @body_id, feet_id = @feet_id,
-      updated_at = unixepoch()
-  `);
-  _equippedCount = lazyPrepare(`
-    SELECT COUNT(*) as count FROM relic_inventory
-    WHERE head_id = ? OR hands_id = ? OR body_id = ? OR feet_id = ?
-  `);
-
-  find(id) {
-    const row = this._find().get(id);
-    if (row) row.substats = JSON.parse(row.substats);
-    return row ?? null;
+  async find(id, client = sql) {
+    const rows = await client`SELECT * FROM relics WHERE id = ${id}`;
+    if (!rows[0]) return null;
+    rows[0].substats = JSON.parse(rows[0].substats);
+    return rows[0];
   }
 
-  findByOwner(jid) {
-    return this._findByOwner().all(jid).map((row) => {
-      row.substats = JSON.parse(row.substats);
-      return row;
-    });
+  async findByOwner(jid, client = sql) {
+    const rows = await client`SELECT * FROM relics WHERE owner_jid = ${jid} ORDER BY created_at DESC`;
+    return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
-  findByOwnerAndSlot(jid, slot) {
-    return this._findByOwnerAndSlot().all(jid, slot).map((row) => {
-      row.substats = JSON.parse(row.substats);
-      return row;
-    });
+  async findByOwnerAndSlot(jid, slot, client = sql) {
+    const rows = await client`SELECT * FROM relics WHERE owner_jid = ${jid} AND slot = ${slot} ORDER BY created_at DESC`;
+    return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
-  create(data) {
-    const result = this._insert().run({
-      owner_jid: data.owner_jid,
-      slot: data.slot,
-      main_stat: data.main_stat,
-      main_value: data.main_value,
-      substats: JSON.stringify(data.substats),
-      level: data.level || 1,
-    });
-    return this.find(Number(result.lastInsertRowid));
+  async create(data, client = sql) {
+    const rows = await client`
+      INSERT INTO relics (owner_jid, slot, main_stat, main_value, substats, level)
+      VALUES (${data.owner_jid}, ${data.slot}, ${data.main_stat}, ${data.main_value}, ${JSON.stringify(data.substats)}, ${data.level || 1})
+      RETURNING id
+    `;
+    return this.find(Number(rows[0].id), client);
   }
 
-  update(relic) {
-    this._update().run({
-      id: relic.id,
-      level: relic.level,
-      main_value: relic.main_value,
-      substats: JSON.stringify(relic.substats),
-    });
-    return this.find(relic.id);
+  async update(relic, client = sql) {
+    await client`
+      UPDATE relics SET level = ${relic.level}, main_value = ${relic.main_value}, substats = ${JSON.stringify(relic.substats)}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE id = ${relic.id}
+    `;
+    return this.find(relic.id, client);
   }
 
-  delete(id) {
-    return this._delete().run(id);
+  async delete(id, client = sql) {
+    const result = await client`DELETE FROM relics WHERE id = ${id} RETURNING id`;
+    return result.length;
   }
 
-  count(jid) {
-    return this._count().get(jid).count;
+  async count(jid, client = sql) {
+    const rows = await client`SELECT COUNT(*)::int AS count FROM relics WHERE owner_jid = ${jid}`;
+    return rows[0].count;
   }
 
-  getInventory(jid) {
-    return this._findInventory().get(jid) ?? null;
+  async getInventory(jid, client = sql) {
+    const rows = await client`SELECT * FROM relic_inventory WHERE jid = ${jid}`;
+    return rows[0] ?? null;
   }
 
-  setInventory(jid, headId, handsId, bodyId, feetId) {
-    return this._upsertInventory().run({
-      jid,
-      head_id: headId,
-      hands_id: handsId,
-      body_id: bodyId,
-      feet_id: feetId,
-    });
+  async setInventory(jid, headId, handsId, bodyId, feetId, client = sql) {
+    await client`
+      INSERT INTO relic_inventory (jid, head_id, hands_id, body_id, feet_id)
+      VALUES (${jid}, ${headId}, ${handsId}, ${bodyId}, ${feetId})
+      ON CONFLICT (jid) DO UPDATE SET
+        head_id = EXCLUDED.head_id, hands_id = EXCLUDED.hands_id, body_id = EXCLUDED.body_id, feet_id = EXCLUDED.feet_id,
+        updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+    `;
   }
 
-  isEquipped(relicId) {
-    const result = this._equippedCount().get(relicId, relicId, relicId, relicId);
-    return result.count > 0;
+  async isEquipped(relicId, client = sql) {
+    const rows = await client`
+      SELECT COUNT(*)::int AS count FROM relic_inventory
+      WHERE head_id = ${relicId} OR hands_id = ${relicId} OR body_id = ${relicId} OR feet_id = ${relicId}
+    `;
+    return rows[0].count > 0;
   }
 }
 

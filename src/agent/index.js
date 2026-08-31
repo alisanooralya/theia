@@ -37,7 +37,7 @@ export const agentService = {
 
     const userContent = media ? buildMultimodalContent(text, media) : text;
 
-    const agentCtx = buildAgentContext(parsed, sock);
+    const agentCtx = await buildAgentContext(parsed, sock);
     await agentCtx.typing().catch(() => {});
 
     const result = await agent.run(agentCtx, userContent);

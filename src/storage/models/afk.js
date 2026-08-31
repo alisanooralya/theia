@@ -1,28 +1,21 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class AfkModel {
-  _get = lazyPrepare('SELECT * FROM afk WHERE jid = ?');
-  _set = lazyPrepare(
-    'INSERT INTO afk (jid, reason, started_at) VALUES (@jid, @reason, @startedAt) ' +
-      'ON CONFLICT(jid) DO UPDATE SET reason = excluded.reason, started_at = excluded.started_at'
-  );
-  _remove = lazyPrepare('DELETE FROM afk WHERE jid = ?');
-
-  get(jid) {
-    return this._get().get(jid) ?? null;
+  async get(jid, client = sql) {
+    const rows = await client`SELECT * FROM afk WHERE jid = ${jid}`;
+    return rows[0] ?? null;
   }
 
-  set(jid, reason = '') {
-    this._set().run({
-      jid,
-      reason,
-      startedAt: Math.floor(Date.now() / 1000),
-    });
+  async set(jid, reason = '', client = sql) {
+    const startedAt = Math.floor(Date.now() / 1000);
+    await client`
+      INSERT INTO afk (jid, reason, started_at) VALUES (${jid}, ${reason}, ${startedAt})
+      ON CONFLICT (jid) DO UPDATE SET reason = EXCLUDED.reason, started_at = EXCLUDED.started_at
+    `;
   }
 
-  remove(jid) {
-    this._remove().run(jid);
+  async remove(jid, client = sql) {
+    await client`DELETE FROM afk WHERE jid = ${jid}`;
   }
 }
 

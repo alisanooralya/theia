@@ -15,11 +15,11 @@ export default {
     if (!parsed.sender) return true;
     try {
       const { groupModel } = await import('#storage/models/index.js');
-      groupModel.ensure(parsed.jid);
+      await groupModel.ensure(parsed.jid);
     } catch {}
     const userJid = parsed.sender;
     try {
-      userModel.ensure(userJid, { pushName: parsed.pushName || '' });
+      await userModel.ensure(userJid, { pushName: parsed.pushName || '' });
     } catch {}
     const key = `${parsed.jid}:${userJid}`;
     const now = Date.now();
@@ -32,9 +32,9 @@ export default {
     try {
       const xp = Math.floor(Math.random() * (XP_MAX - XP_MIN + 1)) + XP_MIN;
       try {
-        groupActivityModel.addXp(parsed.jid, userJid, xp);
+        await groupActivityModel.addXp(parsed.jid, userJid, xp);
       } catch {}
-      const result = userModel.addExp(userJid, xp);
+      const result = await userModel.addExp(userJid, xp);
       if (result.leveledUp) {
         await sock
           .sendMessage(parsed.jid, {

@@ -7,15 +7,16 @@ export default {
   ownerNumber: ['6287760363490', '6283175202307', '6289514701687'],
 
   // ─── Login Mode ───
-  pairingNumber: '6283872712735', //'6283879462232',
+  pairingNumber: /*'6283872712735',*/ '6283879462232',
 
   // ─── Paths ───
   sessionPath: './sessions',
   dbPath: './data/database.db',
 
+  // ─── Supabase (Postgres) ───
+  supabaseDbUrl: 'postgresql://postgres.awsqisxfvenzvbmimqow:theia123%23%24%40@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres',
+
   // ─── Auth Backend ───
-  // 'file'   = development (default)
-  // 'sqlite' = production (lebih efisien)
   authBackend: 'sqlite',
   sessionId: 'default',
 
@@ -46,6 +47,6 @@ export default {
   // ─── Misc ───
   timezone: 'Asia/Jakarta',
   respondToSelf: false,
-  ignoreBots: true,
-  autoread: true,
+  ignoreBots: false,
+  autoread: false,
 };

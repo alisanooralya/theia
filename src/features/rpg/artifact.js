@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import {
   artifactModel,
   statsModel,
@@ -48,17 +48,17 @@ const MAIN_STAT_SCALING = {
     def_percent: { 1: 87, 20: 583 },
   },
   circlet: {
-    hp_percent: { 1: 70, 20: 466 },
-    atk_percent: { 1: 70, 20: 466 },
-    def_percent: { 1: 70, 20: 466 },
-    crit_rate: { 1: 47, 20: 450 },
+    hp_percent: { 1: 58, 20: 388 },
+    atk_percent: { 1: 58, 20: 388 },
+    def_percent: { 1: 58, 20: 388 },
+    crit_rate: { 1: 39, 20: 259 },
   },
 };
 
 const SUBSTAT_VALUES = {
-  atk: { min: 12, max: 34 },
-  hp: { min: 48, max: 74 },
-  def: { min: 69, max: 121 },
+  hp: { min: 80, max: 160 },
+  atk: { min: 5, max: 15 },
+  def: { min: 6, max: 16 },
 };
 
 const ALL_SUBSTATS = ['hp', 'atk', 'def'];
@@ -165,7 +165,7 @@ class ArtifactService {
     return STAT_FORMAT[stat] || ((v) => `+${v}`);
   }
 
-  generateArtifact(jid, forceSlot = null) {
+  async generateArtifact(jid, forceSlot = null) {
     const slot = forceSlot || weightedRandom(
       Object.keys(SLOTS),
       [1, 1, 1, 1, 1]
@@ -214,15 +214,15 @@ class ArtifactService {
     return artifactModel.getInventory(jid);
   }
 
-  equip(jid, userId) {
-    const artifact = artifactModel.find(jid, userId);
+  async equip(jid, userId) {
+    const artifact = await artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
-    const inventory = artifactModel.getInventory(jid) || {
+    const inventory = (await artifactModel.getInventory(jid)) || {
       flower_id: null, feather_id: null, sands_id: null, goblet_id: null, circlet_id: null,
     };
     const slotKey = `${artifact.slot}_id`;
     inventory[slotKey] = artifact.id;
-    artifactModel.setInventory(
+    await artifactModel.setInventory(
       jid,
       inventory.flower_id, inventory.feather_id,
       inventory.sands_id, inventory.goblet_id, inventory.circlet_id
@@ -230,15 +230,15 @@ class ArtifactService {
     return artifact;
   }
 
-  unequip(slot, jid) {
+  async unequip(slot, jid) {
     if (!SLOTS[slot]) throw new Error(`Slot tidak valid: ${slot}. Slot yang tersedia: flower, feather, sands, goblet, circlet.`);
-    const inventory = artifactModel.getInventory(jid);
+    const inventory = await artifactModel.getInventory(jid);
     if (!inventory) throw new Error('Tidak ada artifact yang terpasang.');
     const slotKey = `${slot}_id`;
     const artifactId = inventory[slotKey];
     if (!artifactId) throw new Error(`Tidak ada artifact di slot ${slot}.`);
     inventory[slotKey] = null;
-    artifactModel.setInventory(
+    await artifactModel.setInventory(
       jid,
       inventory.flower_id, inventory.feather_id,
       inventory.sands_id, inventory.goblet_id, inventory.circlet_id
@@ -255,13 +255,13 @@ class ArtifactService {
     return LEVELING_COSTS[artifact.level];
   }
 
-  upgrade(jid, userId) {
-    const artifact = artifactModel.find(jid, userId);
+  async upgrade(jid, userId) {
+    const artifact = await artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
     if (!this.canUpgrade(artifact)) throw new Error('Artifact sudah mencapai level maksimum (20).');
 
-    const wallet = walletModel.find(jid);
-    const user = userModel.findById(jid);
+    const wallet = await walletModel.find(jid);
+    const user = await userModel.findById(jid);
     let coins = wallet?.cash ?? 0;
     let exp = user?.exp ?? 0;
     let totalCostCoins = 0;
@@ -295,10 +295,10 @@ class ArtifactService {
     }
 
     const fromLevel = artifact.level;
-    db.transaction(() => {
-      walletModel.addCash(jid, -totalCostCoins);
+    await sql.begin(async (t) => {
+      await walletModel.addCash(jid, -totalCostCoins, t);
       if (totalCostExp > 0) {
-        userModel.addExp(jid, -totalCostExp);
+        await userModel.addExp(jid, -totalCostExp, t);
       }
       artifact.level = targetLevel;
       artifact.main_value = interpolateMainStat(artifact.slot, artifact.main_stat, artifact.level);
@@ -311,16 +311,16 @@ class ArtifactService {
           }
         }
       }
-      artifactModel.update(artifact);
-    })();
+      await artifactModel.update(artifact, t);
+    });
     return artifact;
   }
 
-  smelt(jid, userId) {
-    const artifact = artifactModel.find(jid, userId);
+  async smelt(jid, userId) {
+    const artifact = await artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
 
-    const inventory = artifactModel.getInventory(jid);
+    const inventory = await artifactModel.getInventory(jid);
     let unequipNeeded = false;
     if (inventory) {
       const slotKey = `${artifact.slot}_id`;
@@ -337,25 +337,26 @@ class ArtifactService {
     }
     const coinsEarned = SMELT_BASE_VALUE + Math.floor(totalSpent * 0.7);
 
-    db.transaction(() => {
+    await sql.begin(async (t) => {
       if (unequipNeeded) {
-        artifactModel.setInventory(
+        await artifactModel.setInventory(
           jid,
           inventory.flower_id, inventory.feather_id,
-          inventory.sands_id, inventory.goblet_id, inventory.circlet_id
+          inventory.sands_id, inventory.goblet_id, inventory.circlet_id,
+          t
         );
       }
-      artifactModel.delete(artifact.id);
+      await artifactModel.delete(artifact.id, t);
       if (coinsEarned > 0) {
-        walletModel.addCash(jid, coinsEarned);
+        await walletModel.addCash(jid, coinsEarned, t);
       }
-    })();
+    });
 
     return { artifact, coinsEarned };
   }
 
-  getPlayerStats(jid) {
-    const base = statsModel.find(jid);
+  async getPlayerStats(jid) {
+    const base = await statsModel.find(jid);
     const baseHp = base?.max_hp ?? 1200;
     const baseAtk = base?.atk ?? 30;
     const baseDef = base?.def ?? 20;
@@ -364,13 +365,13 @@ class ArtifactService {
     let artifactAtk = 0;
     let artifactDef = 0;
     let artifactCritRate = 0;
-    const inventory = artifactModel.getInventory(jid);
+    const inventory = await artifactModel.getInventory(jid);
     if (inventory) {
       const slots = ['flower', 'feather', 'sands', 'goblet', 'circlet'];
       for (const slot of slots) {
         const artifactId = inventory[`${slot}_id`];
         if (!artifactId) continue;
-        const artifact = artifactModel.findById(artifactId);
+        const artifact = await artifactModel.findById(artifactId);
         if (!artifact) continue;
         switch (artifact.main_stat) {
           case 'hp': artifactHp += artifact.main_value; break;
@@ -397,8 +398,8 @@ class ArtifactService {
     };
   }
 
-  getRawBaseStats(jid) {
-    const base = statsModel.find(jid);
+  async getRawBaseStats(jid) {
+    const base = await statsModel.find(jid);
     return {
       hp: base?.max_hp ?? 1200,
       atk: base?.atk ?? 30,
@@ -423,9 +424,9 @@ class ArtifactService {
     };
   }
 
-  formatArtifactFull(artifact) {
+  async formatArtifactFull(artifact) {
     const formatted = this.formatArtifact(artifact);
-    const equipped = artifactModel.isEquipped(artifact.id);
+    const equipped = await artifactModel.isEquipped(artifact.id);
     return [
       `*[${SLOT_EMOJI[artifact.slot]} ${artifact.name}]*`,
       `Slot: ${artifact.slot} | Lv.${artifact.level}`,

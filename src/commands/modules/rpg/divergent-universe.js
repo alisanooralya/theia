@@ -37,7 +37,7 @@ function pendingText(run) {
   return `*${title}*\n${lines.join('\n')}\n\nKetik \`.du choose <nomor>\`.`;
 }
 
-function runText(run) {
+async function runText(run) {
   const state = run.state;
   const node = state.nodes[state.nodeIndex];
   const path = state.path ? du.paths[state.path].name : 'Belum dipilih';
@@ -66,7 +66,7 @@ function runText(run) {
   const reward = state.finalReward
     ? `\nReward: *${F.formatNumber(state.finalReward.cash)} cash* + *${state.finalReward.exp} EXP*`
     : '';
-  const usage = du.getUsage(run.jid);
+  const usage = await du.getUsage(run.jid);
 
   const tips = [];
   if (run.status === 'failed') {
@@ -156,7 +156,7 @@ async function sendOrEdit(ctx, run, text) {
   if (clearedCount > 0 && clearedCount % 3 === 0) {
     const msg = await ctx.reply(text);
     state.lastMessageKey = msg.key;
-    du.saveRun(run);
+    await du.saveRun(run);
     return;
   }
 
@@ -169,7 +169,7 @@ async function sendOrEdit(ctx, run, text) {
   }
   const msg = await ctx.reply(text);
   state.lastMessageKey = msg.key;
-  du.saveRun(run);
+  await du.saveRun(run);
 }
 
 export default {
@@ -214,7 +214,7 @@ export default {
       if (sub === 'paths' || sub === 'pathlist') return ctx.reply(pathsText());
       if (sub === 'reward' || sub === 'hadiah') return ctx.reply(rewardText());
       if (sub === 'limit' || sub === 'kuota') {
-        const usage = du.getUsage(ctx.sender);
+        const usage = await du.getUsage(ctx.sender);
         return ctx.reply([
           '⌁ *LIMIT DIVERGENT UNIVERSE*',
           '',
@@ -232,41 +232,41 @@ export default {
         if (!['easy', 'medium', 'hard'].includes(difficulty)) {
           return ctx.fail('Difficulty tidak valid. Pilih easy, medium, atau hard.');
         }
-        const run = du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName }, difficulty);
-        const text = runText(run);
+        const run = await du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName }, difficulty);
+        const text = await runText(run);
         const msg = await ctx.reply(text);
         run.state.lastMessageKey = msg.key;
-        du.saveRun(run);
+        await du.saveRun(run);
         return;
       }
 
       if (sub === 'path') {
         if (!ctx.args[1]) return ctx.reply(pathsText());
-        const run = du.choosePath(ctx.sender, ctx.jid, ctx.args[1]);
-        await sendOrEdit(ctx, run, runText(run));
+        const run = await du.choosePath(ctx.sender, ctx.jid, ctx.args[1]);
+        await sendOrEdit(ctx, run, await runText(run));
         return;
       }
 
       if (sub === 'explore' || sub === 'jelajah' || sub === 'next') {
-        const run = du.explore(ctx.sender, ctx.jid);
-        await sendOrEdit(ctx, run, runText(run));
+        const run = await du.explore(ctx.sender, ctx.jid);
+        await sendOrEdit(ctx, run, await runText(run));
         return;
       }
 
       if (sub === 'choose' || sub === 'pilih') {
-        const run = du.choose(ctx.sender, ctx.jid, ctx.args[1]);
-        await sendOrEdit(ctx, run, runText(run));
+        const run = await du.choose(ctx.sender, ctx.jid, ctx.args[1]);
+        await sendOrEdit(ctx, run, await runText(run));
         return;
       }
 
       if (sub === 'abandon' || sub === 'keluar') {
-        const abandoned = du.abandon(ctx.sender, ctx.jid);
+        const abandoned = await du.abandon(ctx.sender, ctx.jid);
         return ctx.reply(abandoned
           ? 'Run Divergent Universe dihentikan. Reward akhir hangus.'
           : 'Tidak ada run aktif untuk dihentikan.');
       }
 
-      const run = du.getRun(ctx.sender, ctx.jid);
+      const run = await du.getRun(ctx.sender, ctx.jid);
       if (!run) {
         return ctx.fail('Tidak ada run aktif. Ketik `.du start` untuk memulai.');
       }
@@ -280,7 +280,7 @@ export default {
         return ctx.reply(collectionText('Curio', run.state.curios));
       }
       if (sub === 'status' || sub === 'progres') {
-        return ctx.reply(runText(run));
+        return ctx.reply(await runText(run));
       }
       return ctx.reply('Subcommand tidak dikenal. Ketik `.du` untuk bantuan.');
     } catch (error) {

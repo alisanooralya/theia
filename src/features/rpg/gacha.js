@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import {
   walletModel,
   inventoryModel,
@@ -28,8 +28,7 @@ function weightedRandom(items, weights) {
   return items[items.length - 1];
 }
 
-function buildPool() {
-  const shopItems = itemModel.shopItems();
+function buildPool(shopItems) {
   const pool = [];
 
   for (const item of shopItems) {
@@ -62,38 +61,39 @@ class GachaService {
     this.COIN_COST = GACHA_COST;
   }
 
-  pull(jid, count) {
-    const wallet = walletModel.find(jid);
+  async pull(jid, count) {
+    const wallet = await walletModel.find(jid);
     const totalCost = GACHA_COST * count;
 
     if (!wallet || wallet.cash < totalCost) {
       throw new Error(`Saldo tidak cukup. Butuh 🪙${totalCost.toLocaleString()}, punya 🪙${(wallet?.cash ?? 0).toLocaleString()}.`);
     }
 
-    const pool = buildPool();
+    const shopItems = await itemModel.shopItems();
+    const pool = buildPool(shopItems);
     const results = [];
 
-    db.transaction(() => {
-      walletModel.addCash(jid, -totalCost);
+    await sql.begin(async (t) => {
+      await walletModel.addCash(jid, -totalCost, t);
 
       for (let i = 0; i < count; i++) {
         const result = singlePull(pool);
 
         if (result.type === 'artifact') {
           try {
-            const artifact = artifactService.generateArtifact(jid);
+            const artifact = await artifactService.generateArtifact(jid);
             results.push({ type: 'artifact', artifact });
           } catch {
             results.push({ type: 'zonk' });
           }
         } else if (result.type === 'item') {
-          inventoryModel.add(jid, result.item.id, 1);
+          await inventoryModel.add(jid, result.item.id, 1, t);
           results.push({ type: 'item', item: result.item });
         } else {
           results.push({ type: 'zonk' });
         }
       }
-    })();
+    });
 
     return results;
   }

@@ -1,106 +1,91 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class WalletModel {
-  _find = lazyPrepare('SELECT * FROM wallets WHERE jid = ?');
-  _addCash = lazyPrepare(
-    'UPDATE wallets SET cash = cash + @amount, updated_at = unixepoch() WHERE jid = @jid'
-  );
-  _addBank = lazyPrepare(
-    'UPDATE wallets SET bank = bank + @amount, updated_at = unixepoch() WHERE jid = @jid'
-  );
-  _insertTx = lazyPrepare(
-    'INSERT INTO transactions (from_jid, to_jid, amount, type, note) VALUES (@fromJid, @toJid, @amount, @type, @note)'
-  );
-
-  find(jid) {
-    return this._find().get(jid) ?? null;
+  async find(jid, client = sql) {
+    const rows = await client`SELECT * FROM wallets WHERE jid = ${jid}`;
+    return rows[0] ?? null;
   }
 
-  upgradeBankLimit(jid, amount) {
-    db.prepare(
-      'UPDATE wallets SET bank_limit = bank_limit + @amount, updated_at = unixepoch() WHERE jid = @jid'
-    ).run({ jid, amount });
+  async upgradeBankLimit(jid, amount, client = sql) {
+    await client`
+      UPDATE wallets SET bank_limit = bank_limit + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
   }
 
-  addCash(jid, amount) {
-    const w = this._find().get(jid);
+  async addCash(jid, amount, client = sql) {
+    const w = await this.find(jid, client);
     if (amount < 0 && w && w.cash < Math.abs(amount))
       throw new Error('Saldo cash tidak cukup');
-    this._addCash().run({ jid, amount });
+    await client`
+      UPDATE wallets SET cash = cash + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
   }
 
-  addBank(jid, amount) {
-    const w = this._find().get(jid);
+  async addBank(jid, amount, client = sql) {
+    const w = await this.find(jid, client);
     if (amount < 0 && w && w.bank < Math.abs(amount))
       throw new Error('Saldo bank tidak cukup');
-    this._addBank().run({ jid, amount });
+    await client`
+      UPDATE wallets SET bank = bank + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
   }
 
-  reward(jid, amount, note = 'reward') {
-    this._addCash().run({ jid, amount });
-    this._insertTx().run({
-      fromJid: 'system',
-      toJid: jid,
-      amount,
-      type: 'reward',
-      note,
+  async reward(jid, amount, note = 'reward', client = sql) {
+    await client`
+      UPDATE wallets SET cash = cash + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
+    await client`
+      INSERT INTO transactions (from_jid, to_jid, amount, type, note) VALUES ('system', ${jid}, ${amount}, 'reward', ${note})
+    `;
+  }
+
+  async transfer(fromJid, toJid, amount, note = '') {
+    await sql.begin(async (t) => {
+      const sender = await this.find(fromJid, t);
+      if (!sender || sender.cash < amount)
+        throw new Error('Saldo cash tidak cukup');
+      await this.addCash(fromJid, -amount, t);
+      await this.addCash(toJid, amount, t);
+      await t`
+        INSERT INTO transactions (from_jid, to_jid, amount, type, note) VALUES (${fromJid}, ${toJid}, ${amount}, 'transfer', ${note})
+      `;
     });
   }
 
-  transfer(fromJid, toJid, amount, note = '') {
-    db.transaction(() => {
-      const sender = this._find().get(fromJid);
-      if (!sender || sender.cash < amount)
-        throw new Error('Saldo cash tidak cukup');
-      this._addCash().run({ jid: fromJid, amount: -amount });
-      this._addCash().run({ jid: toJid, amount });
-      this._insertTx().run({ fromJid, toJid, amount, type: 'transfer', note });
-    })();
-  }
-
-  deposit(jid, amount) {
-    db.transaction(() => {
-      const w = this._find().get(jid);
+  async deposit(jid, amount) {
+    await sql.begin(async (t) => {
+      const w = await this.find(jid, t);
       if (!w || w.cash < amount) throw new Error('Saldo cash tidak cukup');
       if (w.bank + amount > w.bank_limit)
         throw new Error(`Limit bank terlampaui (max: ${w.bank_limit})`);
-      this._addCash().run({ jid, amount: -amount });
-      this._addBank().run({ jid, amount });
-    })();
+      await this.addCash(jid, -amount, t);
+      await this.addBank(jid, amount, t);
+    });
   }
 
-  withdraw(jid, amount) {
-    db.transaction(() => {
-      const w = this._find().get(jid);
+  async withdraw(jid, amount) {
+    await sql.begin(async (t) => {
+      const w = await this.find(jid, t);
       if (!w || w.bank < amount) throw new Error('Saldo bank tidak cukup');
-      this._addBank().run({ jid, amount: -amount });
-      this._addCash().run({ jid, amount });
-    })();
+      await this.addBank(jid, -amount, t);
+      await this.addCash(jid, amount, t);
+    });
   }
 
-  leaderboard(limit = 10) {
-    return db
-      .prepare(
-        `
+  async leaderboard(limit = 10) {
+    return sql`
       SELECT w.jid, (w.cash + w.bank) as total, w.cash, w.bank, u.push_name
       FROM wallets w LEFT JOIN users u ON u.jid = w.jid
-      ORDER BY total DESC LIMIT ?
-    `
-      )
-      .all(limit);
+      ORDER BY total DESC LIMIT ${limit}
+    `;
   }
 
-  history(jid, limit = 10) {
-    return db
-      .prepare(
-        `
+  async history(jid, limit = 10) {
+    return sql`
       SELECT * FROM transactions
-      WHERE from_jid = @jid OR to_jid = @jid
-      ORDER BY created_at DESC LIMIT @limit
-    `
-      )
-      .all({ jid, limit });
+      WHERE from_jid = ${jid} OR to_jid = ${jid}
+      ORDER BY created_at DESC LIMIT ${limit}
+    `;
   }
 }
 

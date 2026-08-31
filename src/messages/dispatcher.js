@@ -2,7 +2,7 @@ import { commandRegistry } from '#commands/registry.js';
 import { buildContext } from '#messages/context.js';
 import { runPipeline } from '#guards/pipeline.js';
 import { applyCooldown } from '#guards/throttles/cooldown.js';
-import { groupModel, botConfigModel } from '#storage/models/index.js';
+import { groupModel } from '#storage/models/index.js';
 import { logger } from '#helpers/logger.js';
 import { CommandError } from '#helpers/command-error.js';
 import SETTINGS from '#environment/settings.js';
@@ -27,17 +27,11 @@ export async function dispatch(parsed, sock) {
   if (!command) return;
 
   if (parsed.isGroup && !command.bypassMute) {
-    const group = groupModel.find(parsed.jid);
+    const group = await groupModel.find(parsed.jid);
     if (group?.mute) return;
   }
 
   const ctx = buildContext(parsed, sock);
-
-  if (botConfigModel.isMaintenanceMode() && !ctx.isOwner()) {
-    return ctx
-      .reply('Bot sedang maintenance. Coba lagi nanti.')
-      .catch(() => {});
-  }
 
   logger.debug(
     { command: command.name, sender: ctx.sender },
@@ -49,7 +43,7 @@ export async function dispatch(parsed, sock) {
 
     await ctx.typing();
     await command.execute(ctx);
-    applyCooldown(ctx, command);
+    await applyCooldown(ctx, command);
   } catch (err) {
     if (err instanceof CommandError) {
       await ctx.reply(err.message).catch(() => {});

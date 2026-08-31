@@ -16,13 +16,13 @@ export default {
 
     try {
       if (sub === 'deposit' || sub === 'tabung') {
-        walletModel.deposit(ctx.sender, amount);
-        const wallet = walletModel.find(ctx.sender);
+        await walletModel.deposit(ctx.sender, amount);
+        const wallet = await walletModel.find(ctx.sender);
         await ctx.reply(
           `✅ Deposit *${F.formatNumber(amount)}* ke bank berhasil!\n🏦 Bank: *${F.formatNumber(wallet.bank)}* / ${F.formatNumber(wallet.bank_limit)}`
         );
       } else if (sub === 'withdraw' || sub === 'ambil') {
-        walletModel.withdraw(ctx.sender, amount);
+        await walletModel.withdraw(ctx.sender, amount);
         await ctx.reply(
           `✅ Withdraw *${F.formatNumber(amount)}* dari bank berhasil!`
         );

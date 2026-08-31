@@ -4,8 +4,8 @@ export async function checkPremium(ctx, command) {
   if (!command.premiumOnly) return true;
   if (ctx.isOwner()) return true;
 
-  userModel.checkPremiumExpiry(ctx.sender);
-  const user = userModel.findById(ctx.sender);
+  await userModel.checkPremiumExpiry(ctx.sender);
+  const user = await userModel.findById(ctx.sender);
 
   if (user?.premium) return true;
 

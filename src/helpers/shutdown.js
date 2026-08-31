@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { closeDatabase } from '#storage/connection.js';
 import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
 import { logger } from '#helpers/logger.js';
 
@@ -38,7 +38,7 @@ export function setupShutdown() {
     orchestrator.destroyAll();
 
     try {
-      db.close();
+      await closeDatabase();
     } catch (err) {
       process.stderr.write(`DB close error: ${err}\n`);
     }

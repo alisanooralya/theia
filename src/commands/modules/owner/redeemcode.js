@@ -22,7 +22,7 @@ export default {
       ctx.fail('Expired harus berupa angka milidetik lebih dari 0.');
 
     try {
-      const redeemCode = redeemCodeModel.create(
+      const redeemCode = await redeemCodeModel.create(
         code,
         amount,
         Date.now() + durationMs

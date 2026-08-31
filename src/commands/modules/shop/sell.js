@@ -14,7 +14,7 @@ export default {
     if (!itemId) ctx.fail('Usage: `!sell <item_id> [jumlah]`');
 
     try {
-      const { earned } = shopService.sell(ctx.sender, itemId, qty);
+      const { earned } = await shopService.sell(ctx.sender, itemId, qty);
       await ctx.reply(
         `💰 *Penjualan Berhasil!*\n🪙 +${F.formatNumber(earned)}`
       );

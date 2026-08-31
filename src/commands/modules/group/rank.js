@@ -11,17 +11,17 @@ export default {
   async execute(ctx) {
     const selfJid = ctx.senderAlt || ctx.sender;
     let target = ctx.quoted?.sender ?? selfJid;
-    let data = groupActivityModel.get(ctx.jid, target);
+    let data = await groupActivityModel.get(ctx.jid, target);
 
     if (!data && target === selfJid && ctx.senderAlt) {
-      data = groupActivityModel.get(ctx.jid, ctx.sender);
+      data = await groupActivityModel.get(ctx.jid, ctx.sender);
       if (data) target = ctx.sender;
     }
 
     if (!data) return ctx.reply('Belum ada XP. Coba chat dulu di grup ini.');
-    const nextXp = groupActivityModel.xpForNext(data.level);
+    const nextXp = await groupActivityModel.xpForNext(data.level);
     const need = nextXp - data.xp;
-    const rank = groupActivityModel.rank(ctx.jid, target);
+    const rank = await groupActivityModel.rank(ctx.jid, target);
     const isSelf = target === selfJid;
     const mention = isSelf ? 'Kamu' : `@${target.split('@')[0]}`;
     await ctx.reply(

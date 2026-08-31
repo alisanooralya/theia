@@ -24,7 +24,7 @@ export default {
   cooldown: 0,
 
   async execute(ctx) {
-    const user = userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    const user = await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     const todayKey = wibDayKey(Math.floor(Date.now() / 1000));
     const lastKey = user.last_daily ? wibDayKey(user.last_daily) : null;
 
@@ -36,9 +36,9 @@ export default {
 
     const cash = randInt(DAILY_AMOUNT_MIN, DAILY_AMOUNT_MAX);
     const exp = randInt(DAILY_EXP_MIN, DAILY_EXP_MAX);
-    walletModel.reward(ctx.sender, cash, 'daily reward');
-    const { leveledUp, newLevel } = userModel.addExp(ctx.sender, exp);
-    const streak = userModel.recordDaily(ctx.sender);
+    await walletModel.reward(ctx.sender, cash, 'daily reward');
+    const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, exp);
+    const streak = await userModel.recordDaily(ctx.sender);
 
     let text = `🎁 *Daily Reward!*\n\n🪙 +${F.formatNumber(cash)} cash\n⭐ +${exp} EXP\n🔥 Streak: *${streak} hari*`;
     if (leveledUp)

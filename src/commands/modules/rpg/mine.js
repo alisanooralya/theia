@@ -31,7 +31,7 @@ export default {
   cooldown: 60 * 60 * 1000,
 
   async execute(ctx) {
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
     if (miningUsers.has(ctx.sender)) {
       return ctx.fail('⛏️ Kamu masih menambang, tunggu sampai selesai dulu!');
@@ -50,8 +50,8 @@ export default {
           Math.random() * (mineral.reward[1] - mineral.reward[0])
       );
 
-      walletModel.reward(ctx.sender, reward, `mine: ${mineral.name}`);
-      const { leveledUp, newLevel } = userModel.addExp(ctx.sender, mineral.exp);
+      await walletModel.reward(ctx.sender, reward, `mine: ${mineral.name}`);
+      const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, mineral.exp);
 
       let text = `⛏️ *Mining!*\n\n${mineral.emoji} Kamu dapat: *${mineral.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${mineral.exp} EXP`;
       if (leveledUp)

@@ -24,10 +24,10 @@ export default {
       const itemId = ctx.args[1];
       const qty = parseInt(ctx.args[2]) || 1;
       if (!itemId) ctx.fail('Usage: `!shop buy <item_id> [jumlah]`');
-      userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+      await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
       try {
-        const { total } = shopService.buy(ctx.sender, itemId, qty);
-        const wallet = walletModel.find(ctx.sender);
+        const { total } = await shopService.buy(ctx.sender, itemId, qty);
+        const wallet = await walletModel.find(ctx.sender);
         return ctx.reply(
           `🛒 *Pembelian Berhasil!*\n📦 ×${qty}\n🪙 -${F.formatNumber(total)}\n💰 Sisa: ${F.formatNumber(wallet?.cash ?? 0)}`
         );
@@ -36,8 +36,8 @@ export default {
       }
     }
 
-    const grouped = shopService.getShopItems();
-    const wallet = walletModel.find(ctx.sender);
+    const grouped = await shopService.getShopItems();
+    const wallet = await walletModel.find(ctx.sender);
     let text = `🏪 *Toko Theia*\n${wallet ? `💰 Cash: *${F.formatNumber(wallet.cash)}*\n\n` : '\n'}`;
 
     text += `📖 *Cara Pakai:*\n`;

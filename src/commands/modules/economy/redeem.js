@@ -12,9 +12,9 @@ export default {
     const code = ctx.args[0]?.trim().toUpperCase();
     if (!code) return ctx.fail('Usage: `!redeem <kode>`');
 
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     try {
-      const reward = redeemCodeModel.redeem(code, ctx.sender);
+      const reward = await redeemCodeModel.redeem(code, ctx.sender);
       await ctx.reply(
         `✅ Redeem berhasil! Kamu mendapatkan ${F.formatNumber(reward.amount)} cash.`
       );

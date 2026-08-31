@@ -19,8 +19,8 @@ export default {
       sub === 'disable'
     ) {
       const enabled = sub === 'on' || sub === 'enable';
-      groupModel.ensure(ctx.jid);
-      groupModel.update(ctx.jid, { welcome: enabled ? 1 : 0 });
+      await groupModel.ensure(ctx.jid);
+      await groupModel.update(ctx.jid, { welcome: enabled ? 1 : 0 });
       return ctx.reply(
         `✅ Welcome message ${enabled ? 'diaktifkan' : 'dinonaktifkan'}.`
       );
@@ -29,15 +29,15 @@ export default {
     if (sub === 'set') {
       const msg = ctx.rawArgs.replace(/^set\s+/i, '');
       if (!msg) ctx.fail('Usage: `!welcome set <pesan>`');
-      groupModel.ensure(ctx.jid);
-      groupModel.update(ctx.jid, { welcome_msg: msg });
+      await groupModel.ensure(ctx.jid);
+      await groupModel.update(ctx.jid, { welcome_msg: msg });
       return ctx.reply('✅ Welcome message diupdate.');
     }
 
-    let settings = groupModel.find(ctx.jid);
+    let settings = await groupModel.find(ctx.jid);
     if (!settings) {
-      groupModel.ensure(ctx.jid);
-      settings = groupModel.find(ctx.jid);
+      await groupModel.ensure(ctx.jid);
+      settings = await groupModel.find(ctx.jid);
     }
 
     const status = settings.welcome ? '✅ Aktif' : '❌ Nonaktif';

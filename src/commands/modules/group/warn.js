@@ -1,4 +1,4 @@
-import { db } from '#storage/connection.js';
+import { sql } from '#storage/connection.js';
 import { phoneToJid } from '#helpers/identifier.js';
 import { logger } from '#helpers/logger.js';
 
@@ -17,13 +17,11 @@ const WARN_REASONS = [
   { id: 10, label: 'repeatedly break the same rule', damage: 15 },
 ];
 
-function getHealth(jid, groupJid) {
-  const row = db
-    .prepare(
-      `SELECT COALESCE(SUM(damage), 0) as d FROM warns WHERE jid = ? AND group_jid = ?`
-    )
-    .get(jid, groupJid);
-  return Math.max(0, MAX_HEALTH - (row?.d ?? 0));
+async function getHealth(jid, groupJid) {
+  const rows = await sql`
+    SELECT COALESCE(SUM(damage), 0)::int AS d FROM warns WHERE jid = ${jid} AND group_jid = ${groupJid}
+  `;
+  return Math.max(0, MAX_HEALTH - (rows[0]?.d ?? 0));
 }
 
 function reasonsList() {
@@ -65,11 +63,11 @@ export default {
     if (targetJid === ctx.sender)
       return ctx.reply('Tidak bisa warn diri sendiri.');
 
-    db.prepare(
-      `INSERT INTO warns (jid, group_jid, reason, damage) VALUES (?, ?, ?, ?)`
-    ).run(targetJid, ctx.jid, `${reason.id}. ${reason.label}`, reason.damage);
+    await sql`
+      INSERT INTO warns (jid, group_jid, reason, damage) VALUES (${targetJid}, ${ctx.jid}, ${`${reason.id}. ${reason.label}`}, ${reason.damage})
+    `;
 
-    const health = getHealth(targetJid, ctx.jid);
+    const health = await getHealth(targetJid, ctx.jid);
 
     if (health <= 0) {
       try {
@@ -77,10 +75,7 @@ export default {
       } catch (err) {
         logger.warn({ err }, 'Failed to kick warned user');
       }
-      db.prepare(`DELETE FROM warns WHERE jid = ? AND group_jid = ?`).run(
-        targetJid,
-        ctx.jid
-      );
+      await sql`DELETE FROM warns WHERE jid = ${targetJid} AND group_jid = ${ctx.jid}`;
       return ctx.reply(`@${targetJid.split('@')[0]} health 0 dan di-kick!`, {
         mentions: [targetJid],
       });

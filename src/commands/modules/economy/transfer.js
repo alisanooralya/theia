@@ -27,7 +27,7 @@ export default {
     const total = amount + tax;
 
     try {
-      walletModel.transfer(ctx.sender, targetJid, total, 'transfer');
+      await walletModel.transfer(ctx.sender, targetJid, total, 'transfer');
       await ctx.reply(
         `✅ Transfer *${F.formatNumber(amount)}* ke @${targetJid.split('@')[0]} berhasil!\n💰 Pajak: *${F.formatNumber(tax)}*`,
         { mentions: [targetJid] }

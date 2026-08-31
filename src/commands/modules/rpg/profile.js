@@ -24,25 +24,25 @@ export default {
 
   async execute(ctx) {
     const jid = ctx.mentions[0] ?? ctx.sender;
-    const user = userModel.ensure(jid, { pushName: ctx.pushName });
-    const wallet = walletModel.find(jid);
-    const stats = statsModel.ensure(jid);
-    userModel.checkPremiumExpiry(jid);
+    const user = await userModel.ensure(jid, { pushName: ctx.pushName });
+    const wallet = await walletModel.find(jid);
+    const stats = await statsModel.ensure(jid);
+    await userModel.checkPremiumExpiry(jid);
 
-    const finalStats = artifactService.getPlayerStats(jid);
-    const expNeeded = userModel.expForLevel(user.level + 1);
+    const finalStats = await artifactService.getPlayerStats(jid);
+    const expNeeded = await userModel.expForLevel(user.level + 1);
     const expPct = Math.round((user.exp / expNeeded) * 100);
-    const winrate = statsModel.winrate(jid);
+    const winrate = await statsModel.winrate(jid);
     const premiumBadge = user.premium ? ' 👑' : '';
 
-    const inv = artifactService.getInventory(jid);
-    const slotLines = ['flower', 'feather', 'sands', 'goblet', 'circlet'].map((slot) => {
+    const inv = await artifactService.getInventory(jid);
+    const slotLines = await Promise.all(['flower', 'feather', 'sands', 'goblet', 'circlet'].map(async (slot) => {
       const artifactId = inv?.[`${slot}_id`];
       if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
-      const a = artifactModel.findById(artifactId);
+      const a = await artifactModel.findById(artifactId);
       if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
       return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
-    });
+    }));
 
     const text = [
       `╭──┄  *${user.push_name || 'Unknown'}*${premiumBadge}  ┄──`,

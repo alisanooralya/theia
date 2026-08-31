@@ -18,14 +18,14 @@ export default {
   cooldown: 3 * 60 * 60 * 1000,
 
   async execute(ctx) {
-    userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     const job = JOBS[Math.floor(Math.random() * JOBS.length)];
     const reward = Math.floor(
       job.reward[0] + Math.random() * (job.reward[1] - job.reward[0])
     );
 
-    walletModel.reward(ctx.sender, reward, `work: ${job.name}`);
-    const { leveledUp, newLevel } = userModel.addExp(ctx.sender, job.exp);
+    await walletModel.reward(ctx.sender, reward, `work: ${job.name}`);
+    const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, job.exp);
 
     let text = `💼 *Bekerja*\n\nKamu kerja sebagai *${job.name}*\n🪙 +${F.formatNumber(reward)} cash\n⭐ +${job.exp} EXP`;
     if (leveledUp)

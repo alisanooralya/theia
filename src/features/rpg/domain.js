@@ -64,14 +64,14 @@ class DomainService {
     return DIFFICULTY[difficulty] || null;
   }
 
-  simulateBattle(jid, difficulty) {
+  async simulateBattle(jid, difficulty) {
     const config = DIFFICULTY[difficulty];
     if (!config) throw new Error('Difficulty tidak valid.');
 
-    const base = statsModel.ensure(jid);
+    const base = await statsModel.ensure(jid);
     if (base.hp <= 0) throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
 
-    const pStats = artifactService.getPlayerStats(jid);
+    const pStats = await artifactService.getPlayerStats(jid);
     const now = Math.floor(Date.now() / 1000);
     const effAtk = base.buff_expire > now ? pStats.atk + (base.buff_atk || 0) : pStats.atk;
     const effDef = base.buff_expire > now ? pStats.def + (base.buff_def || 0) : pStats.def;
@@ -116,11 +116,11 @@ class DomainService {
     }
 
     const won = boss.hp <= 0;
-    statsModel.setHp(jid, player.hp);
+    await statsModel.setHp(jid, player.hp);
     return { won, rounds, playerFinalHp: player.hp, bossFinalHp: boss.hp };
   }
 
-  grantRewards(jid, difficulty) {
+  async grantRewards(jid, difficulty) {
     const config = DIFFICULTY[difficulty];
     if (!config) throw new Error('Difficulty tidak valid.');
 
@@ -129,23 +129,23 @@ class DomainService {
 
     const artifacts = [];
     if (Math.random() < config.artifactChance) {
-      const first = artifactService.generateArtifact(jid);
+      const first = await artifactService.generateArtifact(jid);
       artifacts.push(first);
 
       if (config.secondArtifactChance && Math.random() < config.secondArtifactChance) {
-        const second = artifactService.generateArtifact(jid);
+        const second = await artifactService.generateArtifact(jid);
         artifacts.push(second);
       }
     }
 
-    walletModel.reward(jid, coinReward, `domain ${difficulty}`);
-    userModel.addExp(jid, expReward);
+    await walletModel.reward(jid, coinReward, `domain ${difficulty}`);
+    await userModel.addExp(jid, expReward);
 
     return { coin: coinReward, exp: expReward, artifacts };
   }
 
-  formatRoundPlayer(jid, round, config) {
-    const pStats = artifactService.getPlayerStats(jid);
+  async formatRoundPlayer(jid, round, config) {
+    const pStats = await artifactService.getPlayerStats(jid);
     return [
       '╭─── ୨୧ ───╮',
       `│ 🏰 DOMAIN • ${config.name.toUpperCase()}`,

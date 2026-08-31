@@ -24,7 +24,7 @@ export default {
 };
 
 async function levelBoard(ctx, limit) {
-  const top = userModel.leaderboard(limit);
+  const top = await userModel.leaderboard(limit);
   if (!top.length) return ctx.reply('Belum ada data user.');
   let text = `⭐ *Leaderboard Level* (Top ${limit})\n\n`;
   top.forEach((u, i) => {
@@ -35,7 +35,7 @@ async function levelBoard(ctx, limit) {
 }
 
 async function wealthBoard(ctx, limit) {
-  const top = walletModel.leaderboard(limit);
+  const top = await walletModel.leaderboard(limit);
   if (!top.length) return ctx.reply('Belum ada data kekayaan.');
   const lines = top.map(
     (r, i) =>
@@ -47,7 +47,7 @@ async function wealthBoard(ctx, limit) {
 }
 
 async function pvpBoard(ctx, limit) {
-  const top = statsModel.topWins(limit);
+  const top = await statsModel.topWins(limit);
   if (!top.length) return ctx.reply('Belum ada data PvP.');
   let text = `🏆 *Leaderboard PvP* (Top ${limit})\n\n`;
   top.forEach((u, i) => {

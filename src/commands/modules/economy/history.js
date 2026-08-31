@@ -9,7 +9,7 @@ export default {
   cooldown: 5_000,
 
   async execute(ctx) {
-    const txs = walletModel.history(ctx.sender, 10);
+    const txs = await walletModel.history(ctx.sender, 10);
     if (!txs.length) return ctx.reply('📄 Belum ada transaksi.');
 
     let text = '📄 *Riwayat Transaksi*\n\n';

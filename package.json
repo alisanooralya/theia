@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "db:migrate": "node src/storage/migration.js",
-    "db:seed": "node src/storage/seeds/initial-data.js"
+    "db:seed": "node src/storage/seeds/initial-data.js",
+    "db:supabase": "node src/storage/migrate-supabase.js"
   },
   "imports": {
     "#environment/*": "./src/environment/*",
@@ -37,7 +38,8 @@
     "node-cache": "^5.1.2",
     "node-webpmux": "^3.2.1",
     "pino": "^9.3.0",
-    "pino-pretty": "^11.2.0"
+    "pino-pretty": "^11.2.0",
+    "postgres": "^3.4.9"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -1,31 +1,25 @@
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class DivergentUsageModel {
-  _find = lazyPrepare('SELECT * FROM divergent_usage WHERE jid = ?');
-  _ensure = lazyPrepare(`
-    INSERT INTO divergent_usage (jid) VALUES (?)
-    ON CONFLICT(jid) DO NOTHING
-  `);
-  _update = lazyPrepare(`
-    UPDATE divergent_usage
-    SET daily_key = @dailyKey, daily_count = @dailyCount,
-        weekly_key = @weeklyKey, weekly_count = @weeklyCount,
-        updated_at = unixepoch()
-    WHERE jid = @jid
-  `);
-
-  find(jid) {
-    return this._find().get(jid) ?? null;
+  async find(jid, client = sql) {
+    const rows = await client`SELECT * FROM divergent_usage WHERE jid = ${jid}`;
+    return rows[0] ?? null;
   }
 
-  ensure(jid) {
-    this._ensure().run(jid);
-    return this.find(jid);
+  async ensure(jid, client = sql) {
+    await client`INSERT INTO divergent_usage (jid) VALUES (${jid}) ON CONFLICT (jid) DO NOTHING`;
+    return this.find(jid, client);
   }
 
-  save(jid, usage) {
-    this._update().run({ jid, ...usage });
-    return this.find(jid);
+  async save(jid, usage, client = sql) {
+    await client`
+      UPDATE divergent_usage
+      SET daily_key = ${usage.daily_key}, daily_count = ${usage.daily_count},
+          weekly_key = ${usage.weekly_key}, weekly_count = ${usage.weekly_count},
+          updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE jid = ${jid}
+    `;
+    return this.find(jid, client);
   }
 }
 

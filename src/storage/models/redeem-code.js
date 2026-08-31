@@ -1,42 +1,44 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class RedeemCodeModel {
-  _insert = lazyPrepare(
-    'INSERT INTO redeem_codes (code, amount, expires_at) VALUES (@code, @amount, @expiresAt)'
-  );
-  _find = lazyPrepare('SELECT * FROM redeem_codes WHERE code = ?');
-
-  create(code, amount, expiresAt) {
-    this._insert().run({ code, amount, expiresAt });
-    return this._find().get(code);
+  async create(code, amount, expiresAt, client = sql) {
+    await client`
+      INSERT INTO redeem_codes (code, amount, expires_at) VALUES (${code}, ${amount}, ${expiresAt})
+    `;
+    return this.find(code, client);
   }
 
-  redeem(code, jid) {
-    return db.transaction(() => {
-      const redeemCode = this._find().get(code);
+  async find(code, client = sql) {
+    const rows = await client`SELECT * FROM redeem_codes WHERE code = ${code}`;
+    return rows[0] ?? null;
+  }
+
+  async redeem(code, jid) {
+    return sql.begin(async (t) => {
+      const rows = await t`SELECT * FROM redeem_codes WHERE code = ${code}`;
+      const redeemCode = rows[0];
       if (!redeemCode) throw new Error('Redeem code tidak ditemukan.');
       if (redeemCode.expires_at <= Date.now())
         throw new Error('Redeem code sudah expired.');
 
-      const already = db
-        .prepare('SELECT 1 FROM redeem_code_users WHERE code = @code AND jid = @jid')
-        .get({ code, jid });
-      if (already) throw new Error('Kamu sudah pernah me-redeem code ini.');
+      const used = await t`
+        SELECT 1 FROM redeem_code_users WHERE code = ${code} AND jid = ${jid}
+      `;
+      if (used[0]) throw new Error('Kamu sudah pernah me-redeem code ini.');
 
-      db.prepare(
-        'INSERT INTO redeem_code_users (code, jid, used_at) VALUES (@code, @jid, @usedAt)'
-      ).run({ code, jid, usedAt: Math.floor(Date.now() / 1000) });
+      await t`
+        INSERT INTO redeem_code_users (code, jid, used_at) VALUES (${code}, ${jid}, ${Math.floor(Date.now() / 1000)})
+      `;
 
-      db.prepare(
-        'UPDATE wallets SET cash = cash + @amount, updated_at = unixepoch() WHERE jid = @jid'
-      ).run({ jid, amount: redeemCode.amount });
-      db.prepare(
-        "INSERT INTO transactions (from_jid, to_jid, amount, type, note) VALUES ('system', @jid, @amount, 'reward', 'redeem code')"
-      ).run({ jid, amount: redeemCode.amount });
+      await t`
+        UPDATE wallets SET cash = cash + ${redeemCode.amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+      `;
+      await t`
+        INSERT INTO transactions (from_jid, to_jid, amount, type, note) VALUES ('system', ${jid}, ${redeemCode.amount}, 'reward', 'redeem code')
+      `;
 
       return redeemCode;
-    })();
+    });
   }
 }
 

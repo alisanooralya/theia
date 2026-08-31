@@ -24,11 +24,11 @@ export default {
     if (bet < MIN_BET)
       return ctx.reply(`Minimal taruhan: 🪙${F.formatNumber(MIN_BET)}`);
 
-    const wallet = walletModel.find(ctx.sender);
+    const wallet = await walletModel.find(ctx.sender);
     if (!wallet || wallet.cash < bet)
       return ctx.reply('Saldo cash tidak cukup.');
 
-    walletModel.addCash(ctx.sender, -bet);
+    await walletModel.addCash(ctx.sender, -bet);
 
     const a = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
     const b = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
@@ -40,7 +40,7 @@ export default {
     const win = bet * mult;
 
     if (win > 0) {
-      walletModel.addCash(ctx.sender, win);
+      await walletModel.addCash(ctx.sender, win);
       await ctx.reply(
         `🎰 *SLOTS*\n\n${line}\n\n✨ *JACKPOT!* Kamu menang *${F.formatNumber(win)}*! (${mult}x)`
       );

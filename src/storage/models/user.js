@@ -1,54 +1,38 @@
-import { db } from '#storage/connection.js';
-import { lazyPrepare } from '#storage/lazy.js';
+import { sql } from '#storage/connection.js';
 
 class UserModel {
-  _findById = lazyPrepare('SELECT * FROM users WHERE jid = ?');
-  _findByPn = lazyPrepare('SELECT * FROM users WHERE pn = ?');
-  _upsert = lazyPrepare(`
-    INSERT INTO users (jid, pn, push_name) VALUES (@jid, @pn, @pushName)
-    ON CONFLICT(jid) DO UPDATE SET push_name = excluded.push_name, updated_at = unixepoch()
-  `);
-  _upsertWallet = lazyPrepare(`
-    INSERT INTO wallets (jid) VALUES (?) ON CONFLICT(jid) DO NOTHING
-  `);
-  _addExp = lazyPrepare(`
-    UPDATE users SET exp = exp + @amount, updated_at = unixepoch() WHERE jid = @jid
-  `);
-  _setLevel = lazyPrepare(`
-    UPDATE users SET level = @level, exp = @exp, updated_at = unixepoch() WHERE jid = @jid
-  `);
-  _setPremium = lazyPrepare(`
-    UPDATE users SET premium = @premium, premium_exp = @premiumExp, updated_at = unixepoch() WHERE jid = @jid
-  `);
-  _setBanned = lazyPrepare(`
-    UPDATE users SET banned = @banned, updated_at = unixepoch() WHERE jid = @jid
-  `);
-  _leaderboard = lazyPrepare(`
-    SELECT u.jid, u.push_name, u.level, u.exp, w.cash + w.bank AS total_balance
-    FROM users u LEFT JOIN wallets w ON w.jid = u.jid
-    ORDER BY u.level DESC, u.exp DESC LIMIT ?
-  `);
-
-  findById(jid) {
-    return this._findById().get(jid) ?? null;
-  }
-  findByPn(pnJid) {
-    return this._findByPn().get(pnJid) ?? null;
+  async findById(jid, client = sql) {
+    const rows = await client`SELECT * FROM users WHERE jid = ${jid}`;
+    return rows[0] ?? null;
   }
 
-  ensure(jid, { pn = null, pushName = '' } = {}) {
-    this._upsert().run({ jid, pn, pushName });
-    this._upsertWallet().run(jid);
-    return this._findById().get(jid);
+  async findByPn(pnJid, client = sql) {
+    const rows = await client`SELECT * FROM users WHERE pn = ${pnJid}`;
+    return rows[0] ?? null;
   }
 
-  addExp(jid, amount) {
-    this._addExp().run({ jid, amount });
-    const user = this._findById().get(jid);
+  async ensure(jid, { pn = null, pushName = '' } = {}, client = sql) {
+    await client`
+      INSERT INTO users (jid, pn, push_name) VALUES (${jid}, ${pn}, ${pushName})
+      ON CONFLICT (jid) DO UPDATE SET push_name = EXCLUDED.push_name, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+    `;
+    await client`
+      INSERT INTO wallets (jid) VALUES (${jid}) ON CONFLICT (jid) DO NOTHING
+    `;
+    return this.findById(jid, client);
+  }
+
+  async addExp(jid, amount, client = sql) {
+    await client`
+      UPDATE users SET exp = exp + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
+    const user = await this.findById(jid, client);
     const threshold = this.expForLevel(user.level + 1);
     if (user.exp >= threshold) {
       const newLevel = user.level + 1;
-      this._setLevel().run({ jid, level: newLevel, exp: 0 });
+      await client`
+        UPDATE users SET level = ${newLevel}, exp = 0, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+      `;
       return {
         user: { ...user, level: newLevel, exp: 0 },
         leveledUp: true,
@@ -62,8 +46,8 @@ class UserModel {
     return level * level * 100;
   }
 
-  recordDaily(jid) {
-    const user = this._findById().get(jid);
+  async recordDaily(jid, client = sql) {
+    const user = await this.findById(jid, client);
     const nowSec = Math.floor(Date.now() / 1000);
     const last = user?.last_daily ?? 0;
     let streak = 1;
@@ -71,53 +55,72 @@ class UserModel {
       const gapSec = nowSec - last;
       if (gapSec < 48 * 3600) streak = (user.daily_streak ?? 0) + 1;
     }
-    db.prepare(
-      'UPDATE users SET daily_streak = @streak, last_daily = @last, updated_at = unixepoch() WHERE jid = @jid'
-    ).run({ jid, streak, last: nowSec });
+    await client`
+      UPDATE users SET daily_streak = ${streak}, last_daily = ${nowSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
     return streak;
   }
 
-  incrementBankUpgrade(jid) {
-    db.prepare(
-      'UPDATE users SET bank_upgrade_count = bank_upgrade_count + 1, updated_at = unixepoch() WHERE jid = @jid'
-    ).run({ jid });
+  async incrementBankUpgrade(jid, client = sql) {
+    await client`
+      UPDATE users SET bank_upgrade_count = bank_upgrade_count + 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
   }
 
-  getBankUpgradeCount(jid) {
-    return this._findById().get(jid)?.bank_upgrade_count ?? 0;
+  async getBankUpgradeCount(jid, client = sql) {
+    const user = await this.findById(jid, client);
+    return user?.bank_upgrade_count ?? 0;
   }
 
-  setPremium(jid, durationMs) {
+  async setPremium(jid, durationMs, client = sql) {
     const expiresAt = Math.floor((Date.now() + durationMs) / 1000);
-    this._setPremium().run({ jid, premium: 1, premiumExp: expiresAt });
+    await client`
+      UPDATE users SET premium = 1, premium_exp = ${expiresAt}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
   }
 
-  removePremium(jid) {
-    this._setPremium().run({ jid, premium: 0, premiumExp: 0 });
+  async removePremium(jid, client = sql) {
+    await client`
+      UPDATE users SET premium = 0, premium_exp = 0, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
   }
 
-  checkPremiumExpiry(jid) {
-    const user = this._findById().get(jid);
+  async checkPremiumExpiry(jid, client = sql) {
+    const user = await this.findById(jid, client);
     if (
       user?.premium &&
       user.premium_exp > 0 &&
       user.premium_exp < Math.floor(Date.now() / 1000)
     ) {
-      this.removePremium(jid);
+      await this.removePremium(jid, client);
     }
   }
 
-  ban(jid) {
-    this._setBanned().run({ jid, banned: 1 });
+  async ban(jid, client = sql) {
+    await client`UPDATE users SET banned = 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}`;
   }
-  unban(jid) {
-    this._setBanned().run({ jid, banned: 0 });
+
+  async unban(jid, client = sql) {
+    await client`UPDATE users SET banned = 0, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}`;
   }
-  isBanned(jid) {
-    return (this._findById().get(jid)?.banned ?? 0) === 1;
+
+  async isBanned(jid, client = sql) {
+    const user = await this.findById(jid, client);
+    return (user?.banned ?? 0) === 1;
   }
-  leaderboard(limit = 10) {
-    return this._leaderboard().all(limit);
+
+  async setPrisonUntil(jid, epochSec, client = sql) {
+    await client`
+      UPDATE users SET prison_until = ${epochSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
+  }
+
+  async leaderboard(limit = 10) {
+    return sql`
+      SELECT u.jid, u.push_name, u.level, u.exp, w.cash + w.bank AS total_balance
+      FROM users u LEFT JOIN wallets w ON w.jid = u.jid
+      ORDER BY u.level DESC, u.exp DESC LIMIT ${limit}
+    `;
   }
 }
 

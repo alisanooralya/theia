@@ -28,7 +28,7 @@ export default {
       !['mute', 'antitoxic', 'greeting', 'openclose', 'raid'].includes(sub) ||
       !['on', 'off'].includes(value)
     ) {
-      const g = groupModel.find(jid);
+      const g = await groupModel.find(jid);
       return ctx.reply(
         `*Pengaturan Grup*\n\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n⚔️ Raid: ${g?.raid ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <mute/antitoxic/greeting/openclose/raid> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}\n\nℹ️ Raid: notifikasi mulai/selesai raid akan dikirim ke grup ini.`
       );
@@ -36,7 +36,7 @@ export default {
 
     const updates = {};
     updates[sub] = value === 'on' ? 1 : 0;
-    groupModel.update(jid, updates);
+    await groupModel.update(jid, updates);
     await ctx.reply(
       `✅ *${sub}* ${value === 'on' ? 'diaktifkan' : 'dinonaktifkan'}${!ctx.isGroup ? ` untuk \`${jid}\`` : ''}.`
     );

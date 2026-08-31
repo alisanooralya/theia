@@ -55,7 +55,7 @@ export const economyTools = [
       try {
         const tax = Math.floor(amount * TAX_RATE);
         const total = amount + tax;
-        walletModel.transfer(ctx.userId, targetJid, total, 'agent-transfer');
+        await walletModel.transfer(ctx.userId, targetJid, total, 'agent-transfer');
         return {
           success: true,
           message: `Transfer ${amount} ke ${phone} berhasil (pajak ${tax}).`,

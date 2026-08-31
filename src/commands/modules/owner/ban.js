@@ -32,13 +32,13 @@ export default {
 
     const isUnban = ctx.msg.text?.includes('unban');
     if (isUnban) {
-      userModel.unban(targetJid);
+      await userModel.unban(targetJid);
       await ctx.reply(`✅ @${targetJid.split('@')[0]} berhasil di-unban.`, {
         mentions: [targetJid],
       });
     } else {
-      userModel.ensure(targetJid);
-      userModel.ban(targetJid);
+      await userModel.ensure(targetJid);
+      await userModel.ban(targetJid);
       await ctx.reply(`🚫 @${targetJid.split('@')[0]} berhasil di-ban.`, {
         mentions: [targetJid],
       });
