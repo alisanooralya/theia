@@ -2,12 +2,12 @@ import { userModel, walletModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
 const JOBS = [
-  { name: 'kuli bangunan', reward: [500, 1500], exp: 10 },
-  { name: 'tukang kebun', reward: [300, 1000], exp: 8 },
-  { name: 'programmer freelance', reward: [2000, 5000], exp: 30 },
-  { name: 'ojol', reward: [400, 1200], exp: 12 },
-  { name: 'guru les', reward: [600, 2000], exp: 15 },
-  { name: 'chef', reward: [800, 2500], exp: 18 },
+  { name: 'kuli bangunan', reward: [100, 2000], exp: 10 },
+  { name: 'tukang kebun', reward: [800, 1500], exp: 8 },
+  { name: 'programmer freelance', reward: [4000, 5000], exp: 30 },
+  { name: 'ojol', reward: [900, 1800], exp: 12 },
+  { name: 'guru les', reward: [800, 2400], exp: 15 },
+  { name: 'chef', reward: [900, 2800], exp: 18 },
 ];
 
 export default {

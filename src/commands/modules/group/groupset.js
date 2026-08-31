@@ -30,7 +30,7 @@ export default {
     ) {
       const g = await groupModel.find(jid);
       return ctx.reply(
-        `*Pengaturan Grup*\n\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n⚔️ Raid: ${g?.raid ? '✅' : '❌'}\n👋 Welcome: ${g?.welcome ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset <mute/antitoxic/greeting/openclose/raid/welcome> <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}\n\nℹ️ Raid: notifikasi mulai/selesai raid akan dikirim ke grup ini.\n👋 Welcome: pesan sambutan otomatis saat member masuk/keluar.`
+        `*Pengaturan Grup*\n\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n⚔️ Raid: ${g?.raid ? '✅' : '❌'}\n👋 Welcome: ${g?.welcome ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset mute <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`
       );
     }
 

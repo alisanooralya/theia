@@ -7,7 +7,7 @@ const CRIMES = [
   {
     name: 'jambret',
     emoji: '👜',
-    reward: [2000, 5000],
+    reward: [3000, 5000],
     penalty: [1000, 3000],
     exp: 25,
     successChance: 0.55,
@@ -17,7 +17,7 @@ const CRIMES = [
   {
     name: 'hacker',
     emoji: '💻',
-    reward: [4000, 8000],
+    reward: [5000, 8000],
     penalty: [2000, 6000],
     exp: 35,
     successChance: 0.4,
@@ -27,7 +27,7 @@ const CRIMES = [
   {
     name: 'copet',
     emoji: '👛',
-    reward: [1000, 3000],
+    reward: [2000, 3000],
     penalty: [500, 1500],
     exp: 15,
     successChance: 0.75,
@@ -37,7 +37,7 @@ const CRIMES = [
   {
     name: 'judi online',
     emoji: '🎰',
-    reward: [1500, 4000],
+    reward: [2500, 4000],
     penalty: [500, 2000],
     exp: 20,
     gamble: true,
@@ -51,7 +51,7 @@ const CRIMES = [
   {
     name: 'skimming ATM',
     emoji: '💳',
-    reward: [5000, 10000],
+    reward: [8000, 10000],
     penalty: [3000, 8000],
     exp: 40,
     successChance: 0.35,

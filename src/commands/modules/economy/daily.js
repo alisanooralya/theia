@@ -1,8 +1,8 @@
 import { userModel, walletModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
-const DAILY_AMOUNT_MIN = 4_500;
-const DAILY_AMOUNT_MAX = 5_000;
+const DAILY_AMOUNT_MIN = 5_500;
+const DAILY_AMOUNT_MAX = 6_000;
 const DAILY_EXP_MIN = 30;
 const DAILY_EXP_MAX = 50;
 const WIB_OFFSET = 7;
