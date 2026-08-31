@@ -74,7 +74,7 @@ async function migrate() {
       await sql.begin(async (tx) => {
         for (const row of rows) {
           await tx.unsafe(
-            `INSERT INTO ${quoteIdent(table)} (${colList}) VALUES (${placeholders})`,
+            `INSERT INTO ${quoteIdent(table)} (${colList}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
             cols.map((c) => row[c])
           );
         }
