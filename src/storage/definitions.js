@@ -125,7 +125,7 @@ const STATIC_SCHEMA = [
   CREATE TABLE IF NOT EXISTS redeem_codes (
     code        TEXT    PRIMARY KEY,
     amount      INTEGER NOT NULL,
-    expires_at  INTEGER NOT NULL
+    expires_at  BIGINT  NOT NULL
   )
   `,
 
@@ -245,8 +245,8 @@ const STATIC_SCHEMA = [
     boss_hp     INTEGER NOT NULL DEFAULT 500000,
     boss_max_hp INTEGER NOT NULL DEFAULT 500000,
     status      TEXT    NOT NULL DEFAULT 'pending',
-    start_at    INTEGER NOT NULL DEFAULT 0,
-    end_at      INTEGER NOT NULL DEFAULT 0,
+    start_at    BIGINT NOT NULL DEFAULT 0,
+    end_at      BIGINT NOT NULL DEFAULT 0,
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
@@ -261,7 +261,7 @@ const STATIC_SCHEMA = [
     max_hp      INTEGER NOT NULL DEFAULT 2400,
     damage      INTEGER NOT NULL DEFAULT 0,
     status      TEXT    NOT NULL DEFAULT 'active',
-    breaktime_until INTEGER NOT NULL DEFAULT 0,
+    breaktime_until BIGINT NOT NULL DEFAULT 0,
     reward_claimed INTEGER NOT NULL DEFAULT 0,
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
@@ -304,6 +304,10 @@ const MIGRATIONS = [
   `ALTER TABLE divergent_runs ADD COLUMN IF NOT EXISTS chat_jid TEXT`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS raid_coin INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS prison_until INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE raids ALTER COLUMN start_at TYPE BIGINT`,
+  `ALTER TABLE raids ALTER COLUMN end_at TYPE BIGINT`,
+  `ALTER TABLE raid_participants ALTER COLUMN breaktime_until TYPE BIGINT`,
+  `ALTER TABLE redeem_codes ALTER COLUMN expires_at TYPE BIGINT`,
   `UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10`,
 ];
 
