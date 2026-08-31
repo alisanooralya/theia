@@ -18,6 +18,8 @@ const RAID_DURATION = 24 * 60 * 60 * 1000;
 const BREAKTIME_DURATION = 60 * 60 * 1000;
 const HP_RECOVERY_STOP = 80;
 const HP_RECOVERY_BREAKTIME = 200;
+const HP_LOW_RATIO = 0.15;
+const HP_LOW_THRESHOLD = Math.floor(RAID_USER_HP * HP_LOW_RATIO);
 const CRIT_MULT = 1.5;
 const ATTACK_INTERVAL = 30_000;
 
@@ -289,6 +291,19 @@ class RaidService {
             const mentionJid = [jid];
             await sock.sendMessage(jidChat, {
               text: `💔 @${jid.split('@')[0]} HP habis! Masuk Breaktime 1 jam...`,
+              mentions: mentionJid,
+            }).catch(() => {});
+          }
+        } else if (newHp > 0 && newHp <= HP_LOW_THRESHOLD && p.hp > HP_LOW_THRESHOLD) {
+          if (sock && jidChat) {
+            const mentionJid = [jid];
+            await sock.sendMessage(jidChat, {
+              text: [
+                `⚠️ @${jid.split('@')[0]} HP kamu tinggal *${newHp}/${RAID_USER_HP}* (≈15%)!`,
+                '',
+                'Saran: ketik `.raid stop` untuk berhenti menyerang dan pulihkan HP,',
+                'tunggu beberapa menit, lalu lanjutkan lagi dengan `.raid attack`.',
+              ].join('\n'),
               mentions: mentionJid,
             }).catch(() => {});
           }
