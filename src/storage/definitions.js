@@ -308,6 +308,13 @@ const MIGRATIONS = [
   `ALTER TABLE raids ALTER COLUMN end_at TYPE BIGINT`,
   `ALTER TABLE raid_participants ALTER COLUMN breaktime_until TYPE BIGINT`,
   `ALTER TABLE redeem_codes ALTER COLUMN expires_at TYPE BIGINT`,
+  `SELECT setval(pg_get_serial_sequence('warns', 'id'), COALESCE(MAX(id), 1)) FROM warns`,
+  `SELECT setval(pg_get_serial_sequence('inventories', 'id'), COALESCE(MAX(id), 1)) FROM inventories`,
+  `SELECT setval(pg_get_serial_sequence('transactions', 'id'), COALESCE(MAX(id), 1)) FROM transactions`,
+  `SELECT setval(pg_get_serial_sequence('relics', 'id'), COALESCE(MAX(id), 1)) FROM relics`,
+  `SELECT setval(pg_get_serial_sequence('artifacts', 'id'), COALESCE(MAX(id), 1)) FROM artifacts`,
+  `SELECT setval(pg_get_serial_sequence('raids', 'id'), COALESCE(MAX(id), 1)) FROM raids`,
+  `SELECT setval(pg_get_serial_sequence('raid_participants', 'id'), COALESCE(MAX(id), 1)) FROM raid_participants`,
   `UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10`,
 ];
 
