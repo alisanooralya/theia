@@ -55,11 +55,11 @@ class StatsModel {
 
   async updateEquipment(
     jid,
-    { weaponId = null, armorId = null, atk, def, maxHp },
+    { atk, def, maxHp },
     client = sql
   ) {
     await client`
-      UPDATE stats SET weapon_id = ${weaponId}, armor_id = ${armorId}, atk = ${atk}, def = ${def}, max_hp = ${maxHp}, hp = LEAST(hp, ${maxHp}), updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+      UPDATE stats SET atk = ${atk}, def = ${def}, max_hp = ${maxHp}, hp = LEAST(hp, ${maxHp}), updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
     `;
   }
 
