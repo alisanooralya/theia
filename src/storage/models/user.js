@@ -12,14 +12,14 @@ class UserModel {
   }
 
   async ensure(jid, { pn = null, pushName = '' } = {}, client = sql) {
-    await client`
+    const rows = await client`
       INSERT INTO users (jid, pn, push_name) VALUES (${jid}, ${pn}, ${pushName})
       ON CONFLICT (jid) DO UPDATE SET push_name = EXCLUDED.push_name, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      RETURNING *
     `;
-    await client`
-      INSERT INTO wallets (jid) VALUES (${jid}) ON CONFLICT (jid) DO NOTHING
-    `;
-    return this.findById(jid, client);
+    const user = rows[0];
+    await client`INSERT INTO wallets (jid) VALUES (${jid}) ON CONFLICT (jid) DO NOTHING`;
+    return user;
   }
 
   async addExp(jid, amount, client = sql) {

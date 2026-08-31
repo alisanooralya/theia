@@ -24,8 +24,10 @@ export default {
       job.reward[0] + Math.random() * (job.reward[1] - job.reward[0])
     );
 
-    await walletModel.reward(ctx.sender, reward, `work: ${job.name}`);
-    const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, job.exp);
+    const [_, { leveledUp, newLevel }] = await Promise.all([
+      walletModel.reward(ctx.sender, reward, `work: ${job.name}`),
+      userModel.addExp(ctx.sender, job.exp),
+    ]);
 
     let text = `💼 *Bekerja*\n\nKamu kerja sebagai *${job.name}*\n🪙 +${F.formatNumber(reward)} cash\n⭐ +${job.exp} EXP`;
     if (leveledUp)

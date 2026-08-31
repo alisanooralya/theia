@@ -62,11 +62,10 @@ export default {
           Math.random() * (catchResult.reward[1] - catchResult.reward[0])
       );
 
-      await walletModel.reward(ctx.sender, reward, `fish: ${catchResult.name}`);
-      const { leveledUp, newLevel } = await userModel.addExp(
-        ctx.sender,
-        catchResult.exp
-      );
+      const [, { leveledUp, newLevel }] = await Promise.all([
+        walletModel.reward(ctx.sender, reward, `fish: ${catchResult.name}`),
+        userModel.addExp(ctx.sender, catchResult.exp),
+      ]);
 
       let text = `🎣 *Fishing!*\n\n${catchResult.emoji} Kamu dapat: *${catchResult.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${catchResult.exp} EXP`;
       if (leveledUp)

@@ -36,8 +36,10 @@ export default {
 
     const cash = randInt(DAILY_AMOUNT_MIN, DAILY_AMOUNT_MAX);
     const exp = randInt(DAILY_EXP_MIN, DAILY_EXP_MAX);
-    await walletModel.reward(ctx.sender, cash, 'daily reward');
-    const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, exp);
+    const [, { leveledUp, newLevel }] = await Promise.all([
+      walletModel.reward(ctx.sender, cash, 'daily reward'),
+      userModel.addExp(ctx.sender, exp),
+    ]);
     const streak = await userModel.recordDaily(ctx.sender);
 
     let text = `🎁 *Daily Reward!*\n\n🪙 +${F.formatNumber(cash)} cash\n⭐ +${exp} EXP\n🔥 Streak: *${streak} hari*`;

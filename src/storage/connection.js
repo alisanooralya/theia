@@ -21,11 +21,26 @@ export const sql = postgres(DATABASE_URL, {
   },
 });
 
+let keepAliveTimer = null;
+
 export function configureDatabase() {
   logger.info('Database connected (Supabase/Postgres)');
+  startKeepAlive();
+}
+
+function startKeepAlive() {
+  if (keepAliveTimer) return;
+  keepAliveTimer = setInterval(() => {
+    sql`SELECT 1`.catch(() => {});
+  }, 30_000);
+  if (keepAliveTimer.unref) keepAliveTimer.unref();
 }
 
 export async function closeDatabase() {
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+  }
   try {
     await sql.end();
   } catch {}

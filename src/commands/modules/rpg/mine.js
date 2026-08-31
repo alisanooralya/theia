@@ -50,8 +50,10 @@ export default {
           Math.random() * (mineral.reward[1] - mineral.reward[0])
       );
 
-      await walletModel.reward(ctx.sender, reward, `mine: ${mineral.name}`);
-      const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, mineral.exp);
+      const [, { leveledUp, newLevel }] = await Promise.all([
+        walletModel.reward(ctx.sender, reward, `mine: ${mineral.name}`),
+        userModel.addExp(ctx.sender, mineral.exp),
+      ]);
 
       let text = `⛏️ *Mining!*\n\n${mineral.emoji} Kamu dapat: *${mineral.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${mineral.exp} EXP`;
       if (leveledUp)

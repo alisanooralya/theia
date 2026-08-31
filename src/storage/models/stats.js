@@ -7,8 +7,12 @@ class StatsModel {
   }
 
   async ensure(jid, client = sql) {
-    await client`INSERT INTO stats (jid) VALUES (${jid}) ON CONFLICT (jid) DO NOTHING`;
-    return this.find(jid, client);
+    const rows = await client`
+      INSERT INTO stats (jid) VALUES (${jid})
+      ON CONFLICT (jid) DO UPDATE SET jid = EXCLUDED.jid
+      RETURNING *
+    `;
+    return rows[0] ?? null;
   }
 
   async addHp(jid, amount, client = sql) {

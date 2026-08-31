@@ -24,9 +24,11 @@ export default {
 
   async execute(ctx) {
     const jid = ctx.mentions[0] ?? ctx.sender;
-    const user = await userModel.ensure(jid, { pushName: ctx.pushName });
-    const wallet = await walletModel.find(jid);
-    const stats = await statsModel.ensure(jid);
+    const [user, wallet, stats] = await Promise.all([
+      userModel.ensure(jid, { pushName: ctx.pushName }),
+      walletModel.find(jid),
+      statsModel.ensure(jid),
+    ]);
     await userModel.checkPremiumExpiry(jid);
 
     const finalStats = await artifactService.getPlayerStats(jid);

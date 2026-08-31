@@ -10,11 +10,15 @@ export default {
   cooldown: 12 * 60 * 60 * 1000,
 
   async execute(ctx) {
-    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-    await statsModel.ensure(ctx.sender);
+    await Promise.all([
+      userModel.ensure(ctx.sender, { pushName: ctx.pushName }),
+      statsModel.ensure(ctx.sender),
+    ]);
 
-    const stats = await statsModel.find(ctx.sender);
-    const pStats = await artifactService.getPlayerStats(ctx.sender);
+    const [stats, pStats] = await Promise.all([
+      statsModel.find(ctx.sender),
+      artifactService.getPlayerStats(ctx.sender),
+    ]);
     const hp = stats?.hp ?? 0;
     const maxHp = pStats.hp;
     const missing = Math.max(0, maxHp - hp);
