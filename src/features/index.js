@@ -5,6 +5,5 @@ export { robService } from './combat/rob.js';
 export { shopService } from './economy/shop.js';
 export { divergentUniverseService } from './rpg/divergent-universe.js';
 export { relicService } from './rpg/relic.js';
-export { youtubeService } from './platforms/youtube.js';
 export { instagramService } from './platforms/instagram.js';
 export { facebookService } from './platforms/facebook.js';

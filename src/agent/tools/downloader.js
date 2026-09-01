@@ -1,15 +1,14 @@
 /**
  * Downloader tools — reuse the existing platform services
- * (src/features/platforms/{instagram,facebook,youtube}.js) plus the downloader
- * API (TikTok via betabotz) exactly like the !tiktok / !instagram / !facebook /
- * !youtube commands do.
+ * (src/features/platforms/{instagram,facebook}.js) plus the downloader API
+ * (TikTok & YouTube via betabotz) exactly like the !tiktok / !instagram /
+ * !facebook / !youtube commands do.
  *
  * Tools send the media directly to the chat via agentCtx.sendMedia, then report
  * the REAL result back to the model. The AI never fabricates download results.
  */
 import { instagramService } from '#features/platforms/instagram.js';
 import { facebookService } from '#features/platforms/facebook.js';
-import { youtubeService } from '#features/platforms/youtube.js';
 import { downloaderService } from '#features/downloader.js';
 
 const MAX_MEDIA_BYTES = 60 * 1024 * 1024; // WhatsApp media limit ~64MB, keep headroom
@@ -241,16 +240,16 @@ export const downloaderTools = [
       const { ok, url, error } = validateUrl(args.url, 'YouTube');
       if (!ok) return { success: false, error };
       try {
-        const result = await youtubeService.resolve(url, { audioOnly: false });
-        let buf, caption;
-        if (result.mode === 'progressive') {
-          buf = await youtubeService.toBuffer(result.url);
-          caption = `🎬 ${result.title}\n📺 ${result.quality}`;
-        } else {
-          buf = await youtubeService.toBuffer(result.videoUrl);
-          caption = `🎬 ${result.title}\n📺 ${result.quality}\n_Adaptive — audio terpisah_`;
-        }
+        const result = await downloaderService.youtube(url);
+        if (!result.videoUrl)
+          return { success: false, error: 'Video tidak tersedia.' };
+        const buf = await downloaderService.toBuffer(result.videoUrl, {
+          timeout: 90_000,
+        });
         guardSize(buf);
+        const caption = `🎬 ${result.title}${
+          result.quality ? `\n📺 ${result.quality}` : ''
+        }`;
         await ctx.sendMedia('video', buf, caption, { mimetype: 'video/mp4' });
         return {
           success: true,

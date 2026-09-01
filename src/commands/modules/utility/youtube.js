@@ -1,4 +1,4 @@
-import { youtubeService } from '#features/platforms/youtube.js';
+import { downloaderService } from '#features/downloader.js';
 import { F } from '#helpers/index.js';
 
 export default {
@@ -11,6 +11,7 @@ export default {
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
+    const audioOnly = sub === 'audio' || sub === 'a' || sub === 'mp3';
     const url = ctx.args.find((a) => a.includes('youtu')) || ctx.args[0];
 
     if (!url) ctx.fail('Usage: `!youtube <url>` | `!youtube audio <url>`');
@@ -18,33 +19,31 @@ export default {
     await ctx.typing();
 
     try {
-      const audioOnly = sub === 'audio' || sub === 'a' || sub === 'mp3';
-      const result = await youtubeService.resolve(
-        audioOnly ? ctx.args[1] || url : url,
-        { audioOnly }
-      );
+      const result = await downloaderService.youtube(url);
       const duration = F.formatDuration(result.duration * 1000);
 
       if (audioOnly) {
-        const buf = await youtubeService.toBuffer(result.url);
+        if (!result.audioUrl)
+          throw new Error('Audio tidak tersedia untuk video ini.');
+        const buf = await downloaderService.toBuffer(result.audioUrl, {
+          timeout: 90_000,
+        });
         await ctx.sendMedia('audio', buf, `🎵 ${result.title}`, {
           mimetype: 'audio/mpeg',
           ptt: false,
         });
-      } else if (result.mode === 'progressive') {
-        const buf = await youtubeService.toBuffer(result.url);
+      } else {
+        if (!result.videoUrl)
+          throw new Error('Video tidak tersedia untuk video ini.');
+        const buf = await downloaderService.toBuffer(result.videoUrl, {
+          timeout: 90_000,
+        });
         await ctx.sendMedia(
           'video',
           buf,
-          `🎬 ${result.title}\n⏱ ${duration}\n📺 ${result.quality}`,
-          { mimetype: 'video/mp4' }
-        );
-      } else {
-        const videoBuf = await youtubeService.toBuffer(result.videoUrl);
-        await ctx.sendMedia(
-          'video',
-          videoBuf,
-          `🎬 ${result.title}\n⏱ ${duration}\n📺 ${result.quality}\n_Adaptive — audio terpisah_`,
+          `🎬 ${result.title}\n⏱ ${duration}${
+            result.quality ? `\n📺 ${result.quality}` : ''
+          }`,
           { mimetype: 'video/mp4' }
         );
       }
