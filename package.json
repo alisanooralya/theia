@@ -8,7 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "db:migrate": "node src/storage/migration.js",
-    "db:seed": "node src/storage/seeds/initial-data.js",
+    "db:seed": "node src/storage/seeds/initial-data.js"
   },
   "imports": {
     "#environment/*": "./src/environment/*",
