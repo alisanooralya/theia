@@ -422,24 +422,43 @@ const CLIENT_APP = String.raw`
     return btoa(JSON.stringify(payload));
   }
 
+  function showLoading(msg) {
+    var content = document.getElementById('content');
+    if (!content) return;
+    content.innerHTML = '<div class="loading"><div class="spin"></div><div class="loadingMsg">' + esc(msg) + '</div></div>';
+  }
+
   window.duPath = function (id) {
     if (busy) return;
-    try { game.actPath(id); } catch (e) { flash(e.message); }
-    render();
+    busy = true;
+    showLoading('Sinkronisasi Path...');
+    setTimeout(function () {
+      try { game.actPath(id); } catch (e) { busy = false; flash(e.message); render(); return; }
+      busy = false;
+      render();
+    }, 420);
   };
   window.duChoose = function (i) {
     if (busy) return;
-    try { game.actChoose(i); } catch (e) { flash(e.message); }
-    render();
+    busy = true;
+    showLoading('Memproses pilihan...');
+    setTimeout(function () {
+      try { game.actChoose(i); } catch (e) { busy = false; flash(e.message); render(); return; }
+      busy = false;
+      render();
+    }, 420);
   };
   window.duExplore = function () {
     if (busy) return;
     busy = true;
-    var res;
-    try { res = game.actExplore(); } catch (e) { busy = false; flash(e.message); render(); return; }
-    var battle = res && res.battle && res.battle.length ? res.battle : null;
-    if (!battle) { busy = false; render(); return; }
-    playBattle(battle);
+    showLoading('Memasuki node...');
+    setTimeout(function () {
+      var res;
+      try { res = game.actExplore(); } catch (e) { busy = false; flash(e.message); render(); return; }
+      var battle = res && res.battle && res.battle.length ? res.battle : null;
+      if (!battle) { busy = false; render(); return; }
+      playBattle(battle);
+    }, 420);
   };
   function playBattle(battle) {
     var idx = 0;
@@ -493,7 +512,6 @@ function relayHtmlMessage(ctx, html, submessageText = 'Divergent Universe') {
   const responseId = randomUUID();
   const sections = [
     htmlLayout(html),
-    suggestionPillsLayout(['.du status', '.du view', '.du abandon']),
   ];
   const msg = {
     messageContextInfo: {
@@ -586,6 +604,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Aria
 .btitle{font-size:13px;font-weight:800;color:#b7f7c0;margin-bottom:8px;text-align:center}
 .bline{font-size:10px;color:#d8eadb;padding:3px 0;border-bottom:1px dashed #1c261c}
 .crit{color:#ffd166}.dodge{color:#64b5f6}
+.loading{background:#0c120c;border:1px solid rgba(126,231,135,.2);border-radius:11px;padding:18px;text-align:center}
+.spin{width:26px;height:26px;border:3px solid #1c261c;border-top-color:#7ee787;border-radius:50%;margin:0 auto 10px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loadingMsg{font-size:11px;color:#9fd9a7}
 .fin{font-size:15px;font-weight:800;text-align:center;margin:6px 0 8px;color:#b7f7c0}
 .reward{background:#0d2b0d;border:1px solid #2a6b2a;border-radius:9px;padding:9px;font-size:11px;font-weight:700;color:#7ee787;text-align:center;margin-bottom:8px}
 .toklab{font-size:9px;color:#8fb896;margin:8px 0 4px}
