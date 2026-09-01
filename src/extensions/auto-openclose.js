@@ -9,6 +9,7 @@ const OPEN_MIN = 5 * 60
 let timer = null
 let lastCloseKey = null
 let lastOpenKey = null
+let running = false
 
 function wibMinutes() {
   const now = new Date()
@@ -33,6 +34,8 @@ async function applyState(jid, wantClosed) {
 }
 
 async function runForGroups(wantClosed) {
+  const sock = getSocket()
+  if (!sock) return
   const groups = await sql`SELECT jid FROM groups WHERE openclose = 1`
   for (const { jid } of groups) {
     await applyState(jid, wantClosed)
@@ -43,22 +46,30 @@ export default {
   name: 'auto-openclose',
 
   init() {
-    timer = setInterval(() => {
+    timer = setInterval(async () => {
+      if (running) return
+      running = true
       try {
         const { minutes, dayKey } = wibMinutes()
         if (minutes >= CLOSE_MIN) {
           if (lastCloseKey !== dayKey) {
+            await runForGroups(true)
+            // Only mark as done after the operation succeeds, so a transient
+            // failure (socket reconnect, DB error) is retried on next tick.
             lastCloseKey = dayKey
-            runForGroups(true).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] close failed'))
+            logger.info({ dayKey }, '[AutoOpenClose] groups closed')
           }
         } else if (minutes >= OPEN_MIN) {
           if (lastOpenKey !== dayKey) {
+            await runForGroups(false)
             lastOpenKey = dayKey
-            runForGroups(false).catch(err => logger.warn({ err: err.message }, '[AutoOpenClose] open failed'))
+            logger.info({ dayKey }, '[AutoOpenClose] groups opened')
           }
         }
       } catch (err) {
         logger.warn({ err: err.message }, '[AutoOpenClose] tick failed')
+      } finally {
+        running = false
       }
     }, TICK_MS)
     logger.info('[AutoOpenClose] Initialized — close 23:00, open 05:00 WIB')
@@ -69,5 +80,6 @@ export default {
     timer = null
     lastCloseKey = null
     lastOpenKey = null
+    running = false
   },
 }

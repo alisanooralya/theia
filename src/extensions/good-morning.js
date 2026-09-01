@@ -8,6 +8,7 @@ const GREET_MIN = 7 * 60;
 const GREET_WINDOW = 60;
 let timer = null;
 let lastSentKey = null;
+let running = false;
 
 function wibMinutes() {
   const now = new Date();
@@ -19,7 +20,7 @@ function wibMinutes() {
 
 async function sendGoodMorning() {
   const sock = getSocket();
-  if (!sock) return;
+  if (!sock) throw new Error('socket not ready');
   const groups = await sql`SELECT jid FROM groups WHERE greeting = 1`;
   for (const { jid } of groups) {
     try {
@@ -38,17 +39,26 @@ export default {
   name: 'good-morning',
 
   init() {
-    timer = setInterval(() => {
+    timer = setInterval(async () => {
+      if (running) return;
+      running = true;
       try {
         const { minutes, dayKey } = wibMinutes();
-        if (minutes >= GREET_MIN && minutes < GREET_MIN + GREET_WINDOW && lastSentKey !== dayKey) {
+        if (
+          minutes >= GREET_MIN &&
+          minutes < GREET_MIN + GREET_WINDOW &&
+          lastSentKey !== dayKey
+        ) {
+          await sendGoodMorning();
+          // Mark as sent only AFTER the operation succeeded, so a transient
+          // failure (socket reconnect, rate limit) is retried on next tick.
           lastSentKey = dayKey;
-          sendGoodMorning().catch((err) =>
-            logger.warn({ err: err.message }, '[GoodMorning] failed')
-          );
+          logger.info({ dayKey }, '[GoodMorning] sent greeting');
         }
       } catch (err) {
         logger.warn({ err: err.message }, '[GoodMorning] tick failed');
+      } finally {
+        running = false;
       }
     }, TICK_MS);
     logger.info('[GoodMorning] Initialized — 07:00 WIB greeting');
@@ -58,5 +68,6 @@ export default {
     if (timer) clearInterval(timer);
     timer = null;
     lastSentKey = null;
+    running = false;
   },
 };
