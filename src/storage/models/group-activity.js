@@ -16,9 +16,9 @@ class GroupActivityModel {
       INSERT INTO group_activity (jid, user_jid, xp, level, message_count, updated_at)
       VALUES (${jid}, ${userJid}, ${amount}, ${calcLevel(amount)}, 1, (EXTRACT(EPOCH FROM NOW()))::BIGINT)
       ON CONFLICT (jid, user_jid) DO UPDATE SET
-        xp = xp + ${amount},
-        level = CAST(FLOOR(SQRT((xp + ${amount}) / 100.0)) AS INTEGER) + 1,
-        message_count = message_count + 1,
+        xp = group_activity.xp + ${amount},
+        level = CAST(FLOOR(SQRT((group_activity.xp + ${amount}) / 100.0)) AS INTEGER) + 1,
+        message_count = group_activity.message_count + 1,
         updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
     `;
     const after = await this.get(jid, userJid, client);
