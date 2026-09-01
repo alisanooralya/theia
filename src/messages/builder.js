@@ -602,82 +602,6 @@ class ButtonV2 extends BaseBuilder {
   }
 }
 
-class Carousel extends BaseBuilder {
-  #client;
-
-  constructor(client) {
-    super();
-    if (!client) {
-      throw new Error('Socket is required');
-    }
-
-    this.#client = client;
-    this._cards = [];
-  }
-
-  addCard(card) {
-    const cards = Array.isArray(card) ? card : [card];
-    const baseIndex = this._cards.length;
-
-    for (const [index, c] of cards.entries()) {
-      if (!c?.header?.hasMediaAttachment) {
-        throw new Error(
-          `Card [${baseIndex + index}] must include an image or video in header`
-        );
-      }
-    }
-
-    this._cards.push(...cards);
-    return this;
-  }
-
-  build(jid, { ...options } = {}) {
-    return generateWAMessageFromContent(
-      jid,
-      {
-        ...this._extraPayload,
-        interactiveMessage: {
-          header: {
-            hasMediaAttachment: false,
-          },
-          body: { text: this._body },
-          footer: { text: this._footer },
-          contextInfo: this._contextInfo,
-          carouselMessage: {
-            cards: this._cards,
-          },
-        },
-      },
-      { ...options }
-    );
-  }
-
-  async send(jid, { ...options } = {}) {
-    const msg = this.build(jid, options);
-
-    await this.#client.relayMessage(msg.key.remoteJid, msg.message, {
-      messageId: msg.key.id,
-      additionalNodes: [
-        {
-          tag: 'biz',
-          attrs: {},
-          content: [
-            {
-              tag: 'interactive',
-              attrs: { type: 'native_flow', v: '1' },
-              content: [
-                { tag: 'native_flow', attrs: { v: '9', name: 'mixed' } },
-              ],
-            },
-          ],
-        },
-      ],
-      ...options,
-    });
-    return msg;
-  }
-}
-
 class AIRich extends BaseBuilder {
   #client;
 
@@ -1526,9 +1450,7 @@ class AIRich extends BaseBuilder {
     }
 
     const [header, ...rows] = arr;
-
     const maxLen = Math.max(header.length, ...rows.map((r) => r.length));
-
     const normalize = (r) => [...r, ...Array(maxLen - r.length).fill('')];
 
     const unified_rows = [
@@ -1555,4 +1477,4 @@ class AIRich extends BaseBuilder {
   }
 }
 
-export { Button, ButtonV2, Carousel, AIRich };
+export { Button, ButtonV2, AIRich };
