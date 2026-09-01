@@ -734,9 +734,10 @@ class DivergentUniverseService {
     await divergentUsageModel.save(
       jid,
       {
-        ...usage,
-        dailyCount: usage.dailyCount + 1,
-        weeklyCount: usage.weeklyCount + 1,
+        daily_key: usage.dailyKey,
+        daily_count: usage.dailyCount + 1,
+        weekly_key: usage.weeklyKey,
+        weekly_count: usage.weeklyCount + 1,
       },
       t
     );
