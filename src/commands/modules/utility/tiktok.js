@@ -1,4 +1,3 @@
-import { tiktokService } from '#features/platforms/tiktok.js';
 import { downloaderService } from '#features/downloader.js';
 
 export default {
@@ -16,10 +15,10 @@ export default {
     await ctx.typing();
 
     try {
-      const result = await tiktokService.resolve(url);
+      const result = await downloaderService.tiktok(url);
 
       if (result.type === 'video') {
-        const buf = await tiktokService.toBuffer(result.url, result._cookie);
+        const buf = await downloaderService.toBuffer(result.url);
         await ctx.sendMedia(
           'video',
           buf,
@@ -36,7 +35,7 @@ export default {
           );
         }
       } else if (result.type === 'audio') {
-        const buf = await tiktokService.toBuffer(result.url, result._cookie);
+        const buf = await downloaderService.toBuffer(result.url);
         await ctx.sendMedia(
           'audio',
           buf,

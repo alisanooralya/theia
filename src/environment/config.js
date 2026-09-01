@@ -50,4 +50,7 @@ export default {
   respondToSelf: false,
   ignoreBots: false,
   autoread: false,
+
+  // ─── API Keys ───
+  tiktokApiKey: 'Btz-ZEaRQ',
 };

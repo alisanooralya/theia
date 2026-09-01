@@ -45,6 +45,8 @@ const SETTINGS = Object.freeze({
   agentCooldownMs: parseInt(config.agentCooldownMs, 10),
   agentTimeoutMs: parseInt(config.agentTimeoutMs, 10),
   agentMaxHistory: parseInt(config.agentMaxHistory, 10),
+
+  tiktokApiKey: config.tiktokApiKey || '',
 });
 
 export default SETTINGS;

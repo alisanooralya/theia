@@ -1,12 +1,12 @@
 /**
  * Downloader tools — reuse the existing platform services
- * (src/features/platforms/{tiktok,instagram,facebook,youtube}.js) exactly like
- * the !tiktok / !instagram / !facebook / !youtube commands do.
+ * (src/features/platforms/{instagram,facebook,youtube}.js) plus the downloader
+ * API (TikTok via betabotz) exactly like the !tiktok / !instagram / !facebook /
+ * !youtube commands do.
  *
  * Tools send the media directly to the chat via agentCtx.sendMedia, then report
  * the REAL result back to the model. The AI never fabricates download results.
  */
-import { tiktokService } from '#features/platforms/tiktok.js';
 import { instagramService } from '#features/platforms/instagram.js';
 import { facebookService } from '#features/platforms/facebook.js';
 import { youtubeService } from '#features/platforms/youtube.js';
@@ -69,9 +69,9 @@ export const downloaderTools = [
       const { ok, url, error } = validateUrl(args.url, 'TikTok');
       if (!ok) return { success: false, error };
       try {
-        const result = await tiktokService.resolve(url);
+        const result = await downloaderService.tiktok(url);
         if (result.type === 'video') {
-          const buf = await tiktokService.toBuffer(result.url, result._cookie);
+          const buf = await downloaderService.toBuffer(result.url);
           guardSize(buf);
           await ctx.sendMedia(
             'video',
@@ -90,7 +90,7 @@ export const downloaderTools = [
             );
           }
         } else if (result.type === 'audio') {
-          const buf = await tiktokService.toBuffer(result.url, result._cookie);
+          const buf = await downloaderService.toBuffer(result.url);
           guardSize(buf);
           await ctx.sendMedia(
             'audio',
