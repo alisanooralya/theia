@@ -655,6 +655,112 @@ class DivergentUniverseService {
     return DIFFICULTY;
   }
 
+  get baseReward() {
+    return BASE_REWARD;
+  }
+
+  get eventScenarios() {
+    return EVENT_SCENARIOS;
+  }
+
+  getEngineData() {
+    return {
+      paths: PATHS,
+      blessings: BLESSINGS,
+      curios: CURIOS,
+      baseReward: BASE_REWARD,
+      finalReward: FINAL_REWARD,
+      difficulty: DIFFICULTY,
+      eventScenarios: EVENT_SCENARIOS,
+    };
+  }
+
+  async startPlay(jid, chatJid, metadata = {}, difficulty = 'medium') {
+    return sql.begin(async (t) => {
+      const run = await this._start(jid, chatJid, metadata, difficulty, t);
+      run.state.seed = Math.floor(Math.random() * 0xffffffff) >>> 0;
+      run.state.actions = [];
+      return divergentRunModel.save(run, t);
+    });
+  }
+
+  async finishPlay(jid, chatJid, token) {
+    return sql.begin(async (t) => {
+      const run = await this._activeRun(jid, chatJid);
+      const state = run.state;
+      if (!state.seed || !Number.isFinite(state.seed)) {
+        throw new Error('Run ini tidak dimulai lewat `.du play`.');
+      }
+      const payload = this._decodePlayToken(token);
+      if (payload.seed !== state.seed) {
+        throw new Error('Token hasil tidak valid (seed tidak cocok).');
+      }
+      if (payload.difficulty !== state.difficulty) {
+        throw new Error('Token hasil tidak valid (difficulty tidak cocok).');
+      }
+      const initialState = JSON.parse(JSON.stringify(state));
+      delete initialState.seed;
+      delete initialState.actions;
+      const { getDuEngine } = await import(
+        '#features/rpg/divergent-universe-engine.js'
+      );
+      const game = getDuEngine().makeDU(this.getEngineData()).create(
+        payload.seed,
+        initialState
+      );
+      for (const action of payload.actions) {
+        if (action.t === 'path') game.actPath(action.v);
+        else if (action.t === 'explore') game.actExplore();
+        else if (action.t === 'choose') game.actChoose(action.v);
+        else throw new Error('Token hasil tidak valid (aksi tidak dikenal).');
+      }
+      if (game.status === 'active') {
+        throw new Error('Run belum selesai. Selesaikan dulu sebelum finish.');
+      }
+      const resultState = JSON.parse(JSON.stringify(game.state));
+      delete resultState.seed;
+      delete resultState.actions;
+      run.state = resultState;
+      if (game.status === 'failed') {
+        run.status = 'failed';
+        run.state.pending = null;
+        await divergentRunModel.save(run, t);
+        return run;
+      }
+      await this._finish(run, t);
+      return divergentRunModel.save(run, t);
+    });
+  }
+
+  _decodePlayToken(token) {
+    let json;
+    try {
+      json = JSON.parse(
+        Buffer.from(String(token || ''), 'base64').toString('utf8')
+      );
+    } catch {
+      throw new Error('Token hasil tidak valid.');
+    }
+    if (!json || json.v !== 1 || !Array.isArray(json.actions)) {
+      throw new Error('Token hasil tidak valid.');
+    }
+    const actions = json.actions.map((raw) => {
+      if (raw === 'e') return { t: 'explore' };
+      if (typeof raw === 'string' && raw.startsWith('p:')) {
+        return { t: 'path', v: raw.slice(2) };
+      }
+      if (typeof raw === 'string' && raw.startsWith('c:')) {
+        return { t: 'choose', v: Number(raw.slice(2)) };
+      }
+      throw new Error('Token hasil tidak valid (aksi tidak dikenal).');
+    });
+    return {
+      seed: Number(json.seed),
+      difficulty: String(json.difficulty || ''),
+      actions,
+    };
+  }
+
   async getRun(jid, chatJid = null) {
     const run = await divergentRunModel.find(jid);
     if (!run || !chatJid) return run;

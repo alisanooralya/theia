@@ -1,5 +1,5 @@
 import { divergentUniverseService as du } from '#features/rpg/divergent-universe.js';
-import { sendDuHtml } from '#features/rpg/divergent-universe-view.js';
+import { sendDuHtml, sendDuPlay } from '#features/rpg/divergent-universe-view.js';
 import { F } from '#helpers/index.js';
 
 const TYPE = {
@@ -206,6 +206,8 @@ export default {
             '`.du choose <nomor>` - ambil pilihan',
             '`.du status` - lihat progres dan peta',
             '`.du view` - lihat progres sebagai panel visual',
+            '`.du play [difficulty]` - mainkan DU interaktif di chat',
+            '`.du finish <token>` - klaim hasil setelah main interaktif',
             '`.du blessings` - lihat Blessing milikmu',
             '`.du curios` - lihat Curio milikmu',
             '`.du reward` - lihat formula hadiah clear',
@@ -289,6 +291,37 @@ export default {
             ? 'Run Divergent Universe dihentikan. Reward akhir hangus.'
             : 'Tidak ada run aktif untuk dihentikan.'
         );
+      }
+
+      if (sub === 'play' || sub === 'main') {
+        const difficulty = ctx.args[1]?.toLowerCase() || 'easy';
+        if (!['easy', 'medium', 'hard'].includes(difficulty)) {
+          return ctx.fail(
+            'Difficulty tidak valid. Pilih easy, medium, atau hard.'
+          );
+        }
+        const run = await du.startPlay(
+          ctx.sender,
+          ctx.jid,
+          { pushName: ctx.pushName },
+          difficulty
+        );
+        return sendDuPlay(ctx, run);
+      }
+
+      if (sub === 'finish' || sub === 'klaim') {
+        const token = ctx.args[1];
+        if (!token) {
+          return ctx.fail(
+            'Kirim token hasil dengan `.du finish <token>`. Token didapat dari tombol di panel game.'
+          );
+        }
+        const run = await du.finishPlay(ctx.sender, ctx.jid, token);
+        const text = await runText(run);
+        const msg = await ctx.reply(text);
+        run.state.lastMessageKey = msg.key;
+        await du.saveRun(run);
+        return;
       }
 
       if (sub === 'view' || sub === 'visual') {
