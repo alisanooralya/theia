@@ -14,11 +14,11 @@ export default {
 
     if (!side || !['heads', 'tails', 'kepala', 'ekor'].includes(side))
       ctx.fail('Usage: `!coinflip <heads/tails> <bet>`');
-    if (bet < 100) return ctx.reply('Minimal taruhan: 🪙100');
+    if (bet < 100) return ctx.fail('Minimal taruhan: 🪙100');
 
     const wallet = await walletModel.find(ctx.sender);
     if (!wallet || wallet.cash < bet)
-      return ctx.reply('Saldo cash tidak cukup.');
+      return ctx.fail('Saldo cash tidak cukup.');
 
     await walletModel.addCash(ctx.sender, -bet);
 

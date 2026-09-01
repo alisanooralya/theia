@@ -7,7 +7,7 @@ export default {
   aliases: ['sembuh', 'recover'],
   category: 'rpg',
   description: 'Heal HP (semakin banyak bayar, semakin banyak HP)',
-  cooldown: 12 * 60 * 60 * 1000,
+  cooldown: 6 * 60 * 60 * 1000,
 
   async execute(ctx) {
     await Promise.all([
@@ -27,7 +27,6 @@ export default {
       return ctx.fail('❤️ HP kamu sudah penuh.');
     }
 
-    // Harga penuh untuk heal 100% (pembulatan ke atas per 100 HP).
     const fullPrice = Math.ceil(missing / 100) * 100;
     const coinsPerHp = fullPrice / missing;
 
