@@ -44,7 +44,7 @@ export default {
         );
       }
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      await ctx.fail(`${err.message}`);
     }
   },
 };
