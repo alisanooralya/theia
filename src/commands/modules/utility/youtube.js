@@ -6,8 +6,7 @@ export default {
   aliases: ['yt', 'ytdl', 'yta'],
   category: 'utility',
   description: 'Download video/audio YouTube',
-  cooldown: 30_000,
-  isProblem: true,
+  cooldown: 60_000,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();

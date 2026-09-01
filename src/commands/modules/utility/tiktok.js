@@ -5,8 +5,7 @@ export default {
   aliases: ['tt', 'tiktokdl'],
   category: 'utility',
   description: 'Download video TikTok (tanpa watermark)',
-  cooldown: 30_000,
-  isProblem: true,
+  cooldown: 60_000,
 
   async execute(ctx) {
     const url = ctx.args[0];
