@@ -1,4 +1,5 @@
 import { divergentUniverseService as du } from '#features/rpg/divergent-universe.js';
+import { sendDuHtml } from '#features/rpg/divergent-universe-view.js';
 import { F } from '#helpers/index.js';
 
 const TYPE = {
@@ -204,6 +205,7 @@ export default {
             '`.du explore` - selesaikan node saat ini',
             '`.du choose <nomor>` - ambil pilihan',
             '`.du status` - lihat progres dan peta',
+            '`.du view` - lihat progres sebagai panel visual',
             '`.du blessings` - lihat Blessing milikmu',
             '`.du curios` - lihat Curio milikmu',
             '`.du reward` - lihat formula hadiah clear',
@@ -287,6 +289,16 @@ export default {
             ? 'Run Divergent Universe dihentikan. Reward akhir hangus.'
             : 'Tidak ada run aktif untuk dihentikan.'
         );
+      }
+
+      if (sub === 'view' || sub === 'visual') {
+        const run = await du.getRun(ctx.sender, ctx.jid);
+        if (!run) {
+          return ctx.fail(
+            'Tidak ada run aktif. Ketik `.du start` untuk memulai.'
+          );
+        }
+        return sendDuHtml(ctx, run);
       }
 
       const run = await du.getRun(ctx.sender, ctx.jid);
