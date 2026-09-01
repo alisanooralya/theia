@@ -4,7 +4,8 @@ import { logger } from '#helpers/logger.js';
 class InventoryModel {
   async getAll(jid, client = sql) {
     return client`
-      SELECT i.*, it.name, it.description, it.category, it.rarity, it.sellable
+      SELECT i.id, i.jid, i.item_id, i.quantity, i.data, i.created_at,
+             it.name, it.description, it.category, it.rarity, it.sellable
       FROM inventories i JOIN items it ON it.id = i.item_id
       WHERE i.jid = ${jid} ORDER BY it.category, it.name
     `;
@@ -12,7 +13,8 @@ class InventoryModel {
 
   async getItem(jid, itemId, client = sql) {
     const rows = await client`
-      SELECT i.*, it.name, it.description, it.category, it.rarity, it.sellable, it.price
+      SELECT i.id, i.jid, i.item_id, i.quantity, i.data, i.created_at,
+             it.name, it.description, it.category, it.rarity, it.sellable, it.price
       FROM inventories i JOIN items it ON it.id = i.item_id
       WHERE i.jid = ${jid} AND i.item_id = ${itemId}
     `;
@@ -32,7 +34,7 @@ class InventoryModel {
     }
     await client`
       INSERT INTO inventories (jid, item_id, quantity) VALUES (${jid}, ${itemId}, ${qty})
-      ON CONFLICT (jid, item_id) DO UPDATE SET quantity = quantity + ${qty}
+      ON CONFLICT (jid, item_id) DO UPDATE SET quantity = inventories.quantity + ${qty}
     `;
     return true;
   }
