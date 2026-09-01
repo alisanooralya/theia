@@ -1,4 +1,5 @@
 import { groupActivityModel } from '#storage/models/index.js';
+import { groupModel } from '#storage/models/index.js';
 import { userModel } from '#storage/models/index.js';
 import { logger } from '#helpers/logger.js';
 
@@ -14,14 +15,12 @@ export default {
     if (!parsed.isGroup) return true;
     if (!parsed.sender) return true;
     try {
-      const { groupModel } = await import('#storage/models/index.js');
-      await groupModel.ensure(parsed.jid);
+      await Promise.all([
+        groupModel.ensure(parsed.jid),
+        userModel.ensure(parsed.sender, { pushName: parsed.pushName || '' }),
+      ]);
     } catch {}
-    const userJid = parsed.sender;
-    try {
-      await userModel.ensure(userJid, { pushName: parsed.pushName || '' });
-    } catch {}
-    const key = `${parsed.jid}:${userJid}`;
+    const key = `${parsed.jid}:${parsed.sender}`;
     const now = Date.now();
     if (cooldown.has(key) && now - cooldown.get(key) < COOLDOWN_MS) return true;
     cooldown.set(key, now);
@@ -31,15 +30,15 @@ export default {
     }
     try {
       const xp = Math.floor(Math.random() * (XP_MAX - XP_MIN + 1)) + XP_MIN;
-      try {
-        await groupActivityModel.addXp(parsed.jid, userJid, xp);
-      } catch {}
-      const result = await userModel.addExp(userJid, xp);
+      const [, result] = await Promise.all([
+        groupActivityModel.addXp(parsed.jid, parsed.sender, xp),
+        userModel.addExp(parsed.sender, xp),
+      ]);
       if (result.leveledUp) {
         await sock
           .sendMessage(parsed.jid, {
-            text: `🎉 Selamat @${userJid.split('@')[0]} naik ke *Level ${result.newLevel}* ! (${xp} XP)`,
-            mentions: [userJid],
+            text: `🎉 Selamat @${parsed.sender.split('@')[0]} naik ke *Level ${result.newLevel}* ! (${xp} XP)`,
+            mentions: [parsed.sender],
           })
           .catch(() => {});
       }

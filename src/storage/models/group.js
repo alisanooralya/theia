@@ -1,4 +1,5 @@
 import { sql } from '#storage/connection.js';
+import { groupCache } from '#helpers/cache.js';
 
 const ALLOWED_FIELDS = [
   'name',
@@ -12,8 +13,12 @@ const ALLOWED_FIELDS = [
 
 class GroupModel {
   async find(jid, client = sql) {
+    const cached = groupCache.get(jid);
+    if (cached) return cached;
     const rows = await client`SELECT * FROM groups WHERE jid = ${jid}`;
-    return rows[0] ?? null;
+    const row = rows[0] ?? null;
+    if (row) groupCache.set(jid, row);
+    return row;
   }
 
   async findRaidGroups(client = sql) {
@@ -22,6 +27,7 @@ class GroupModel {
   }
 
   async ensure(jid, name = '', client = sql) {
+    groupCache.del(jid);
     await client`
       INSERT INTO groups (jid, name) VALUES (${jid}, ${name})
       ON CONFLICT (jid) DO UPDATE SET name = EXCLUDED.name, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
@@ -30,6 +36,7 @@ class GroupModel {
   }
 
   async update(jid, fields, client = sql) {
+    groupCache.del(jid);
     const entries = Object.entries(fields).filter(([k]) =>
       ALLOWED_FIELDS.includes(k)
     );
