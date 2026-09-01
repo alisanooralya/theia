@@ -3,7 +3,8 @@ import { sql } from '#storage/connection.js';
 class CooldownModel {
   async check(jid, command, client = sql) {
     const key = `${jid}:${command}`;
-    const rows = await client`SELECT expires_at FROM cooldowns WHERE key = ${key}`;
+    const rows =
+      await client`SELECT expires_at FROM cooldowns WHERE key = ${key}`;
     const row = rows[0];
     if (!row) return 0;
     const remaining = row.expires_at * 1000 - Date.now();

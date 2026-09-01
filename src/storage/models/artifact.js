@@ -2,7 +2,8 @@ import { sql } from '#storage/connection.js';
 
 class ArtifactModel {
   async find(ownerJid, userId, client = sql) {
-    const rows = await client`SELECT * FROM artifacts WHERE owner_jid = ${ownerJid} AND user_id = ${userId}`;
+    const rows =
+      await client`SELECT * FROM artifacts WHERE owner_jid = ${ownerJid} AND user_id = ${userId}`;
     if (!rows[0]) return null;
     rows[0].substats = JSON.parse(rows[0].substats);
     return rows[0];
@@ -16,12 +17,14 @@ class ArtifactModel {
   }
 
   async findByOwner(jid, client = sql) {
-    const rows = await client`SELECT * FROM artifacts WHERE owner_jid = ${jid} ORDER BY user_id ASC`;
+    const rows =
+      await client`SELECT * FROM artifacts WHERE owner_jid = ${jid} ORDER BY user_id ASC`;
     return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
   async findByOwnerAndSlot(jid, slot, client = sql) {
-    const rows = await client`SELECT * FROM artifacts WHERE owner_jid = ${jid} AND slot = ${slot} ORDER BY user_id ASC`;
+    const rows =
+      await client`SELECT * FROM artifacts WHERE owner_jid = ${jid} AND slot = ${slot} ORDER BY user_id ASC`;
     return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
@@ -46,21 +49,32 @@ class ArtifactModel {
   }
 
   async delete(id, client = sql) {
-    const result = await client`DELETE FROM artifacts WHERE id = ${id} RETURNING id`;
+    const result =
+      await client`DELETE FROM artifacts WHERE id = ${id} RETURNING id`;
     return result.length;
   }
 
   async count(jid, client = sql) {
-    const rows = await client`SELECT COUNT(*)::int AS count FROM artifacts WHERE owner_jid = ${jid}`;
+    const rows =
+      await client`SELECT COUNT(*)::int AS count FROM artifacts WHERE owner_jid = ${jid}`;
     return rows[0].count;
   }
 
   async getInventory(jid, client = sql) {
-    const rows = await client`SELECT * FROM artifact_inventory WHERE jid = ${jid}`;
+    const rows =
+      await client`SELECT * FROM artifact_inventory WHERE jid = ${jid}`;
     return rows[0] ?? null;
   }
 
-  async setInventory(jid, flowerId, featherId, sandsId, gobletId, circletId, client = sql) {
+  async setInventory(
+    jid,
+    flowerId,
+    featherId,
+    sandsId,
+    gobletId,
+    circletId,
+    client = sql
+  ) {
     await client`
       INSERT INTO artifact_inventory (jid, flower_id, feather_id, sands_id, goblet_id, circlet_id)
       VALUES (${jid}, ${flowerId}, ${featherId}, ${sandsId}, ${gobletId}, ${circletId})

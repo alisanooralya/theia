@@ -1,4 +1,9 @@
-import { afkModel, userModel, walletModel, groupModel } from '#storage/models/index.js';
+import {
+  afkModel,
+  userModel,
+  walletModel,
+  groupModel,
+} from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
 
@@ -15,7 +20,7 @@ export default {
     const prefix = SETTINGS.prefix || '.';
     const isAfkCmd =
       text === `${prefix}afk` || text.startsWith(`${prefix}afk `);
-    const isMuted = parsed.isGroup && await groupModel.isMuted(parsed.jid);
+    const isMuted = parsed.isGroup && (await groupModel.isMuted(parsed.jid));
 
     await userModel.ensure(jid, { pushName: parsed.pushName || '' });
 
@@ -28,16 +33,13 @@ export default {
       if (coins > 0) await walletModel.reward(jid, coins, 'afk');
       await afkModel.remove(jid);
       await sock
-        .sendMessage(
-          parsed.jid,
-          {
-            text:
-              `👋 @${jid.split('@')[0]} selamat datang kembali!\n` +
-              `⏳ Kamu AFK selama *${F.formatDuration(durMs)}*` +
-              (coins > 0 ? `\n🪙 AFK reward: +${coins} coin` : ''),
-            mentions: [jid],
-          }
-        )
+        .sendMessage(parsed.jid, {
+          text:
+            `👋 @${jid.split('@')[0]} selamat datang kembali!\n` +
+            `⏳ Kamu AFK selama *${F.formatDuration(durMs)}*` +
+            (coins > 0 ? `\n🪙 AFK reward: +${coins} coin` : ''),
+          mentions: [jid],
+        })
         .catch(() => {});
       return true;
     }
@@ -47,15 +49,13 @@ export default {
       const reason = text.slice(`${prefix}afk`.length).trim();
       await afkModel.set(jid, reason);
       await sock
-        .sendMessage(
-          parsed.jid,
-          {
-            text:
-              `📴 @${jid.split('@')[0]} sekarang AFK` +
-              (reason ? `: ${reason}` : '') + `.`,
-            mentions: [jid],
-          }
-        )
+        .sendMessage(parsed.jid, {
+          text:
+            `📴 @${jid.split('@')[0]} sekarang AFK` +
+            (reason ? `: ${reason}` : '') +
+            `.`,
+          mentions: [jid],
+        })
         .catch(() => {});
       return false;
     }
@@ -66,7 +66,8 @@ export default {
         const a = await afkModel.get(m);
         if (a) {
           const durMs = Date.now() - a.started_at * 1000;
-          const name = (await userModel.findById(m))?.push_name || m.split('@')[0];
+          const name =
+            (await userModel.findById(m))?.push_name || m.split('@')[0];
           await sock
             .sendMessage(parsed.jid, {
               text:

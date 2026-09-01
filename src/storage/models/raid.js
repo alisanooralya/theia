@@ -2,12 +2,14 @@ import { sql } from '#storage/connection.js';
 
 class RaidModel {
   async getActive(client = sql) {
-    const rows = await client`SELECT * FROM raids WHERE status = 'active' ORDER BY id DESC LIMIT 1`;
+    const rows =
+      await client`SELECT * FROM raids WHERE status = 'active' ORDER BY id DESC LIMIT 1`;
     return rows[0] ?? null;
   }
 
   async getEnded(client = sql) {
-    const rows = await client`SELECT * FROM raids WHERE status IN ('ended', 'cleared') ORDER BY id DESC LIMIT 1`;
+    const rows =
+      await client`SELECT * FROM raids WHERE status IN ('ended', 'cleared') ORDER BY id DESC LIMIT 1`;
     return rows[0] ?? null;
   }
 
@@ -32,7 +34,8 @@ class RaidModel {
   }
 
   async getParticipant(raidId, jid, client = sql) {
-    const rows = await client`SELECT * FROM raid_participants WHERE raid_id = ${raidId} AND jid = ${jid}`;
+    const rows =
+      await client`SELECT * FROM raid_participants WHERE raid_id = ${raidId} AND jid = ${jid}`;
     return rows[0] ?? null;
   }
 

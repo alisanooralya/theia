@@ -38,13 +38,15 @@ export default {
     const premiumBadge = user.premium ? ' 👑' : '';
 
     const inv = await artifactService.getInventory(jid);
-    const slotLines = await Promise.all(['flower', 'feather', 'sands', 'goblet', 'circlet'].map(async (slot) => {
-      const artifactId = inv?.[`${slot}_id`];
-      if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
-      const a = await artifactModel.findById(artifactId);
-      if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
-      return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
-    }));
+    const slotLines = await Promise.all(
+      ['flower', 'feather', 'sands', 'goblet', 'circlet'].map(async (slot) => {
+        const artifactId = inv?.[`${slot}_id`];
+        if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
+        const a = await artifactModel.findById(artifactId);
+        if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
+        return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
+      })
+    );
 
     const text = [
       `╭──┄  *${user.push_name || 'Unknown'}*${premiumBadge}  ┄──`,

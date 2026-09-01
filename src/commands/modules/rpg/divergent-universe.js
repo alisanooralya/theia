@@ -23,11 +23,12 @@ function pendingText(run) {
   if (!pending) return 'Ketik `.du explore` untuk memasuki node berikutnya.';
   if (pending.type === 'path') return 'Pilih Path dengan `.du path <nama>`.';
 
-  const title = pending.type === 'blessing'
-    ? 'Pilih Blessing'
-    : pending.type === 'curio'
-      ? 'Pilih Curio'
-      : `Event: ${pending.eventName}`;
+  const title =
+    pending.type === 'blessing'
+      ? 'Pilih Blessing'
+      : pending.type === 'curio'
+        ? 'Pilih Curio'
+        : `Event: ${pending.eventName}`;
   const lines = pending.options.map((option, index) => {
     const item = typeof option === 'string' ? effectById(option) : option;
     const path = item.path ? ` [${du.paths[item.path].name}]` : '';
@@ -49,20 +50,23 @@ async function runText(run) {
   const maxHpBonus = effects.reduce((sum, item) => sum + (item.maxHp || 0), 0);
   const maxHp = Math.max(50, state.baseMaxHp + maxHpBonus);
   const totalNodes = state.nodes.length;
-  const map = state.nodes.map((item) => {
-    if (item.cleared) return '✓';
-    if (item.position === state.nodeIndex + 1) return '◆';
-    if (item.type === 'boss') return 'B';
-    if (item.type === 'elite') return 'E';
-    return '·';
-  }).join(' ');
-  const status = run.status === 'active'
-    ? 'AKTIF'
-    : run.status === 'completed'
-      ? 'SELESAI'
-      : run.status === 'failed'
-        ? 'GAGAL'
-        : 'DITINGGALKAN';
+  const map = state.nodes
+    .map((item) => {
+      if (item.cleared) return '✓';
+      if (item.position === state.nodeIndex + 1) return '◆';
+      if (item.type === 'boss') return 'B';
+      if (item.type === 'elite') return 'E';
+      return '·';
+    })
+    .join(' ');
+  const status =
+    run.status === 'active'
+      ? 'AKTIF'
+      : run.status === 'completed'
+        ? 'SELESAI'
+        : run.status === 'failed'
+          ? 'GAGAL'
+          : 'DITINGGALKAN';
   const reward = state.finalReward
     ? `\nReward: *${F.formatNumber(state.finalReward.cash)} cash* + *${state.finalReward.exp} EXP*`
     : '';
@@ -75,13 +79,13 @@ async function runText(run) {
       '*Tips:*',
       '- Ketik `.du start [difficulty]` untuk memulai run baru.',
       '- Pilih Path yang sesuai strategimu.',
-      '- Relic bisa meningkatkan stat di DU.',
+      '- Relic bisa meningkatkan stat di DU.'
     );
   } else if (run.status === 'abandoned') {
     tips.push(
       '',
       '*Tips:*',
-      '- Ketik `.du start [difficulty]` untuk memulai run baru.',
+      '- Ketik `.du start [difficulty]` untuk memulai run baru.'
     );
   }
 
@@ -102,8 +106,12 @@ async function runText(run) {
     reward,
     ...tips,
     '',
-    run.status === 'active' ? pendingText(run) : 'Mulai run baru dengan `.du start`.',
-  ].filter((line) => line !== undefined).join('\n');
+    run.status === 'active'
+      ? pendingText(run)
+      : 'Mulai run baru dengan `.du start`.',
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n');
 }
 
 function pathsText() {
@@ -127,7 +135,8 @@ function rewardText() {
   const reward = du.finalReward;
   const difficulties = du.difficulty;
   const difficultyLines = Object.entries(difficulties).map(
-    ([key, config]) => `- *${config.name}*: ${config.nodeCount} node - Reward ×${config.rewardMultiplier}`
+    ([key, config]) =>
+      `- *${config.name}*: ${config.nodeCount} node - Reward ×${config.rewardMultiplier}`
   );
   return [
     '⌁ *HADIAH CLEAR DU*',
@@ -145,7 +154,7 @@ function rewardText() {
     'Stat profil kamu (`.profile`: ATK/DEF/HP/SPD) tidak mempengaruhi hasil di sini — hanya stat dasar dari sistem Divergent Universe yang dipakai.',
     'Fragment adalah currency run dan tidak masuk ke wallet secara langsung.',
     '',
-    `Batas bermain: *${du.runLimit.daily}x per hari* dan *${du.runLimit.weekly}x per minggu*.`
+    `Batas bermain: *${du.runLimit.daily}x per hari* dan *${du.runLimit.weekly}x per minggu*.`,
   ].join('\n');
 }
 
@@ -177,62 +186,74 @@ export default {
   aliases: ['divergent', 'divergentuniverse'],
   category: 'rpg',
   description: 'Jelajahi Divergent Universe',
-  cooldown: 2_000, isProblem: true,
+  cooldown: 2_000,
+  isProblem: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase() || 'help';
 
     try {
       if (sub === 'help' || sub === 'bantuan') {
-        return ctx.reply([
-          '⌁ *DIVERGENT UNIVERSE - BANTUAN*',
-          '',
-          '`.du start [difficulty]` - buat run baru (easy/medium/hard)',
-          '`.du paths` - lihat semua Path',
-          '`.du path <nama>` - pilih Path',
-          '`.du explore` - selesaikan node saat ini',
-          '`.du choose <nomor>` - ambil pilihan',
-          '`.du status` - lihat progres dan peta',
-          '`.du blessings` - lihat Blessing milikmu',
-          '`.du curios` - lihat Curio milikmu',
-          '`.du reward` - lihat formula hadiah clear',
-          '`.du limit` - lihat sisa kesempatan bermain',
-          '`.du abandon` - hentikan run',
-          '',
-          '*Difficulty:*',
-          '- Easy: 8 node (3 battle, 2 event, 2 treasure, 1 elite, 0 boss) - Reward ×0.6',
-          '- Medium: 16 node (6 battle, 3 event, 3 treasure, 2 elite, 2 boss) - Reward ×1',
-          '- Hard: 22 node (8 battle, 4 event, 4 treasure, 3 elite, 3 boss) - Reward ×1.5',
-          '',
-          'Cash/koin dan EXP hanya diberikan setelah semua node clear.',
-          'Stat profil kamu (`.profile`: ATK/DEF/HP/SPD) TIDAK mempengaruhi DU — fitur ini hanya menggunakan stat dasar yang diberikan sistem Divergent Universe.',
-          `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
-          'DU hanya tersedia di private chat.',
-        ].join('\n'));
+        return ctx.reply(
+          [
+            '⌁ *DIVERGENT UNIVERSE - BANTUAN*',
+            '',
+            '`.du start [difficulty]` - buat run baru (easy/medium/hard)',
+            '`.du paths` - lihat semua Path',
+            '`.du path <nama>` - pilih Path',
+            '`.du explore` - selesaikan node saat ini',
+            '`.du choose <nomor>` - ambil pilihan',
+            '`.du status` - lihat progres dan peta',
+            '`.du blessings` - lihat Blessing milikmu',
+            '`.du curios` - lihat Curio milikmu',
+            '`.du reward` - lihat formula hadiah clear',
+            '`.du limit` - lihat sisa kesempatan bermain',
+            '`.du abandon` - hentikan run',
+            '',
+            '*Difficulty:*',
+            '- Easy: 8 node (3 battle, 2 event, 2 treasure, 1 elite, 0 boss) - Reward ×0.6',
+            '- Medium: 16 node (6 battle, 3 event, 3 treasure, 2 elite, 2 boss) - Reward ×1',
+            '- Hard: 22 node (8 battle, 4 event, 4 treasure, 3 elite, 3 boss) - Reward ×1.5',
+            '',
+            'Cash/koin dan EXP hanya diberikan setelah semua node clear.',
+            'Stat profil kamu (`.profile`: ATK/DEF/HP/SPD) TIDAK mempengaruhi DU — fitur ini hanya menggunakan stat dasar yang diberikan sistem Divergent Universe.',
+            `Setiap pemain hanya dapat memulai ${du.runLimit.daily} run per hari dan ${du.runLimit.weekly} run per minggu.`,
+            'DU hanya tersedia di private chat.',
+          ].join('\n')
+        );
       }
 
       if (sub === 'paths' || sub === 'pathlist') return ctx.reply(pathsText());
       if (sub === 'reward' || sub === 'hadiah') return ctx.reply(rewardText());
       if (sub === 'limit' || sub === 'kuota') {
         const usage = await du.getUsage(ctx.sender);
-        return ctx.reply([
-          '⌁ *LIMIT DIVERGENT UNIVERSE*',
-          '',
-          `Harian: *${usage.dailyCount}/${du.runLimit.daily}* digunakan, *${usage.dailyRemaining}* tersisa.`,
-          `Mingguan: *${usage.weeklyCount}/${du.runLimit.weekly}* digunakan, *${usage.weeklyRemaining}* tersisa.`,
-          '',
-          'Limit harian reset pukul 00.00.',
-          'Limit mingguan reset Senin pukul 00.00.',
-          'Run yang kalah atau ditinggalkan tetap dihitung.',
-        ].join('\n'));
+        return ctx.reply(
+          [
+            '⌁ *LIMIT DIVERGENT UNIVERSE*',
+            '',
+            `Harian: *${usage.dailyCount}/${du.runLimit.daily}* digunakan, *${usage.dailyRemaining}* tersisa.`,
+            `Mingguan: *${usage.weeklyCount}/${du.runLimit.weekly}* digunakan, *${usage.weeklyRemaining}* tersisa.`,
+            '',
+            'Limit harian reset pukul 00.00.',
+            'Limit mingguan reset Senin pukul 00.00.',
+            'Run yang kalah atau ditinggalkan tetap dihitung.',
+          ].join('\n')
+        );
       }
 
       if (sub === 'start' || sub === 'mulai') {
         const difficulty = ctx.args[1]?.toLowerCase() || 'easy';
         if (!['easy', 'medium', 'hard'].includes(difficulty)) {
-          return ctx.fail('Difficulty tidak valid. Pilih easy, medium, atau hard.');
+          return ctx.fail(
+            'Difficulty tidak valid. Pilih easy, medium, atau hard.'
+          );
         }
-        const run = await du.start(ctx.sender, ctx.jid, { pushName: ctx.pushName }, difficulty);
+        const run = await du.start(
+          ctx.sender,
+          ctx.jid,
+          { pushName: ctx.pushName },
+          difficulty
+        );
         const text = await runText(run);
         const msg = await ctx.reply(text);
         run.state.lastMessageKey = msg.key;
@@ -261,17 +282,23 @@ export default {
 
       if (sub === 'abandon' || sub === 'keluar') {
         const abandoned = await du.abandon(ctx.sender, ctx.jid);
-        return ctx.reply(abandoned
-          ? 'Run Divergent Universe dihentikan. Reward akhir hangus.'
-          : 'Tidak ada run aktif untuk dihentikan.');
+        return ctx.reply(
+          abandoned
+            ? 'Run Divergent Universe dihentikan. Reward akhir hangus.'
+            : 'Tidak ada run aktif untuk dihentikan.'
+        );
       }
 
       const run = await du.getRun(ctx.sender, ctx.jid);
       if (!run) {
-        return ctx.fail('Tidak ada run aktif. Ketik `.du start` untuk memulai.');
+        return ctx.fail(
+          'Tidak ada run aktif. Ketik `.du start` untuk memulai.'
+        );
       }
       if (run.status !== 'active') {
-        return ctx.fail('Run sudah selesai atau gagal. Ketik `.du start` untuk memulai run baru.');
+        return ctx.fail(
+          'Run sudah selesai atau gagal. Ketik `.du start` untuk memulai run baru.'
+        );
       }
       if (sub === 'blessings' || sub === 'blessing') {
         return ctx.reply(collectionText('Blessing', run.state.blessings));

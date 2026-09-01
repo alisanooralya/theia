@@ -1,9 +1,5 @@
 import { sql } from '#storage/connection.js';
-import {
-  userModel,
-  walletModel,
-  statsModel,
-} from '#storage/models/index.js';
+import { userModel, walletModel, statsModel } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
 
 const CRIT_MULT = 1.5;
@@ -294,16 +290,23 @@ class BattleService {
       const winStats = byJid[winner];
       const loseStats = byJid[loser];
       if (winStats.crit > 0)
-        highlights.push(`💥 ${this._name(winner)} landed ${winStats.crit} Critical Hit${winStats.crit > 1 ? 's' : ''}`);
+        highlights.push(
+          `💥 ${this._name(winner)} landed ${winStats.crit} Critical Hit${winStats.crit > 1 ? 's' : ''}`
+        );
       if (loseStats.block > 0)
-        highlights.push(`🛡️ ${this._name(loser)} blocked ${loseStats.block} attack${loseStats.block > 1 ? 's' : ''}`);
+        highlights.push(
+          `🛡️ ${this._name(loser)} blocked ${loseStats.block} attack${loseStats.block > 1 ? 's' : ''}`
+        );
       const counterJid = winStats.counter > 0 ? winner : loser;
       if (counts.counter > 0)
-        highlights.push(`⚡ ${this._name(counterJid)} performed ${byJid[counterJid].counter} Counter${byJid[counterJid].counter > 1 ? 's' : ''}`);
+        highlights.push(
+          `⚡ ${this._name(counterJid)} performed ${byJid[counterJid].counter} Counter${byJid[counterJid].counter > 1 ? 's' : ''}`
+        );
       if (realFinish)
-        highlights.push(`☠️ ${this._name(finishingBy)} delivered the finishing blow`);
-      else
-        highlights.push(`⏳ ${this._name(winner)} won by remaining HP`);
+        highlights.push(
+          `☠️ ${this._name(finishingBy)} delivered the finishing blow`
+        );
+      else highlights.push(`⏳ ${this._name(winner)} won by remaining HP`);
     }
 
     return {
@@ -351,7 +354,11 @@ class BattleService {
 
     if (overdrive) events.push({ type: 'overdrive', by: attacker.jid });
 
-    const blockChance = clamp(defender.def / (defender.def + 200), 0, BLOCK_CHANCE_MAX);
+    const blockChance = clamp(
+      defender.def / (defender.def + 200),
+      0,
+      BLOCK_CHANCE_MAX
+    );
     const blocked = !crit && rng() < blockChance;
     if (blocked) {
       dmg = Math.floor(dmg * BLOCK_REDUCTION);
@@ -432,8 +439,10 @@ class BattleService {
 
   _momentumLine(a, d) {
     const parts = [];
-    if (a.momentum > 0) parts.push(`🔥 ${this._name(a.jid)} Momentum: ${a.momentum}`);
-    if (d.momentum > 0) parts.push(`🔥 ${this._name(d.jid)} Momentum: ${d.momentum}`);
+    if (a.momentum > 0)
+      parts.push(`🔥 ${this._name(a.jid)} Momentum: ${a.momentum}`);
+    if (d.momentum > 0)
+      parts.push(`🔥 ${this._name(d.jid)} Momentum: ${d.momentum}`);
     return parts.join('  ') || null;
   }
 

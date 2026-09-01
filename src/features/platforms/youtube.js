@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { logger } from '#helpers/logger.js';
 
-const YT_API_KEY = process.env.YT_API_KEY || 'AIzaSyBoGKjHSmOqzMPpWHRYXmMGdRqYTplIRoU';
+const YT_API_KEY =
+  process.env.YT_API_KEY || 'AIzaSyBoGKjHSmOqzMPpWHRYXmMGdRqYTplIRoU';
 const YT_PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player';
 
 if (!YT_API_KEY?.startsWith('AIza')) {
@@ -49,11 +50,15 @@ class YoutubeService {
     }
     if (!this._isPlayable(playerData)) {
       if (!playerData) {
-        throw new Error('Gagal mengambil data video dari YouTube. Coba lagi nanti.');
+        throw new Error(
+          'Gagal mengambil data video dari YouTube. Coba lagi nanti.'
+        );
       }
       const reason = playerData?.playabilityStatus?.reason;
       if (reason?.includes('bot') || reason?.includes('Sign in')) {
-        throw new Error('YouTube mendeteksi bot. Coba lagi nanti atau gunakan video lain.');
+        throw new Error(
+          'YouTube mendeteksi bot. Coba lagi nanti atau gunakan video lain.'
+        );
       }
       throw new Error(
         `Video tidak bisa diputar: ${reason ?? 'Tidak diketahui'}`
@@ -138,7 +143,9 @@ class YoutubeService {
 
     const hasDirectUrl = allFormats.some((f) => f.url);
     if (!hasDirectUrl && allFormats.some((f) => f.signatureCipher)) {
-      throw new Error('Video ini memerlukan dekripsi cipher yang belum didukung. Coba video lain.');
+      throw new Error(
+        'Video ini memerlukan dekripsi cipher yang belum didukung. Coba video lain.'
+      );
     }
 
     const title = details.title ?? 'YouTube Video';

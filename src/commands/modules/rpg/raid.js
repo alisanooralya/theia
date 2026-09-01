@@ -26,14 +26,25 @@ function formatScheduleLocal(ms) {
 function statusText(raidData, participant) {
   const { raid, participants, remaining } = raidData;
   const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
-  const status = participant?.status === 'stopped' ? 'Stopped'
-    : participant?.status === 'breaktime' ? 'Breaktime'
-      : isAttacking(participant?.jid) ? 'Attacking'
-        : 'Active';
+  const status =
+    participant?.status === 'stopped'
+      ? 'Stopped'
+      : participant?.status === 'breaktime'
+        ? 'Breaktime'
+        : isAttacking(participant?.jid)
+          ? 'Attacking'
+          : 'Active';
 
   const endDate = new Date(raid.end_at);
-  const timeStr = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
-  const dateStr = endDate.toLocaleDateString('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' });
+  const timeStr = endDate.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  });
+  const dateStr = endDate.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    timeZone: 'Asia/Jakarta',
+  });
 
   return [
     '⚔️ *RAID STATUS*',
@@ -41,11 +52,13 @@ function statusText(raidData, participant) {
     `Boss: *${raid.boss_name}*`,
     `HP: ${bar(raid.boss_hp, raid.boss_max_hp, 15)} *${F.formatNumber(raid.boss_hp)} / ${F.formatNumber(raid.boss_max_hp)}*`,
     '',
-    participant ? [
-      `HP Kamu: ${bar(participant.hp, 2400, 10)} *${participant.hp}/2400*`,
-      `Damage: *${F.formatNumber(participant.damage)}*`,
-      `Status: *${status}*`,
-    ].join('\n') : 'Kamu belum join.',
+    participant
+      ? [
+          `HP Kamu: ${bar(participant.hp, 2400, 10)} *${participant.hp}/2400*`,
+          `Damage: *${F.formatNumber(participant.damage)}*`,
+          `Status: *${status}*`,
+        ].join('\n')
+      : 'Kamu belum join.',
     '',
     `Participant: *${participants.length}*`,
     `Total Damage: *${F.formatNumber(totalDamage)}*`,
@@ -83,7 +96,8 @@ export default {
   aliases: ['raids'],
   category: 'rpg',
   description: 'Raid Boss mingguan',
-  cooldown: 5_000, groupOnly: true,
+  cooldown: 5_000,
+  groupOnly: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase() || 'status';
@@ -102,30 +116,40 @@ export default {
       }
 
       if (sub === 'join') {
-        const { raid: raidData, participant } = await raidService.join(ctx.sender);
-        return ctx.reply(`✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`);
+        const { raid: raidData, participant } = await raidService.join(
+          ctx.sender
+        );
+        return ctx.reply(
+          `✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`
+        );
       }
 
       if (sub === 'attack' || sub === 'serang') {
         await raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
-        return ctx.reply('⚔️ Menyerang boss!\nKetik `.raid stop` untuk berhenti.');
+        return ctx.reply(
+          '⚔️ Menyerang boss!\nKetik `.raid stop` untuk berhenti.'
+        );
       }
 
       if (sub === 'stop') {
         await raidService.stop(ctx.sender);
-        return ctx.reply('🛑 Penyerangan dihentikan. HP akan recovery. Ketik `.raid attack` untuk lanjut.');
+        return ctx.reply(
+          '🛑 Penyerangan dihentikan. HP akan recovery. Ketik `.raid attack` untuk lanjut.'
+        );
       }
 
       if (sub === 'claim') {
         const result = await raidService.claimReward(ctx.sender);
-        return ctx.reply([
-          '🎁 *RAID REWARD*',
-          '',
-          `Contribution: *${F.formatNumber(result.contribution)}*`,
-          `🪙 +${F.formatNumber(result.cash)} Cash`,
-          `⭐ +${result.exp} EXP`,
-          `💠 +${result.raidCoin} Raid Coin`,
-        ].join('\n'));
+        return ctx.reply(
+          [
+            '🎁 *RAID REWARD*',
+            '',
+            `Contribution: *${F.formatNumber(result.contribution)}*`,
+            `🪙 +${F.formatNumber(result.cash)} Cash`,
+            `⭐ +${result.exp} EXP`,
+            `💠 +${result.raidCoin} Raid Coin`,
+          ].join('\n')
+        );
       }
 
       const raidData = await raidService.getRaidInfo();
@@ -136,7 +160,10 @@ export default {
         );
       }
 
-      const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+      const participant = await raidModel.getParticipant(
+        raidData.raid.id,
+        ctx.sender
+      );
       return ctx.reply(statusText(raidData, participant));
     } catch (error) {
       return ctx.fail(error.message);

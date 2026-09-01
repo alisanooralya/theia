@@ -24,8 +24,12 @@ function buildStatusText(raid, participants) {
   const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
   const remaining = Math.max(0, raid.end_at - Date.now());
   const activeCount = participants.filter((p) => p.status === 'active').length;
-  const breaktimeCount = participants.filter((p) => p.status === 'breaktime').length;
-  const stoppedCount = participants.filter((p) => p.status === 'stopped').length;
+  const breaktimeCount = participants.filter(
+    (p) => p.status === 'breaktime'
+  ).length;
+  const stoppedCount = participants.filter(
+    (p) => p.status === 'stopped'
+  ).length;
 
   return [
     '⚔️ *RAID STATUS (Auto)*',
@@ -61,7 +65,9 @@ export default {
           ].join('\n');
           const sent = await raidService.broadcast(storedSock, startText);
           if (sent.length === 0 && storedChatId) {
-            storedSock.sendMessage(storedChatId, { text: startText }).catch(() => {});
+            storedSock
+              .sendMessage(storedChatId, { text: startText })
+              .catch(() => {});
           }
         }
       } catch (err) {
@@ -69,25 +75,30 @@ export default {
       }
     }, 60 * 1000);
 
-    statusInterval = setInterval(async () => {
-      try {
-        const raid = await raidModel.getActive();
-        if (!raid || raid.status !== 'active') return;
+    statusInterval = setInterval(
+      async () => {
+        try {
+          const raid = await raidModel.getActive();
+          if (!raid || raid.status !== 'active') return;
 
-        if (Date.now() >= raid.end_at) {
-          await raidService.endRaid(storedSock, storedChatId);
-          logger.info('[RaidStatus] Raid ended due to time');
-          return;
+          if (Date.now() >= raid.end_at) {
+            await raidService.endRaid(storedSock, storedChatId);
+            logger.info('[RaidStatus] Raid ended due to time');
+            return;
+          }
+
+          const participants = await raidModel.getParticipants(raid.id);
+          if (participants.length === 0) return;
+
+          logger.info(
+            `[RaidStatus] Raid HP: ${raid.boss_hp}, Participants: ${participants.length}`
+          );
+        } catch (err) {
+          logger.warn({ err: err.message }, '[RaidStatus] failed');
         }
-
-        const participants = await raidModel.getParticipants(raid.id);
-        if (participants.length === 0) return;
-
-        logger.info(`[RaidStatus] Raid HP: ${raid.boss_hp}, Participants: ${participants.length}`);
-      } catch (err) {
-        logger.warn({ err: err.message }, '[RaidStatus] failed');
-      }
-    }, 60 * 60 * 1000);
+      },
+      60 * 60 * 1000
+    );
 
     recoveryInterval = setInterval(async () => {
       try {
@@ -125,7 +136,9 @@ export default {
       }
     }, 60 * 1000);
 
-    logger.info('[Raid] Initialized — schedule per minute, status hourly, recovery every minute');
+    logger.info(
+      '[Raid] Initialized — schedule per minute, status hourly, recovery every minute'
+    );
   },
   async destroy() {
     if (scheduleInterval) clearInterval(scheduleInterval);

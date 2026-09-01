@@ -38,44 +38,230 @@ const PATHS = {
 };
 
 const BLESSINGS = [
-  { id: 'destruction_fighting_spirit', path: 'destruction', name: 'Fighting Spirit', text: '+16% damage saat HP di bawah 60%.', atk: 0.16 },
-  { id: 'destruction_regression', path: 'destruction', name: 'Regression', text: 'Pulihkan 8 HP setelah menang.', heal: 8 },
-  { id: 'destruction_cataclysm', path: 'destruction', name: 'Cataclysm', text: '+10% damage dan +5 max HP.', atk: 0.1, maxHp: 5 },
-  { id: 'hunt_critical_boost', path: 'hunt', name: 'Critical Boost', text: '+15% peluang critical.', crit: 0.15 },
-  { id: 'hunt_galaxy', path: 'hunt', name: 'Galaxy Hunter', text: '+14% damage terhadap elite dan boss.', bossAtk: 0.14 },
-  { id: 'hunt_afterimage', path: 'hunt', name: 'Afterimage', text: '+10% peluang menghindari damage.', dodge: 0.1 },
-  { id: 'erudition_brain', path: 'erudition', name: 'Brain in a Vat', text: '+5% damage untuk setiap 3 blessing.', perBlessing: 0.05 },
-  { id: 'erudition_inspiration', path: 'erudition', name: 'Inspiration', text: '+12% damage.', atk: 0.12 },
-  { id: 'erudition_compression', path: 'erudition', name: 'Energy Compression', text: '+25% critical damage.', critDamage: 0.25 },
-  { id: 'preservation_construct', path: 'preservation', name: 'Firm Construct', text: '-12% damage yang diterima.', reduction: 0.12 },
-  { id: 'preservation_shield', path: 'preservation', name: 'Amber Shield', text: 'Dapatkan shield 7 HP sebelum battle.', shield: 7 },
-  { id: 'preservation_resonance', path: 'preservation', name: 'Resonant Guard', text: '+8 max HP dan -5% damage.', maxHp: 8, reduction: 0.05 },
-  { id: 'abundance_dewdrop', path: 'abundance', name: 'Dewdrop', text: 'Pulihkan 12 HP setelah menang.', heal: 12 },
-  { id: 'abundance_lotus', path: 'abundance', name: 'Lotus in Bloom', text: '+15 max HP.', maxHp: 15 },
-  { id: 'abundance_mercy', path: 'abundance', name: 'Merciful Cycle', text: 'Event pemulihan memberi 50% lebih banyak HP.', eventHeal: 0.5 },
-  { id: 'nihility_suspicion', path: 'nihility', name: 'Suspicion', text: 'Abaikan 14% kekuatan musuh.', weaken: 0.14 },
-  { id: 'nihility_void', path: 'nihility', name: 'Void Current', text: '+18% damage setelah node event.', atk: 0.18 },
-  { id: 'nihility_entropy', path: 'nihility', name: 'Entropy', text: '+25 fragment dari setiap kemenangan.', fragments: 25 },
+  {
+    id: 'destruction_fighting_spirit',
+    path: 'destruction',
+    name: 'Fighting Spirit',
+    text: '+16% damage saat HP di bawah 60%.',
+    atk: 0.16,
+  },
+  {
+    id: 'destruction_regression',
+    path: 'destruction',
+    name: 'Regression',
+    text: 'Pulihkan 8 HP setelah menang.',
+    heal: 8,
+  },
+  {
+    id: 'destruction_cataclysm',
+    path: 'destruction',
+    name: 'Cataclysm',
+    text: '+10% damage dan +5 max HP.',
+    atk: 0.1,
+    maxHp: 5,
+  },
+  {
+    id: 'hunt_critical_boost',
+    path: 'hunt',
+    name: 'Critical Boost',
+    text: '+15% peluang critical.',
+    crit: 0.15,
+  },
+  {
+    id: 'hunt_galaxy',
+    path: 'hunt',
+    name: 'Galaxy Hunter',
+    text: '+14% damage terhadap elite dan boss.',
+    bossAtk: 0.14,
+  },
+  {
+    id: 'hunt_afterimage',
+    path: 'hunt',
+    name: 'Afterimage',
+    text: '+10% peluang menghindari damage.',
+    dodge: 0.1,
+  },
+  {
+    id: 'erudition_brain',
+    path: 'erudition',
+    name: 'Brain in a Vat',
+    text: '+5% damage untuk setiap 3 blessing.',
+    perBlessing: 0.05,
+  },
+  {
+    id: 'erudition_inspiration',
+    path: 'erudition',
+    name: 'Inspiration',
+    text: '+12% damage.',
+    atk: 0.12,
+  },
+  {
+    id: 'erudition_compression',
+    path: 'erudition',
+    name: 'Energy Compression',
+    text: '+25% critical damage.',
+    critDamage: 0.25,
+  },
+  {
+    id: 'preservation_construct',
+    path: 'preservation',
+    name: 'Firm Construct',
+    text: '-12% damage yang diterima.',
+    reduction: 0.12,
+  },
+  {
+    id: 'preservation_shield',
+    path: 'preservation',
+    name: 'Amber Shield',
+    text: 'Dapatkan shield 7 HP sebelum battle.',
+    shield: 7,
+  },
+  {
+    id: 'preservation_resonance',
+    path: 'preservation',
+    name: 'Resonant Guard',
+    text: '+8 max HP dan -5% damage.',
+    maxHp: 8,
+    reduction: 0.05,
+  },
+  {
+    id: 'abundance_dewdrop',
+    path: 'abundance',
+    name: 'Dewdrop',
+    text: 'Pulihkan 12 HP setelah menang.',
+    heal: 12,
+  },
+  {
+    id: 'abundance_lotus',
+    path: 'abundance',
+    name: 'Lotus in Bloom',
+    text: '+15 max HP.',
+    maxHp: 15,
+  },
+  {
+    id: 'abundance_mercy',
+    path: 'abundance',
+    name: 'Merciful Cycle',
+    text: 'Event pemulihan memberi 50% lebih banyak HP.',
+    eventHeal: 0.5,
+  },
+  {
+    id: 'nihility_suspicion',
+    path: 'nihility',
+    name: 'Suspicion',
+    text: 'Abaikan 14% kekuatan musuh.',
+    weaken: 0.14,
+  },
+  {
+    id: 'nihility_void',
+    path: 'nihility',
+    name: 'Void Current',
+    text: '+18% damage setelah node event.',
+    atk: 0.18,
+  },
+  {
+    id: 'nihility_entropy',
+    path: 'nihility',
+    name: 'Entropy',
+    text: '+25 fragment dari setiap kemenangan.',
+    fragments: 25,
+  },
 ];
 
 const CURIOS = [
-  { id: 'dimension_dice', name: 'Dimension Dice', text: 'Reward fragment +25%.', fragmentMult: 0.25 },
-  { id: 'healing_terminal', name: 'Healing Terminal', text: 'Pulihkan 15 HP saat didapat.', instantHeal: 15 },
-  { id: 'shattered_crown', name: 'Shattered Crown', text: '+18% damage, tetapi max HP -8.', atk: 0.18, maxHp: -8 },
-  { id: 'silver_coin', name: 'Silver Coin', text: 'Reward akhir cash +30%.', cashMult: 0.3 },
-  { id: 'clockwork', name: 'Clockwork Apple', text: 'Damage yang diterima -8%.', reduction: 0.08 },
-  { id: 'lucky_capsule', name: 'Lucky Capsule', text: 'Peluang critical +10%.', crit: 0.1 },
-  { id: 'wax_seal', name: 'Path Wax Seal', text: 'Blessing dari Path pilihanmu lebih sering muncul.', pathBias: true },
-  { id: 'cosmic_credit', name: 'Cosmic Credit', text: 'Langsung memperoleh 180 fragment.', instantFragments: 180 },
-  { id: 'mechanical_cuckoo', name: 'Mechanical Cuckoo', text: '+12% damage terhadap boss.', bossAtk: 0.12 },
-  { id: 'revival_chip', name: 'Revival Chip', text: 'Sekali per run, bangkit dengan 35 HP.', revive: true },
-  { id: 'error_corrupted_code', name: 'Error Curio: Corrupted Code', text: 'Kekuatan semua musuh +18%.', error: true, enemyPower: 0.18 },
-  { id: 'error_empty_pouch', name: 'Error Curio: Empty Pouch', text: 'Fragment yang diperoleh -20%.', error: true, fragmentMult: -0.2 },
-  { id: 'error_broken_clock', name: 'Error Curio: Broken Clock', text: 'Damage yang diterima +15%.', error: true, incomingDamage: 0.15 },
+  {
+    id: 'dimension_dice',
+    name: 'Dimension Dice',
+    text: 'Reward fragment +25%.',
+    fragmentMult: 0.25,
+  },
+  {
+    id: 'healing_terminal',
+    name: 'Healing Terminal',
+    text: 'Pulihkan 15 HP saat didapat.',
+    instantHeal: 15,
+  },
+  {
+    id: 'shattered_crown',
+    name: 'Shattered Crown',
+    text: '+18% damage, tetapi max HP -8.',
+    atk: 0.18,
+    maxHp: -8,
+  },
+  {
+    id: 'silver_coin',
+    name: 'Silver Coin',
+    text: 'Reward akhir cash +30%.',
+    cashMult: 0.3,
+  },
+  {
+    id: 'clockwork',
+    name: 'Clockwork Apple',
+    text: 'Damage yang diterima -8%.',
+    reduction: 0.08,
+  },
+  {
+    id: 'lucky_capsule',
+    name: 'Lucky Capsule',
+    text: 'Peluang critical +10%.',
+    crit: 0.1,
+  },
+  {
+    id: 'wax_seal',
+    name: 'Path Wax Seal',
+    text: 'Blessing dari Path pilihanmu lebih sering muncul.',
+    pathBias: true,
+  },
+  {
+    id: 'cosmic_credit',
+    name: 'Cosmic Credit',
+    text: 'Langsung memperoleh 180 fragment.',
+    instantFragments: 180,
+  },
+  {
+    id: 'mechanical_cuckoo',
+    name: 'Mechanical Cuckoo',
+    text: '+12% damage terhadap boss.',
+    bossAtk: 0.12,
+  },
+  {
+    id: 'revival_chip',
+    name: 'Revival Chip',
+    text: 'Sekali per run, bangkit dengan 35 HP.',
+    revive: true,
+  },
+  {
+    id: 'error_corrupted_code',
+    name: 'Error Curio: Corrupted Code',
+    text: 'Kekuatan semua musuh +18%.',
+    error: true,
+    enemyPower: 0.18,
+  },
+  {
+    id: 'error_empty_pouch',
+    name: 'Error Curio: Empty Pouch',
+    text: 'Fragment yang diperoleh -20%.',
+    error: true,
+    fragmentMult: -0.2,
+  },
+  {
+    id: 'error_broken_clock',
+    name: 'Error Curio: Broken Clock',
+    text: 'Damage yang diterima +15%.',
+    error: true,
+    incomingDamage: 0.15,
+  },
 ];
 
 const NAMES = {
-  battle: ['Antimatter Patrol', 'Fragmentum Pack', 'Void Marauders', 'Automaton Squad', 'Dreamjolt Troupe', 'Swarm Remnants'],
+  battle: [
+    'Antimatter Patrol',
+    'Fragmentum Pack',
+    'Void Marauders',
+    'Automaton Squad',
+    'Dreamjolt Troupe',
+    'Swarm Remnants',
+  ],
   event: [
     'Ruan Mei Replica',
     'Unending Darkness',
@@ -184,44 +370,112 @@ function normalizedUsage(row, date = new Date()) {
 
 const EVENT_SCENARIOS = {
   'Ruan Mei Replica': [
-    { id: 'research', name: 'Bantu Penelitian', text: 'Dapatkan Blessing acak dan 60 fragment.' },
+    {
+      id: 'research',
+      name: 'Bantu Penelitian',
+      text: 'Dapatkan Blessing acak dan 60 fragment.',
+    },
     { id: 'ruan_rest', name: 'Minta Pemulihan', text: 'Pulihkan 40 HP.' },
     { id: 'ruan_leave', name: 'Pergi Diam-diam', text: 'Ambil 120 fragment.' },
   ],
   'Unending Darkness': [
-    { id: 'light', name: 'Nyalakan Cahaya', text: 'Bayar 80 fragment untuk memulihkan seluruh HP.' },
-    { id: 'darkness', name: 'Masuki Kegelapan', text: 'Kehilangan 22 HP dan memperoleh 260 fragment.' },
+    {
+      id: 'light',
+      name: 'Nyalakan Cahaya',
+      text: 'Bayar 80 fragment untuk memulihkan seluruh HP.',
+    },
+    {
+      id: 'darkness',
+      name: 'Masuki Kegelapan',
+      text: 'Kehilangan 22 HP dan memperoleh 260 fragment.',
+    },
     { id: 'wait', name: 'Menunggu', text: 'Pulihkan 20 HP.' },
   ],
   'Cosmic Merchant': [
-    { id: 'trade', name: 'Pertukaran Aneh', text: 'Bayar 100 fragment untuk Blessing acak.' },
-    { id: 'buy_curio', name: 'Beli Kotak Curio', text: 'Bayar 160 fragment untuk Curio acak.' },
-    { id: 'merchant_gift', name: 'Minta Sampel Gratis', text: 'Dapatkan 90 fragment.' },
+    {
+      id: 'trade',
+      name: 'Pertukaran Aneh',
+      text: 'Bayar 100 fragment untuk Blessing acak.',
+    },
+    {
+      id: 'buy_curio',
+      name: 'Beli Kotak Curio',
+      text: 'Bayar 160 fragment untuk Curio acak.',
+    },
+    {
+      id: 'merchant_gift',
+      name: 'Minta Sampel Gratis',
+      text: 'Dapatkan 90 fragment.',
+    },
   ],
   'Lonely Trotter': [
-    { id: 'chase', name: 'Kejar Trotter', text: '50% mendapat 320 fragment, jika gagal kehilangan 20 HP.' },
-    { id: 'feed', name: 'Beri Makan', text: 'Bayar 60 fragment untuk mendapat 10 max HP.' },
+    {
+      id: 'chase',
+      name: 'Kejar Trotter',
+      text: '50% mendapat 320 fragment, jika gagal kehilangan 20 HP.',
+    },
+    {
+      id: 'feed',
+      name: 'Beri Makan',
+      text: 'Bayar 60 fragment untuk mendapat 10 max HP.',
+    },
     { id: 'trotter_leave', name: 'Biarkan Pergi', text: 'Pulihkan 25 HP.' },
   ],
   'Mirror of Memories': [
-    { id: 'mirror_blessing', name: 'Tatap Pantulan', text: 'Kehilangan 15 HP untuk Blessing acak.' },
-    { id: 'mirror_shatter', name: 'Pecahkan Cermin', text: 'Dapatkan 180 fragment.' },
+    {
+      id: 'mirror_blessing',
+      name: 'Tatap Pantulan',
+      text: 'Kehilangan 15 HP untuk Blessing acak.',
+    },
+    {
+      id: 'mirror_shatter',
+      name: 'Pecahkan Cermin',
+      text: 'Dapatkan 180 fragment.',
+    },
     { id: 'mirror_restore', name: 'Pulihkan Ingatan', text: 'Pulihkan 35 HP.' },
   ],
   'Society of Architects': [
-    { id: 'donate', name: 'Donasi Material', text: 'Bayar 120 fragment untuk mendapat 15 max HP.' },
-    { id: 'work', name: 'Bantu Pembangunan', text: 'Kehilangan 10 HP dan mendapat 170 fragment.' },
+    {
+      id: 'donate',
+      name: 'Donasi Material',
+      text: 'Bayar 120 fragment untuk mendapat 15 max HP.',
+    },
+    {
+      id: 'work',
+      name: 'Bantu Pembangunan',
+      text: 'Kehilangan 10 HP dan mendapat 170 fragment.',
+    },
     { id: 'shelter', name: 'Gunakan Shelter', text: 'Pulihkan 30 HP.' },
   ],
   'Glitched Arcade': [
-    { id: 'jackpot', name: 'Tarik Tuas', text: '50% mendapat 280 fragment, jika gagal kehilangan 120 fragment.' },
-    { id: 'repair', name: 'Perbaiki Mesin', text: 'Kehilangan 12 HP untuk mendapat Blessing acak.' },
+    {
+      id: 'jackpot',
+      name: 'Tarik Tuas',
+      text: '50% mendapat 280 fragment, jika gagal kehilangan 120 fragment.',
+    },
+    {
+      id: 'repair',
+      name: 'Perbaiki Mesin',
+      text: 'Kehilangan 12 HP untuk mendapat Blessing acak.',
+    },
     { id: 'arcade_leave', name: 'Cabut Kabel', text: 'Dapatkan 70 fragment.' },
   ],
   'Nameless Signal': [
-    { id: 'answer_signal', name: 'Jawab Sinyal', text: 'Dapatkan Curio acak, mungkin termasuk Error Curio.' },
-    { id: 'decode_signal', name: 'Dekode Sinyal', text: 'Dapatkan Blessing acak.' },
-    { id: 'sell_signal', name: 'Jual Koordinat', text: 'Dapatkan 150 fragment.' },
+    {
+      id: 'answer_signal',
+      name: 'Jawab Sinyal',
+      text: 'Dapatkan Curio acak, mungkin termasuk Error Curio.',
+    },
+    {
+      id: 'decode_signal',
+      name: 'Dekode Sinyal',
+      text: 'Dapatkan Blessing acak.',
+    },
+    {
+      id: 'sell_signal',
+      name: 'Jual Koordinat',
+      text: 'Dapatkan 150 fragment.',
+    },
   ],
 };
 
@@ -329,16 +583,23 @@ function heal(state, amount) {
 }
 
 function availableBlessings(state, count = 3) {
-  const remaining = BLESSINGS.filter((item) => !state.blessings.includes(item.id));
+  const remaining = BLESSINGS.filter(
+    (item) => !state.blessings.includes(item.id)
+  );
   const effects = totalEffects(state);
   if (!effects.pathBias) return sample(remaining, count);
-  const matching = shuffle(remaining.filter((item) => item.path === state.path));
+  const matching = shuffle(
+    remaining.filter((item) => item.path === state.path)
+  );
   const others = shuffle(remaining.filter((item) => item.path !== state.path));
   return [...matching, ...others].slice(0, count);
 }
 
 function availableCurios(state, count = 3) {
-  return sample(CURIOS.filter((item) => !state.curios.includes(item.id)), count);
+  return sample(
+    CURIOS.filter((item) => !state.curios.includes(item.id)),
+    count
+  );
 }
 
 function grantBlessing(state) {
@@ -411,7 +672,9 @@ class DivergentUniverseService {
   }
 
   async start(jid, chatJid, metadata = {}, difficulty = 'medium') {
-    return sql.begin(async (t) => this._start(jid, chatJid, metadata, difficulty, t));
+    return sql.begin(async (t) =>
+      this._start(jid, chatJid, metadata, difficulty, t)
+    );
   }
 
   async _start(jid, chatJid, metadata = {}, difficulty = 'medium', t) {
@@ -423,7 +686,9 @@ class DivergentUniverseService {
     await statsModel.ensure(jid, t);
     const current = await divergentRunModel.find(jid, t);
     if (current?.status === 'active') {
-      throw new Error('Masih ada run aktif. Gunakan `.du status` atau `.du abandon`.');
+      throw new Error(
+        'Masih ada run aktif. Gunakan `.du status` atau `.du abandon`.'
+      );
     }
     const chatRun = await divergentRunModel.findActiveByChat(chatJid, t);
     if (chatRun && chatRun.jid !== jid) {
@@ -459,12 +724,22 @@ class DivergentUniverseService {
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
       relicEffects,
     };
-    const run = await divergentRunModel.create(jid, chatJid, state, 'active', t);
-    await divergentUsageModel.save(jid, {
-      ...usage,
-      dailyCount: usage.dailyCount + 1,
-      weeklyCount: usage.weeklyCount + 1,
-    }, t);
+    const run = await divergentRunModel.create(
+      jid,
+      chatJid,
+      state,
+      'active',
+      t
+    );
+    await divergentUsageModel.save(
+      jid,
+      {
+        ...usage,
+        dailyCount: usage.dailyCount + 1,
+        weeklyCount: usage.weeklyCount + 1,
+      },
+      t
+    );
     return run;
   }
 
@@ -472,7 +747,8 @@ class DivergentUniverseService {
     const run = await this._activeRun(jid, chatJid);
     if (run.state.path) throw new Error('Path run ini sudah dipilih.');
     const path = String(pathId || '').toLowerCase();
-    if (!PATHS[path]) throw new Error('Path tidak tersedia. Lihat daftar dengan `.du paths`.');
+    if (!PATHS[path])
+      throw new Error('Path tidak tersedia. Lihat daftar dengan `.du paths`.');
     run.state.path = path;
     run.state.pending = null;
     if (path === 'abundance') {
@@ -486,8 +762,12 @@ class DivergentUniverseService {
   async explore(jid, chatJid) {
     const run = await this._activeRun(jid, chatJid);
     const state = run.state;
-    if (!state.path) throw new Error('Pilih Path dahulu dengan `.du path <nama>`.');
-    if (state.pending) throw new Error('Selesaikan pilihan yang tertunda dengan `.du choose <nomor>`.');
+    if (!state.path)
+      throw new Error('Pilih Path dahulu dengan `.du path <nama>`.');
+    if (state.pending)
+      throw new Error(
+        'Selesaikan pilihan yang tertunda dengan `.du choose <nomor>`.'
+      );
     const node = state.nodes[state.nodeIndex];
     if (!node) throw new Error('Semua node pada run ini sudah selesai.');
 
@@ -517,7 +797,9 @@ class DivergentUniverseService {
     }
 
     if (pending.type === 'blessing') {
-      const blessing = BLESSINGS.find((item) => item.id === pending.options[choice]);
+      const blessing = BLESSINGS.find(
+        (item) => item.id === pending.options[choice]
+      );
       state.blessings.push(blessing.id);
       state.lastResult = `Blessing diperoleh: ${blessing.name}. ${blessing.text}`;
       this._advance(state);
@@ -568,12 +850,16 @@ class DivergentUniverseService {
     if (!run.chat_jid) {
       const chatRun = await divergentRunModel.findActiveByChat(chatJid);
       if (chatRun && chatRun.jid !== run.jid) {
-        throw new Error('Grup ini sudah memiliki run DU aktif milik pemain lain.');
+        throw new Error(
+          'Grup ini sudah memiliki run DU aktif milik pemain lain.'
+        );
       }
       return divergentRunModel.bindChat(run.jid, chatJid);
     }
     if (run.chat_jid !== chatJid) {
-      throw new Error('Run DU ini hanya dapat dimainkan di chat tempat run dimulai.');
+      throw new Error(
+        'Run DU ini hanya dapat dimainkan di chat tempat run dimulai.'
+      );
     }
     return run;
   }
@@ -584,15 +870,31 @@ class DivergentUniverseService {
     const diffConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
     const tier = node.type === 'boss' ? 1.6 : node.type === 'elite' ? 1.3 : 1;
     const progress = 1 + node.position * 0.045;
-    const relicDefBonus = Math.floor((state.baseMaxHp || 100) * (relic.def_percent || 0));
-    const shield = (effects.shield || 0) + (state.path === 'preservation' ? 5 : 0) + relicDefBonus;
-    const reduction = Math.min(0.6, (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0));
+    const relicDefBonus = Math.floor(
+      (state.baseMaxHp || 100) * (relic.def_percent || 0)
+    );
+    const shield =
+      (effects.shield || 0) +
+      (state.path === 'preservation' ? 5 : 0) +
+      relicDefBonus;
+    const reduction = Math.min(
+      0.6,
+      (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0)
+    );
     const damageMultiplier = diffConfig.damageMultiplier || 1;
     const enemyMultiplier = diffConfig.enemyMultiplier || 1;
-    const enemyPower = tier * progress * (1 - (effects.weaken || 0)) * (1 + (effects.enemyPower || 0)) * enemyMultiplier;
+    const enemyPower =
+      tier *
+      progress *
+      (1 - (effects.weaken || 0)) *
+      (1 + (effects.enemyPower || 0)) *
+      enemyMultiplier;
     const baseWinChance = diffConfig.baseWinChance || 0.7;
     const relicCritRate = relic.crit_rate || 0;
-    const critChance = Math.min(0.55, 0.12 + (effects.crit || 0) + relicCritRate);
+    const critChance = Math.min(
+      0.55,
+      0.12 + (effects.crit || 0) + relicCritRate
+    );
 
     let rounds = 0;
     let totalDamageTaken = 0;
@@ -601,21 +903,26 @@ class DivergentUniverseService {
     while (state.hp > 0) {
       rounds++;
       let playerPower = 1 + (effects.atk || 0) + (relic.atk_flat || 0) * 0.01;
-      if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction') playerPower += 0.18;
+      if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction')
+        playerPower += 0.18;
       if (node.type !== 'battle') playerPower += effects.bossAtk || 0;
-      playerPower += Math.floor(state.blessings.length / 3) * (effects.perBlessing || 0);
+      playerPower +=
+        Math.floor(state.blessings.length / 3) * (effects.perBlessing || 0);
       const crit = Math.random() < critChance;
       lastCrit = crit;
       if (crit) playerPower *= 1.5 + (effects.critDamage || 0);
-      const winChance = Math.max(0.48, Math.min(0.94, baseWinChance + (playerPower - enemyPower) * 0.18));
+      const winChance = Math.max(
+        0.48,
+        Math.min(0.94, baseWinChance + (playerPower - enemyPower) * 0.18)
+      );
       const won = Math.random() < winChance;
       let damage = Math.floor(
         (won ? 13 : 27) *
-        tier *
-        progress *
-        (1 - reduction) *
-        (1 + (effects.incomingDamage || 0)) *
-        damageMultiplier
+          tier *
+          progress *
+          (1 - reduction) *
+          (1 + (effects.incomingDamage || 0)) *
+          damageMultiplier
       );
       if (Math.random() < Math.min(0.4, effects.dodge || 0)) damage = 0;
       damage = Math.max(0, damage - shield);
@@ -640,10 +947,19 @@ class DivergentUniverseService {
           return;
         }
         const reward = BASE_REWARD[node.type];
-        const gained = addFragments(state, reward.fragments + (effects.fragments || 0));
-        const restored = heal(state, (effects.heal || 0) + (state.path === 'abundance' ? 5 : 0));
+        const gained = addFragments(
+          state,
+          reward.fragments + (effects.fragments || 0)
+        );
+        const restored = heal(
+          state,
+          (effects.heal || 0) + (state.path === 'abundance' ? 5 : 0)
+        );
         const options = availableBlessings(state);
-        state.pending = { type: 'blessing', options: options.map((item) => item.id) };
+        state.pending = {
+          type: 'blessing',
+          options: options.map((item) => item.id),
+        };
         const lines = [
           `${lastCrit ? 'Critical! ' : ''}${node.name} dikalahkan dalam *${rounds} ronde*.`,
           `Total damage diterima: -${totalDamageTaken} | HP: ${state.hp}/${maxHp(state)}`,
@@ -654,7 +970,9 @@ class DivergentUniverseService {
           const curio = grantRandomCurio(state);
           if (curio) {
             const errorTag = curio.error ? ' [ERROR]' : '';
-            lines.push(`Curio diterima: *${curio.name}*${errorTag} - ${curio.text}`);
+            lines.push(
+              `Curio diterima: *${curio.name}*${errorTag} - ${curio.text}`
+            );
           }
         }
         lines.push('Pilih satu Blessing.');
@@ -694,16 +1012,15 @@ class DivergentUniverseService {
   }
 
   _openEvent(state, node) {
-    const options = EVENT_SCENARIOS[node.name] || EVENT_SCENARIOS['Ruan Mei Replica'];
+    const options =
+      EVENT_SCENARIOS[node.name] || EVENT_SCENARIOS['Ruan Mei Replica'];
     state.pending = { type: 'event', eventName: node.name, options };
     state.lastResult = `${node.name} menawarkan tiga kemungkinan.`;
   }
 
   _resolveEvent(state, option) {
-    const eventHeal = (amount) => heal(
-      state,
-      amount * (1 + (totalEffects(state).eventHeal || 0))
-    );
+    const eventHeal = (amount) =>
+      heal(state, amount * (1 + (totalEffects(state).eventHeal || 0)));
     const spend = (amount) => {
       if (state.fragments < amount) {
         throw new Error(`Butuh ${amount} fragment untuk pilihan ini.`);
@@ -862,21 +1179,30 @@ class DivergentUniverseService {
     const multiplier = difficultyConfig.rewardMultiplier;
     const rewardCash = Math.floor(
       (FINAL_REWARD.baseCash + state.fragments * FINAL_REWARD.cashPerFragment) *
-      (1 + (effects.cashMult || 0)) *
-      multiplier
+        (1 + (effects.cashMult || 0)) *
+        multiplier
     );
     const rewardExp = Math.floor(
       (FINAL_REWARD.baseExp +
         state.blessings.length * FINAL_REWARD.expPerBlessing) *
-      multiplier
+        multiplier
     );
     const cereliaAmount = Math.floor(
-      (state.difficulty === 'easy' ? 2 : state.difficulty === 'medium' ? 4 : 6) * multiplier
+      (state.difficulty === 'easy'
+        ? 2
+        : state.difficulty === 'medium'
+          ? 4
+          : 6) * multiplier
     );
     const relicDrops = this._rollRelicDrops(state.difficulty);
     const relicIds = [];
     await sql.begin(async (inner) => {
-      await walletModel.reward(run.jid, rewardCash, 'divergent universe clear', inner);
+      await walletModel.reward(
+        run.jid,
+        rewardCash,
+        'divergent universe clear',
+        inner
+      );
       await userModel.addExp(run.jid, rewardExp, inner);
       if (cereliaAmount > 0) {
         await inventoryModel.add(run.jid, 'cerelia', cereliaAmount, inner);
@@ -893,14 +1219,14 @@ class DivergentUniverseService {
       cerelia: cereliaAmount,
       relics: relicIds,
     };
-    const relicText = relicDrops > 0
-      ? ` + ${relicDrops} relic`
-      : '';
+    const relicText = relicDrops > 0 ? ` + ${relicDrops} relic` : '';
     state.lastResult = `Divergent Universe ditaklukkan. Reward akhir: ${rewardCash} cash, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
   }
 
   async _generateRelic(jid, t) {
-    const slot = ['head', 'hands', 'body', 'feet'][Math.floor(Math.random() * 4)];
+    const slot = ['head', 'hands', 'body', 'feet'][
+      Math.floor(Math.random() * 4)
+    ];
     const mainStats = {
       head: ['hp_flat'],
       hands: ['atk_flat'],
@@ -933,7 +1259,14 @@ class DivergentUniverseService {
       def_percent: 3,
       spd_flat: 2,
     };
-    const allSubstats = ['hp_flat', 'atk_flat', 'crit_rate', 'hp_percent', 'def_percent', 'spd_flat'];
+    const allSubstats = [
+      'hp_flat',
+      'atk_flat',
+      'crit_rate',
+      'hp_percent',
+      'def_percent',
+      'spd_flat',
+    ];
     const substats = [];
     const available = [...allSubstats];
     for (let i = 0; i < 3 && available.length > 0; i++) {
@@ -949,14 +1282,17 @@ class DivergentUniverseService {
       };
       substats.push({ stat, value: subValues[stat], rolls: 0 });
     }
-    return relicModel.create({
-      owner_jid: jid,
-      slot,
-      main_stat: mainStat,
-      main_value: mainValues[mainStat],
-      substats,
-      level: 1,
-    }, t);
+    return relicModel.create(
+      {
+        owner_jid: jid,
+        slot,
+        main_stat: mainStat,
+        main_value: mainValues[mainStat],
+        substats,
+        level: 1,
+      },
+      t
+    );
   }
 
   _rollRelicDrops(difficulty) {

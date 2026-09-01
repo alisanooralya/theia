@@ -27,7 +27,8 @@ async function sendGoodMorning() {
       const meta = await sock.groupMetadata(jid);
       const mentions = meta.participants.map((p) => p.id);
       if (!mentions.length) continue;
-      const text = '🌅 *Selamat pagi semuanya!* Selamat melanjutkan petualangan hari ini, para traveler. Semoga sukses dan sehat selalu! ☀️';
+      const text =
+        '🌅 *Selamat pagi semuanya!* Selamat melanjutkan petualangan hari ini, para traveler. Semoga sukses dan sehat selalu! ☀️';
       await sock.sendMessage(jid, { text, mentions }).catch(() => {});
     } catch (err) {
       logger.warn({ err: err.message, jid }, '[GoodMorning] group failed');

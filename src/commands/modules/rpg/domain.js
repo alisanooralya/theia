@@ -37,7 +37,10 @@ export default {
       if (!sub) return ctx.fail(helpText());
 
       const config = domain.getDifficultyConfig(sub);
-      if (!config) return ctx.fail('Difficulty tidak valid. Pilih: easy, medium, atau hard.');
+      if (!config)
+        return ctx.fail(
+          'Difficulty tidak valid. Pilih: easy, medium, atau hard.'
+        );
 
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
       await statsModel.ensure(ctx.sender);
@@ -61,12 +64,19 @@ export default {
       let finalText;
       if (result.won) {
         const rewards = await domain.grantRewards(ctx.sender, sub);
-        finalText = await domain.formatVictory(config, rewards, result.rounds.length);
+        finalText = await domain.formatVictory(
+          config,
+          rewards,
+          result.rounds.length
+        );
       } else {
         finalText = domain.formatDefeat(config, result.rounds.length);
       }
 
-      await ctx.sock.sendMessage(ctx.jid, { text: finalText, edit: statusMsg.key });
+      await ctx.sock.sendMessage(ctx.jid, {
+        text: finalText,
+        edit: statusMsg.key,
+      });
     } catch (error) {
       return ctx.fail(error.message);
     }

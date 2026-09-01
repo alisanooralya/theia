@@ -66,7 +66,9 @@ class GachaService {
     const totalCost = GACHA_COST * count;
 
     if (!wallet || wallet.cash < totalCost) {
-      throw new Error(`Saldo tidak cukup. Butuh 🪙${totalCost.toLocaleString()}, punya 🪙${(wallet?.cash ?? 0).toLocaleString()}.`);
+      throw new Error(
+        `Saldo tidak cukup. Butuh 🪙${totalCost.toLocaleString()}, punya 🪙${(wallet?.cash ?? 0).toLocaleString()}.`
+      );
     }
 
     const shopItems = await itemModel.shopItems();

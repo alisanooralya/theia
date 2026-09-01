@@ -11,13 +11,20 @@ async function getRelicByIndex(jid, rawIndex) {
 
 async function relicListText(jid) {
   const relics = await relic.getRelics(jid);
-  if (!relics.length) return 'Kamu belum memiliki relic. Dapatkan dengan menyelesaikan Divergent Universe.';
-  const lines = await Promise.all(relics.map(async (r, i) => {
-    const formatted = relic.formatRelic(r);
-    const equipped = (await relicModel.isEquipped(r.id)) ? ' *[Equipped]*' : '';
-    const substats = formatted.substats.length ? '\n' + formatted.substats.join('\n') : '';
-    return `${i + 1} *[${formatted.slot}]* Lv.${r.level} - ${formatted.mainStat}${equipped}${substats}`;
-  }));
+  if (!relics.length)
+    return 'Kamu belum memiliki relic. Dapatkan dengan menyelesaikan Divergent Universe.';
+  const lines = await Promise.all(
+    relics.map(async (r, i) => {
+      const formatted = relic.formatRelic(r);
+      const equipped = (await relicModel.isEquipped(r.id))
+        ? ' *[Equipped]*'
+        : '';
+      const substats = formatted.substats.length
+        ? '\n' + formatted.substats.join('\n')
+        : '';
+      return `${i + 1} *[${formatted.slot}]* Lv.${r.level} - ${formatted.mainStat}${equipped}${substats}`;
+    })
+  );
   return `⌁ *RELIC COLLECTION*\n\n${lines.join('\n')}`;
 }
 
@@ -28,21 +35,26 @@ async function relicDetailText(relicData) {
 async function inventoryText(jid) {
   const inv = await relic.getInventory(jid);
   const stats = await relic.getEquippedStats(jid);
-  const lines = await Promise.all(['head', 'hands', 'body', 'feet'].map(async (slot) => {
-    const relicId = inv?.[`${slot}_id`];
-    if (!relicId) return `  ${slot}: *Kosong*`;
-    const r = await relicModel.find(relicId);
-    if (!r) return `  ${slot}: *Kosong*`;
-    const formatted = relic.formatRelic(r);
-    return `  ${slot}: *Lv.${r.level}* - ${formatted.mainStat}`;
-  }));
+  const lines = await Promise.all(
+    ['head', 'hands', 'body', 'feet'].map(async (slot) => {
+      const relicId = inv?.[`${slot}_id`];
+      if (!relicId) return `  ${slot}: *Kosong*`;
+      const r = await relicModel.find(relicId);
+      if (!r) return `  ${slot}: *Kosong*`;
+      const formatted = relic.formatRelic(r);
+      return `  ${slot}: *Lv.${r.level}* - ${formatted.mainStat}`;
+    })
+  );
   const statLines = [];
   if (stats) {
     if (stats.hp_flat > 0) statLines.push(`  HP: +${stats.hp_flat}`);
     if (stats.atk_flat > 0) statLines.push(`  ATK: +${stats.atk_flat}`);
-    if (stats.crit_rate > 0) statLines.push(`  Crit Rate: +${(stats.crit_rate / 10).toFixed(1)}%`);
-    if (stats.hp_percent > 0) statLines.push(`  HP%: +${(stats.hp_percent / 10).toFixed(1)}%`);
-    if (stats.def_percent > 0) statLines.push(`  DEF%: +${(stats.def_percent / 10).toFixed(1)}%`);
+    if (stats.crit_rate > 0)
+      statLines.push(`  Crit Rate: +${(stats.crit_rate / 10).toFixed(1)}%`);
+    if (stats.hp_percent > 0)
+      statLines.push(`  HP%: +${(stats.hp_percent / 10).toFixed(1)}%`);
+    if (stats.def_percent > 0)
+      statLines.push(`  DEF%: +${(stats.def_percent / 10).toFixed(1)}%`);
     if (stats.spd_flat > 0) statLines.push(`  SPD: +${stats.spd_flat}`);
   }
   return [
@@ -54,7 +66,9 @@ async function inventoryText(jid) {
     ...statLines,
     statLines.length ? '' : '',
     'Gunakan `.relic help` untuk bantuan.',
-  ].filter((line) => line !== undefined).join('\n');
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n');
 }
 
 function helpText() {
@@ -115,10 +129,15 @@ export default {
 
       if (sub === 'equip') {
         const target = await getRelicByIndex(ctx.sender, ctx.args[1]);
-        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        if (!target)
+          return ctx.fail(
+            'Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.'
+          );
         const equipped = await relic.equip(target.id, ctx.sender);
         const formatted = relic.formatRelic(equipped);
-        return ctx.reply(`Relic *${formatted.slot}* Lv.${equipped.level} berhasil dipasang!`);
+        return ctx.reply(
+          `Relic *${formatted.slot}* Lv.${equipped.level} berhasil dipasang!`
+        );
       }
 
       if (sub === 'unequip') {
@@ -128,28 +147,43 @@ export default {
         }
         const removed = await relic.unequip(slot, ctx.sender);
         const formatted = relic.formatRelic(removed);
-        return ctx.reply(`Relic *${formatted.slot}* Lv.${removed.level} berhasil dilepas!`);
+        return ctx.reply(
+          `Relic *${formatted.slot}* Lv.${removed.level} berhasil dilepas!`
+        );
       }
 
       if (sub === 'detail') {
         const target = await getRelicByIndex(ctx.sender, ctx.args[1]);
-        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        if (!target)
+          return ctx.fail(
+            'Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.'
+          );
         return ctx.reply(await relicDetailText(target));
       }
 
       if (sub === 'levelup') {
         const target = await getRelicByIndex(ctx.sender, ctx.args[1]);
-        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        if (!target)
+          return ctx.fail(
+            'Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.'
+          );
         const leveled = await relic.levelUp(target.id, ctx.sender);
         const formatted = relic.formatRelic(leveled);
         const cost = relic.getLevelUpCost(leveled);
-        const nextCost = cost ? `\nNext: ${cost.coins} koin${cost.cerelia > 0 ? ` + ${cost.cerelia} Cerelia` : ''}${cost.userExp > 0 ? ` + ${cost.userExp} EXP` : ''}` : '\nMax level tercapai!';
-        return ctx.reply(`Relic berhasil di-upgrade ke *Lv.${leveled.level}*!\n${formatted.mainStat}${nextCost}`);
+        const nextCost = cost
+          ? `\nNext: ${cost.coins} koin${cost.cerelia > 0 ? ` + ${cost.cerelia} Cerelia` : ''}${cost.userExp > 0 ? ` + ${cost.userExp} EXP` : ''}`
+          : '\nMax level tercapai!';
+        return ctx.reply(
+          `Relic berhasil di-upgrade ke *Lv.${leveled.level}*!\n${formatted.mainStat}${nextCost}`
+        );
       }
 
       if (sub === 'smelt') {
         const target = await getRelicByIndex(ctx.sender, ctx.args[1]);
-        if (!target) return ctx.fail('Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.');
+        if (!target)
+          return ctx.fail(
+            'Nomor relic tidak valid. Gunakan `.relic list` untuk melihat nomor.'
+          );
         const result = await relic.smelt(target.id, ctx.sender);
         const formatted = relic.formatRelic(result.relic);
         let text = `Relic *${formatted.slot}* Lv.${result.relic.level} berhasil dilebur!\n`;

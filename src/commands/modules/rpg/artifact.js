@@ -7,26 +7,37 @@ const SLOTS = ['flower', 'feather', 'sands', 'goblet', 'circlet'];
 
 async function equippedText(jid) {
   const inventory = await artifact.getInventory(jid);
-  const lines = await Promise.all(SLOTS.map(async (slot) => {
-    const artifactId = inventory?.[`${slot}_id`];
-    if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
-    const a = await artifactModel.findById(artifactId);
-    if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
-    return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
-  }));
+  const lines = await Promise.all(
+    SLOTS.map(async (slot) => {
+      const artifactId = inventory?.[`${slot}_id`];
+      if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
+      const a = await artifactModel.findById(artifactId);
+      if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
+      return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
+    })
+  );
   return lines.join('\n');
 }
 
 async function artifactListText(jid) {
   const artifacts = await artifact.getArtifacts(jid);
   if (!artifacts.length) return 'Kamu belum memiliki artifact.';
-  const lines = await Promise.all(artifacts.map(async (a) => {
-    const equipped = (await artifactModel.isEquipped(a.id)) ? ' *[Equipped]*' : '';
-    const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
-    const subEntries = Object.entries(a.substats || {});
-    const subLine = subEntries.length ? '\n' + subEntries.map(([stat, value]) => `${artifact.statNames[stat]} +${value}`).join('\n') : '';
-    return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n`;
-  }));
+  const lines = await Promise.all(
+    artifacts.map(async (a) => {
+      const equipped = (await artifactModel.isEquipped(a.id))
+        ? ' *[Equipped]*'
+        : '';
+      const mainFormatted = artifact.getStatFormat(a.main_stat)(a.main_value);
+      const subEntries = Object.entries(a.substats || {});
+      const subLine = subEntries.length
+        ? '\n' +
+          subEntries
+            .map(([stat, value]) => `${artifact.statNames[stat]} +${value}`)
+            .join('\n')
+        : '';
+      return `#${a.user_id}. *${a.name}* (${a.slot}) Lv.${a.level} - ${mainFormatted}${equipped}${subLine}\n`;
+    })
+  );
   return lines.join('\n');
 }
 
@@ -74,10 +85,14 @@ export default {
       if (sub === 'equip') {
         const userId = Number.parseInt(ctx.args[1], 10);
         if (!Number.isInteger(userId) || userId < 1) {
-          return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
+          return ctx.fail(
+            'Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.'
+          );
         }
         const equipped = await artifact.equip(ctx.sender, userId);
-        return ctx.reply(`✅ *${equipped.name}* (${equipped.slot}) Lv.${equipped.level} berhasil dipasang!`);
+        return ctx.reply(
+          `✅ *${equipped.name}* (${equipped.slot}) Lv.${equipped.level} berhasil dipasang!`
+        );
       }
 
       if (sub === 'unequip') {
@@ -86,27 +101,39 @@ export default {
           return ctx.fail(`Masukkan slot: ${SLOTS.join(', ')}`);
         }
         const removed = await artifact.unequip(slot, ctx.sender);
-        return ctx.reply(`✅ *${removed.name}* (${removed.slot}) Lv.${removed.level} berhasil dilepas!`);
+        return ctx.reply(
+          `✅ *${removed.name}* (${removed.slot}) Lv.${removed.level} berhasil dilepas!`
+        );
       }
 
       if (sub === 'levelup') {
         const userId = Number.parseInt(ctx.args[1], 10);
         if (!Number.isInteger(userId) || userId < 1) {
-          return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
+          return ctx.fail(
+            'Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.'
+          );
         }
         const upgraded = await artifact.upgrade(ctx.sender, userId);
         const cost = artifact.getUpgradeCost(upgraded);
-        const nextCost = cost ? `\nNext: ${cost.coins} koin${cost.exp > 0 ? ` + ${cost.exp} EXP` : ''}` : '\nMax level tercapai!';
-        return ctx.reply(`✅ *${upgraded.name}* berhasil di-upgrade ke *Lv.${upgraded.level}*!${nextCost}`);
+        const nextCost = cost
+          ? `\nNext: ${cost.coins} koin${cost.exp > 0 ? ` + ${cost.exp} EXP` : ''}`
+          : '\nMax level tercapai!';
+        return ctx.reply(
+          `✅ *${upgraded.name}* berhasil di-upgrade ke *Lv.${upgraded.level}*!${nextCost}`
+        );
       }
 
       if (sub === 'smelt') {
         const userId = Number.parseInt(ctx.args[1], 10);
         if (!Number.isInteger(userId) || userId < 1) {
-          return ctx.fail('Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.');
+          return ctx.fail(
+            'Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.'
+          );
         }
         const result = await artifact.smelt(ctx.sender, userId);
-        return ctx.reply(`🔥 Artifact *${result.artifact.name}* (${result.artifact.slot}) Lv.${result.artifact.level} berhasil dilebur!\n+${result.coinsEarned} koin`);
+        return ctx.reply(
+          `🔥 Artifact *${result.artifact.name}* (${result.artifact.slot}) Lv.${result.artifact.level} berhasil dilebur!\n+${result.coinsEarned} koin`
+        );
       }
 
       const equippedLines = await equippedText(ctx.sender);

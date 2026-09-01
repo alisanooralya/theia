@@ -20,11 +20,7 @@ export default {
     const items = await inventoryModel.getAll(ctx.sender);
     if (!items.length) return ctx.reply('📦 Inventory kosong.');
 
-    const catOrder = [
-      'consumable',
-      'material',
-      'special',
-    ];
+    const catOrder = ['consumable', 'material', 'special'];
     const grouped = items.reduce((acc, i) => {
       const cat = i.category || 'misc';
       if (!acc[cat]) acc[cat] = [];
@@ -46,7 +42,8 @@ export default {
     for (const [cat, list] of Object.entries(grouped)) {
       if (catOrder.includes(cat)) continue;
       text += `*[${cat.toUpperCase()}]*\n`;
-      for (const i of list) text += `  *${i.name}* ×${i.quantity} \`${i.item_id}\`\n`;
+      for (const i of list)
+        text += `  *${i.name}* ×${i.quantity} \`${i.item_id}\`\n`;
     }
 
     await ctx.reply(text.trimEnd());

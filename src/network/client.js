@@ -80,7 +80,8 @@ export async function createClient() {
 
   const originalSend = sock.sendMessage.bind(sock);
   const sendQueue = createSendQueue(originalSend, { rateLimitMs: 3_000 });
-  sock.sendMessage = (jid, content, options) => sendQueue.enqueue(jid, content, options);
+  sock.sendMessage = (jid, content, options) =>
+    sendQueue.enqueue(jid, content, options);
   sock.enqueueSend = sendQueue.enqueue;
 
   if (SETTINGS.pairingNumber && !sock.authState.creds.registered) {

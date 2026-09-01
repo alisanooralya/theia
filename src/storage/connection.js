@@ -5,7 +5,9 @@ import { logger } from '#helpers/logger.js';
 const DATABASE_URL = SETTINGS.supabaseDbUrl;
 
 if (!DATABASE_URL) {
-  logger.fatal('supabaseDbUrl belum dikonfigurasi di src/environment/config.js');
+  logger.fatal(
+    'supabaseDbUrl belum dikonfigurasi di src/environment/config.js'
+  );
   process.exit(1);
 }
 

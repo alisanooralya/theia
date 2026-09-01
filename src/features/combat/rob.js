@@ -1,9 +1,5 @@
 import { sql } from '#storage/connection.js';
-import {
-  userModel,
-  walletModel,
-  statsModel,
-} from '#storage/models/index.js';
+import { userModel, walletModel, statsModel } from '#storage/models/index.js';
 
 const MIN_CHANCE = 0.3;
 const MAX_CHANCE = 0.7;

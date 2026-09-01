@@ -57,11 +57,7 @@ class StatsModel {
     `;
   }
 
-  async updateEquipment(
-    jid,
-    { atk, def, maxHp },
-    client = sql
-  ) {
+  async updateEquipment(jid, { atk, def, maxHp }, client = sql) {
     await client`
       UPDATE stats SET atk = ${atk}, def = ${def}, max_hp = ${maxHp}, hp = LEAST(hp, ${maxHp}), updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
     `;

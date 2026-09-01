@@ -170,7 +170,11 @@ async function extractQuoted(raw, content, jid, sock) {
     download: () =>
       downloadMediaMessage(
         {
-          key: { remoteJid: jid, id: ctx.stanzaId, participant: ctx.participant },
+          key: {
+            remoteJid: jid,
+            id: ctx.stanzaId,
+            participant: ctx.participant,
+          },
           message: ctx.quotedMessage,
         },
         'buffer',

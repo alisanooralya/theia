@@ -53,7 +53,8 @@ class DivergentRunModel {
   }
 
   async remove(jid, client = sql) {
-    const result = await client`DELETE FROM divergent_runs WHERE jid = ${jid} RETURNING jid`;
+    const result =
+      await client`DELETE FROM divergent_runs WHERE jid = ${jid} RETURNING jid`;
     return result.length > 0;
   }
 }

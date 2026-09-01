@@ -47,7 +47,7 @@ export default {
 
     for (const [cat, items] of Object.entries(grouped)) {
       text += `*[ ${cat.toUpperCase()} ]*\n`;
-       items.forEach((item) => {
+      items.forEach((item) => {
         const emoji = RARITY_EMOJI[item.rarity] ?? '⬜';
         const price = shopService.priceForBuy(ctx.sender, item);
         text += `${emoji} \`${item.id}\`\n  *${item.name}* — 🪙${F.formatNumber(price)}\n  _${item.description}_\n`;

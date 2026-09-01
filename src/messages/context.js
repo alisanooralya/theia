@@ -56,12 +56,22 @@ export function buildContext(s, sock) {
 
     send: (content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.enqueueSend(s.jid, { ...body, ...options }, {}, bypassMeta(meta));
+      return sock.enqueueSend(
+        s.jid,
+        { ...body, ...options },
+        {},
+        bypassMeta(meta)
+      );
     },
 
     sendTo: (targetJid, content, options = {}, meta = {}) => {
       const body = typeof content === 'string' ? { text: content } : content;
-      return sock.enqueueSend(targetJid, { ...body, ...options }, {}, bypassMeta(meta));
+      return sock.enqueueSend(
+        targetJid,
+        { ...body, ...options },
+        {},
+        bypassMeta(meta)
+      );
     },
 
     react: (emoji, meta = {}) =>
@@ -131,7 +141,12 @@ export function buildContext(s, sock) {
       sock.enqueueSend(s.jid, { delete: msgKey }, {}, bypassMeta(meta)),
     downloadMedia: () =>
       s.isMedia
-        ? downloadMediaMessage(s.raw, 'buffer', {}, { logger, reuploadRequest: sock.updateMediaMessage })
+        ? downloadMediaMessage(
+            s.raw,
+            'buffer',
+            {},
+            { logger, reuploadRequest: sock.updateMediaMessage }
+          )
         : Promise.resolve(null),
     typing: () => sock.sendPresenceUpdate('composing', s.jid),
     stopTyping: () => sock.sendPresenceUpdate('paused', s.jid),

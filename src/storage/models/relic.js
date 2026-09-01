@@ -9,12 +9,14 @@ class RelicModel {
   }
 
   async findByOwner(jid, client = sql) {
-    const rows = await client`SELECT * FROM relics WHERE owner_jid = ${jid} ORDER BY created_at DESC`;
+    const rows =
+      await client`SELECT * FROM relics WHERE owner_jid = ${jid} ORDER BY created_at DESC`;
     return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
   async findByOwnerAndSlot(jid, slot, client = sql) {
-    const rows = await client`SELECT * FROM relics WHERE owner_jid = ${jid} AND slot = ${slot} ORDER BY created_at DESC`;
+    const rows =
+      await client`SELECT * FROM relics WHERE owner_jid = ${jid} AND slot = ${slot} ORDER BY created_at DESC`;
     return rows.map((row) => ({ ...row, substats: JSON.parse(row.substats) }));
   }
 
@@ -35,12 +37,14 @@ class RelicModel {
   }
 
   async delete(id, client = sql) {
-    const result = await client`DELETE FROM relics WHERE id = ${id} RETURNING id`;
+    const result =
+      await client`DELETE FROM relics WHERE id = ${id} RETURNING id`;
     return result.length;
   }
 
   async count(jid, client = sql) {
-    const rows = await client`SELECT COUNT(*)::int AS count FROM relics WHERE owner_jid = ${jid}`;
+    const rows =
+      await client`SELECT COUNT(*)::int AS count FROM relics WHERE owner_jid = ${jid}`;
     return rows[0].count;
   }
 

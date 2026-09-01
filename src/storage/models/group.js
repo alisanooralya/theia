@@ -1,6 +1,14 @@
 import { sql } from '#storage/connection.js';
 
-const ALLOWED_FIELDS = ['name', 'welcome', 'mute', 'antitoxic', 'greeting', 'openclose', 'raid'];
+const ALLOWED_FIELDS = [
+  'name',
+  'welcome',
+  'mute',
+  'antitoxic',
+  'greeting',
+  'openclose',
+  'raid',
+];
 
 class GroupModel {
   async find(jid, client = sql) {
@@ -26,9 +34,7 @@ class GroupModel {
       ALLOWED_FIELDS.includes(k)
     );
     if (!entries.length) return;
-    const setClauses = entries.map(
-      (_, i) => `${entries[i][0]} = $${i + 1}`
-    );
+    const setClauses = entries.map((_, i) => `${entries[i][0]} = $${i + 1}`);
     const params = entries.map(([, v]) => v);
     setClauses.push('updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT');
     params.push(jid);

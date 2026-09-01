@@ -14,7 +14,8 @@ export default {
   dbPath: './data/database.db',
 
   // ─── Supabase (Postgres) ───
-  supabaseDbUrl: 'postgresql://postgres.awsqisxfvenzvbmimqow:theia123%23%24%40@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres',
+  supabaseDbUrl:
+    'postgresql://postgres.awsqisxfvenzvbmimqow:theia123%23%24%40@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres',
 
   // ─── Auth Backend ───
   authBackend: 'sqlite',

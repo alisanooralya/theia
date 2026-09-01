@@ -124,11 +124,13 @@ export default {
       const reward = randInt(range[0], range[1]);
 
       await walletModel.reward(ctx.sender, reward, `crime: ${crime.name}`);
-      const { leveledUp, newLevel } = await userModel.addExp(ctx.sender, crime.exp);
+      const { leveledUp, newLevel } = await userModel.addExp(
+        ctx.sender,
+        crime.exp
+      );
       const label = outcome === 'jackpot' ? 'JACKPOT!' : 'Berhasil!';
       let text = `${title}\n\n${label} Kamu mendapatkan\n🪙 +${F.formatNumber(reward)} Coin`;
-      if (outcome === 'jackpot')
-        text += `\n🎰 *JACKPOT!* Keberuntungan besar!`;
+      if (outcome === 'jackpot') text += `\n🎰 *JACKPOT!* Keberuntungan besar!`;
       text += `\n⭐ +${crime.exp} EXP`;
       if (leveledUp)
         text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
@@ -143,7 +145,8 @@ export default {
 
       if (actualLose > 0) await walletModel.addCash(ctx.sender, -actualLose);
       let text = `${title}\n\nKalah dalam judi online!\n🪙 -${F.formatNumber(actualLose)} Coin`;
-      if (actualLose === 0) text += `\nUntungnya kamu tidak punya uang untuk dibawa kalah. 😅`;
+      if (actualLose === 0)
+        text += `\nUntungnya kamu tidak punya uang untuk dibawa kalah. 😅`;
       await sendResult(ctx, firstMsg.key, text);
       return;
     }
@@ -152,7 +155,8 @@ export default {
       const penalty = randInt(crime.penalty[0], crime.penalty[1]);
       const wallet = await walletModel.find(ctx.sender);
       const actualPenalty = Math.min(penalty, wallet?.cash ?? 0);
-      if (actualPenalty > 0) await walletModel.addCash(ctx.sender, -actualPenalty);
+      if (actualPenalty > 0)
+        await walletModel.addCash(ctx.sender, -actualPenalty);
 
       const prisonUntil = nowSec + Math.floor(crime.prisonMs / 1000);
       await userModel.setPrisonUntil(ctx.sender, prisonUntil);

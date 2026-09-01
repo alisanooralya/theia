@@ -5,8 +5,13 @@ const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1_000;
 
 function isFatalError(err) {
-  const blob = String(err?.message || '') + String(err?.data || '') + String(err?.error || '');
-  return /404|410|not found|invalid jid|forbidden|unauthorized/.test(blob.toLowerCase());
+  const blob =
+    String(err?.message || '') +
+    String(err?.data || '') +
+    String(err?.error || '');
+  return /404|410|not found|invalid jid|forbidden|unauthorized/.test(
+    blob.toLowerCase()
+  );
 }
 
 function makeDedupKey(jid, content, options) {
@@ -60,7 +65,8 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
     if (!ready.length) return null;
 
     let maxPri = -Infinity;
-    for (const jid of ready) maxPri = Math.max(maxPri, groups.get(jid)[0].priority);
+    for (const jid of ready)
+      maxPri = Math.max(maxPri, groups.get(jid)[0].priority);
 
     const candidates =
       maxPri > 0
@@ -101,7 +107,10 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
         if (task.retryCount > MAX_RETRIES || isFatalError(err)) {
           pending--;
           if (dedupKey) pendingDedup.delete(dedupKey);
-          logger.warn({ err: err.message, jid }, '[SendQueue] send failed permanently');
+          logger.warn(
+            { err: err.message, jid },
+            '[SendQueue] send failed permanently'
+          );
           task.reject(err);
         } else {
           const delay = BACKOFF_BASE_MS * 2 ** (task.retryCount - 1);
@@ -188,9 +197,7 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
     return p;
   }
 
-  loop().catch((err) =>
-    logger.error({ err }, '[SendQueue] loop crashed')
-  );
+  loop().catch((err) => logger.error({ err }, '[SendQueue] loop crashed'));
 
   return {
     enqueue,

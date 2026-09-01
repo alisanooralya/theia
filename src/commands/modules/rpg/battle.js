@@ -70,8 +70,18 @@ function buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap) {
   return lines.join('\n');
 }
 
-async function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, mentionMap) {
-  const resolveName = async (jid) => mentionMap[jid] ?? await displayName(jid);
+async function buildResultText(
+  result,
+  aName,
+  dName,
+  aHp,
+  aMax,
+  dHp,
+  dMax,
+  mentionMap
+) {
+  const resolveName = async (jid) =>
+    mentionMap[jid] ?? (await displayName(jid));
 
   if (result.draw) {
     return [
@@ -91,7 +101,9 @@ async function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, menti
   const winName = winJid === result.attackerJid ? aName : dName;
   const loseName = loseJid === result.attackerJid ? aName : dName;
   const winnerHp =
-    winJid === result.attackerJid ? result.attackerFinalHp : result.defenderFinalHp;
+    winJid === result.attackerJid
+      ? result.attackerFinalHp
+      : result.defenderFinalHp;
 
   const lines = [
     `╭────── 🏆 DUEL RESULT ──────╮`,
@@ -110,12 +122,18 @@ async function buildResultText(result, aName, dName, aHp, aMax, dHp, dMax, menti
       }
     }
     for (const h of result.highlights.slice(0, 5)) {
-      lines.push(`│ ${h.replace(/@\d+/g, (m) => resolveMap[`${m.slice(1)}@s.whatsapp.net`])}`);
+      lines.push(
+        `│ ${h.replace(/@\d+/g, (m) => resolveMap[`${m.slice(1)}@s.whatsapp.net`])}`
+      );
     }
     lines.push(`│`);
   }
 
-  lines.push(`│ 🏆 ${winName} wins 🪙 +${F.formatNumber(result.reward.cash)} Coin`, `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`, `╰─────────────────────────────╯`);
+  lines.push(
+    `│ 🏆 ${winName} wins 🪙 +${F.formatNumber(result.reward.cash)} Coin`,
+    `│ ${loseName} lost 🪙 ${F.formatNumber(result.reward.loserLoss)} Coin`,
+    `╰─────────────────────────────╯`
+  );
 
   return lines.join('\n');
 }
@@ -129,7 +147,9 @@ export async function runBattle(ctx, challenger, target, battleId) {
 
   if (!startBattle(battleId)) {
     cancelBattle(battleId);
-    return ctx.reply('❌ Battle tidak bisa dimulai (salah satu player sedang dalam battle lain).');
+    return ctx.reply(
+      '❌ Battle tidak bisa dimulai (salah satu player sedang dalam battle lain).'
+    );
   }
 
   const aName = await displayName(challenger);
@@ -148,7 +168,14 @@ export async function runBattle(ctx, challenger, target, battleId) {
   let battleMsg;
   try {
     await ctx.react('⚔️');
-    const startText = buildStartText(aName, aStats.hp, aMax, dName, dStats.hp, dMax);
+    const startText = buildStartText(
+      aName,
+      aStats.hp,
+      aMax,
+      dName,
+      dStats.hp,
+      dMax
+    );
     battleMsg = await ctx.send(startText, { mentions });
   } catch (err) {
     cancelBattle(battleId);
@@ -178,7 +205,9 @@ export async function runBattle(ctx, challenger, target, battleId) {
     result.attackerJid = challenger;
   } catch (err) {
     cancelBattle(battleId);
-    await edit(`╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle dibatalkan\n│ ${err.message}\n╰─────────────────────╯`);
+    await edit(
+      `╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle dibatalkan\n│ ${err.message}\n╰─────────────────────╯`
+    );
     return;
   }
 
@@ -186,7 +215,15 @@ export async function runBattle(ctx, challenger, target, battleId) {
   for (const snap of snaps) {
     const aHp = snap.aHp;
     const dHp = snap.dHp;
-    const snapText = buildSnapshotText(aName, aHp, aMax, dName, dHp, dMax, snap);
+    const snapText = buildSnapshotText(
+      aName,
+      aHp,
+      aMax,
+      dName,
+      dHp,
+      dMax,
+      snap
+    );
     await edit(snapText);
     await sleep(2700);
   }

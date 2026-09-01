@@ -1,17 +1,33 @@
 import { sql } from '#storage/connection.js';
-import { relicModel, walletModel, userModel, inventoryModel } from '#storage/models/index.js';
+import {
+  relicModel,
+  walletModel,
+  userModel,
+  inventoryModel,
+} from '#storage/models/index.js';
 
 const SLOTS = {
   head: { name: 'Head', mainStats: ['hp_flat'], weights: [1] },
   hands: { name: 'Hands', mainStats: ['atk_flat'], weights: [1] },
-  body: { name: 'Body', mainStats: ['crit_rate', 'hp_percent', 'def_percent'], weights: [1, 1, 1] },
-  feet: { name: 'Feet', mainStats: ['spd_flat', 'def_percent', 'hp_percent'], weights: [1, 2, 2] },
+  body: {
+    name: 'Body',
+    mainStats: ['crit_rate', 'hp_percent', 'def_percent'],
+    weights: [1, 1, 1],
+  },
+  feet: {
+    name: 'Feet',
+    mainStats: ['spd_flat', 'def_percent', 'hp_percent'],
+    weights: [1, 2, 2],
+  },
 };
 
 const STAT_NAMES = {
   hp_flat: { name: 'HP', format: (v) => `+${v} HP` },
   atk_flat: { name: 'ATK', format: (v) => `+${v} ATK` },
-  crit_rate: { name: 'Crit Rate', format: (v) => `+${(v / 10).toFixed(1)}% Crit Rate` },
+  crit_rate: {
+    name: 'Crit Rate',
+    format: (v) => `+${(v / 10).toFixed(1)}% Crit Rate`,
+  },
   hp_percent: { name: 'HP%', format: (v) => `+${(v / 10).toFixed(1)}% HP` },
   def_percent: { name: 'DEF%', format: (v) => `+${(v / 10).toFixed(1)}% DEF` },
   spd_flat: { name: 'SPD', format: (v) => `+${v} SPD` },
@@ -35,7 +51,14 @@ const SUBSTAT_VALUES = {
   spd_flat: { 1: 1, 5: 2 },
 };
 
-const ALL_SUBSTATS = ['hp_flat', 'atk_flat', 'crit_rate', 'hp_percent', 'def_percent', 'spd_flat'];
+const ALL_SUBSTATS = [
+  'hp_flat',
+  'atk_flat',
+  'crit_rate',
+  'hp_percent',
+  'def_percent',
+  'spd_flat',
+];
 
 const LEVELING_COSTS = {
   1: { coins: 500, cerelia: 2, userExp: 0 },
@@ -160,10 +183,7 @@ class RelicService {
   }
 
   generateRelic(jid) {
-    const slot = weightedRandom(
-      Object.keys(SLOTS),
-      [1, 1, 1, 1]
-    );
+    const slot = weightedRandom(Object.keys(SLOTS), [1, 1, 1, 1]);
     const mainStat = rollMainStat(slot);
     const level = 1;
     const mainValue = interpolateStat(mainStat, level);
@@ -204,7 +224,13 @@ class RelicService {
       feet_id: null,
     };
     inventory[`${relic.slot}_id`] = relic.id;
-    await relicModel.setInventory(jid, inventory.head_id, inventory.hands_id, inventory.body_id, inventory.feet_id);
+    await relicModel.setInventory(
+      jid,
+      inventory.head_id,
+      inventory.hands_id,
+      inventory.body_id,
+      inventory.feet_id
+    );
     return relic;
   }
 
@@ -214,7 +240,13 @@ class RelicService {
     const relicId = inventory[`${slot}_id`];
     if (!relicId) throw new Error(`Tidak ada relic di slot ${slot}.`);
     inventory[`${slot}_id`] = null;
-    await relicModel.setInventory(jid, inventory.head_id, inventory.hands_id, inventory.body_id, inventory.feet_id);
+    await relicModel.setInventory(
+      jid,
+      inventory.head_id,
+      inventory.hands_id,
+      inventory.body_id,
+      inventory.feet_id
+    );
     return relicModel.find(relicId);
   }
 
@@ -231,7 +263,8 @@ class RelicService {
     const relic = await relicModel.find(relicId);
     if (!relic) throw new Error('Relic tidak ditemukan.');
     if (relic.owner_jid !== jid) throw new Error('Relic bukan milikmu.');
-    if (!this.canLevelUp(relic)) throw new Error('Relic sudah mencapai level maksimum (15).');
+    if (!this.canLevelUp(relic))
+      throw new Error('Relic sudah mencapai level maksimum (15).');
 
     const wallet = await walletModel.find(jid);
     const user = await userModel.findById(jid);
@@ -261,7 +294,9 @@ class RelicService {
 
     if (targetLevel === relic.level) {
       const nextCost = LEVELING_COSTS[relic.level];
-      throw new Error(`Butuh ${nextCost.coins} koin${nextCost.cerelia > 0 ? ` + ${nextCost.cerelia} Cerelia` : ''}${nextCost.userExp > 0 ? ` + ${nextCost.userExp} EXP` : ''} untuk upgrade. Kamu tidak punya cukup resources.`);
+      throw new Error(
+        `Butuh ${nextCost.coins} koin${nextCost.cerelia > 0 ? ` + ${nextCost.cerelia} Cerelia` : ''}${nextCost.userExp > 0 ? ` + ${nextCost.userExp} EXP` : ''} untuk upgrade. Kamu tidak punya cukup resources.`
+      );
     }
 
     const fromLevel = relic.level;
@@ -298,7 +333,8 @@ class RelicService {
       const equipped = ['head_id', 'hands_id', 'body_id', 'feet_id'].some(
         (key) => inventory[key] === relic.id
       );
-      if (equipped) throw new Error('Tidak bisa melebur relic yang sedang terpasang.');
+      if (equipped)
+        throw new Error('Tidak bisa melebur relic yang sedang terpasang.');
     }
     const coins = relic.level * 200;
     let cerelia = 0;
@@ -330,10 +366,13 @@ class RelicService {
   formatRelic(relic) {
     const slotName = SLOTS[relic.slot]?.name || relic.slot;
     const mainStatName = STAT_NAMES[relic.main_stat]?.name || relic.main_stat;
-    const mainStatFormatted = STAT_NAMES[relic.main_stat]?.format(relic.main_value) || `+${relic.main_value}`;
+    const mainStatFormatted =
+      STAT_NAMES[relic.main_stat]?.format(relic.main_value) ||
+      `+${relic.main_value}`;
     const substatLines = relic.substats.map((sub) => {
       const name = STAT_NAMES[sub.stat]?.name || sub.stat;
-      const formatted = STAT_NAMES[sub.stat]?.format(sub.value) || `+${sub.value}`;
+      const formatted =
+        STAT_NAMES[sub.stat]?.format(sub.value) || `+${sub.value}`;
       const rolls = sub.rolls > 0 ? ` (${sub.rolls}x upgrade)` : '';
       return `  - ${name}: ${formatted}${rolls}`;
     });
@@ -354,7 +393,9 @@ class RelicService {
       'Substats:',
       ...formatted.substats,
       equipped ? 'Status: *Equipped*' : '',
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 }
 

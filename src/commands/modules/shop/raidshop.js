@@ -13,15 +13,17 @@ export default {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
       const raidCoin = await raid.getRaidCoin(ctx.sender);
 
-      return ctx.reply([
-        '╭──── 🏪 *RAID SHOP* ────╮',
-        '│',
-        `│ 💠 Raid Coin: *${raidCoin}*`,
-        '│',
-        '│ Shop saat ini kosong.',
-        '│',
-        '╰──────────────────────╯',
-      ].join('\n'));
+      return ctx.reply(
+        [
+          '╭──── 🏪 *RAID SHOP* ────╮',
+          '│',
+          `│ 💠 Raid Coin: *${raidCoin}*`,
+          '│',
+          '│ Shop saat ini kosong.',
+          '│',
+          '╰──────────────────────╯',
+        ].join('\n')
+      );
     } catch (error) {
       return ctx.fail(error.message);
     }

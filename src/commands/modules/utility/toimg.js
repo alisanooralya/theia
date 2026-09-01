@@ -9,7 +9,11 @@ export default {
 
   async execute(ctx) {
     const quoted = ctx.quoted;
-    if (!quoted || !quoted.isMedia || !quoted.message.stickerMessage.mimetype?.includes('webp'))
+    if (
+      !quoted ||
+      !quoted.isMedia ||
+      !quoted.message.stickerMessage.mimetype?.includes('webp')
+    )
       return ctx.reply('Reply sticker dengan `!toimg`');
 
     await ctx.react('⏳');

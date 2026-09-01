@@ -98,9 +98,15 @@ async function getUserRaidStats(jid) {
       const art = await artifactModel.findById(artifactId);
       if (!art) continue;
       switch (art.main_stat) {
-        case 'atk': artifactAtk += art.main_value; break;
-        case 'atk_percent': artifactAtk += Math.floor(baseAtk * art.main_value / 100); break;
-        case 'crit_rate': artifactCritRate += art.main_value / 10; break;
+        case 'atk':
+          artifactAtk += art.main_value;
+          break;
+        case 'atk_percent':
+          artifactAtk += Math.floor((baseAtk * art.main_value) / 100);
+          break;
+        case 'crit_rate':
+          artifactCritRate += art.main_value / 10;
+          break;
       }
     }
   }
@@ -146,14 +152,23 @@ class RaidService {
     const now = Date.now();
     const startAt = getRaidStartForWeek(now);
     const endAt = startAt + RAID_DURATION;
-    const raid = await raidModel.create(RAID_BOSS_NAME, RAID_BOSS_HP, startAt, endAt);
+    const raid = await raidModel.create(
+      RAID_BOSS_NAME,
+      RAID_BOSS_HP,
+      startAt,
+      endAt
+    );
     logger.info({ startAt, endAt }, '[Raid] scheduled raid created');
     return raid;
   }
 
   async createRaid() {
     const existing = await raidModel.getActive();
-    if (existing && existing.status === 'active' && Date.now() < existing.end_at) {
+    if (
+      existing &&
+      existing.status === 'active' &&
+      Date.now() < existing.end_at
+    ) {
       return existing;
     }
     return this.createScheduledRaid();
@@ -161,7 +176,11 @@ class RaidService {
 
   async startRaid() {
     const existing = await raidModel.getActive();
-    if (existing && existing.status === 'active' && Date.now() < existing.end_at) {
+    if (
+      existing &&
+      existing.status === 'active' &&
+      Date.now() < existing.end_at
+    ) {
       return existing;
     }
     return this.createScheduledRaid();
@@ -222,11 +241,15 @@ class RaidService {
 
     const participant = await raidModel.getParticipant(raid.id, jid);
     if (!participant) {
-      throw new Error('Kamu belum join raid. Ketik `.raid join` terlebih dahulu.');
+      throw new Error(
+        'Kamu belum join raid. Ketik `.raid join` terlebih dahulu.'
+      );
     }
 
     if (participant.status === 'stopped') {
-      throw new Error('Kamu sedang dalam mode Stop. Ketik `.raid attack` untuk melanjutkan.');
+      throw new Error(
+        'Kamu sedang dalam mode Stop. Ketik `.raid attack` untuk melanjutkan.'
+      );
     }
 
     const now = Date.now();
@@ -274,7 +297,11 @@ class RaidService {
           breaktimeUntil = Date.now() + BREAKTIME_DURATION;
         }
 
-        await raidModel.updateBoss(currentRaid.id, newBossHp, newBossHp <= 0 ? 'cleared' : currentRaid.status);
+        await raidModel.updateBoss(
+          currentRaid.id,
+          newBossHp,
+          newBossHp <= 0 ? 'cleared' : currentRaid.status
+        );
         await raidModel.updateParticipant(currentRaid.id, jid, {
           hp: newHp,
           damage: p.damage + actualDamage,
@@ -286,35 +313,51 @@ class RaidService {
           this.stopAttackLoop(jid);
           if (sock && jidChat) {
             const mentionJid = [jid];
-            await sock.sendMessage(jidChat, {
-              text: `💔 @${jid.split('@')[0]} HP habis! Masuk Breaktime 1 jam...`,
-              mentions: mentionJid,
-            }).catch(() => {});
+            await sock
+              .sendMessage(jidChat, {
+                text: `💔 @${jid.split('@')[0]} HP habis! Masuk Breaktime 1 jam...`,
+                mentions: mentionJid,
+              })
+              .catch(() => {});
           }
-        } else if (newHp > 0 && newHp <= HP_LOW_THRESHOLD && p.hp > HP_LOW_THRESHOLD) {
+        } else if (
+          newHp > 0 &&
+          newHp <= HP_LOW_THRESHOLD &&
+          p.hp > HP_LOW_THRESHOLD
+        ) {
           if (sock && jidChat) {
             const mentionJid = [jid];
-            await sock.sendMessage(jidChat, {
-              text: [
-                `⚠️ @${jid.split('@')[0]} HP kamu tinggal *${newHp}/${RAID_USER_HP}* (≈15%)!`,
-                '',
-                'Saran: ketik `.raid stop` untuk berhenti menyerang dan pulihkan HP,',
-                'tunggu beberapa menit, lalu lanjutkan lagi dengan `.raid attack`.',
-              ].join('\n'),
-              mentions: mentionJid,
-            }).catch(() => {});
+            await sock
+              .sendMessage(jidChat, {
+                text: [
+                  `⚠️ @${jid.split('@')[0]} HP kamu tinggal *${newHp}/${RAID_USER_HP}* (≈15%)!`,
+                  '',
+                  'Saran: ketik `.raid stop` untuk berhenti menyerang dan pulihkan HP,',
+                  'tunggu beberapa menit, lalu lanjutkan lagi dengan `.raid attack`.',
+                ].join('\n'),
+                mentions: mentionJid,
+              })
+              .catch(() => {});
           }
         }
 
         if (newBossHp <= 0) {
           this.stopAttackLoop(jid);
           if (sock && jidChat) {
-            const participants = await raidModel.getParticipants(currentRaid.id);
-            const mentionJid = participants.map(p => p.jid);
+            const participants = await raidModel.getParticipants(
+              currentRaid.id
+            );
+            const mentionJid = participants.map((p) => p.jid);
             const contributionList = participants
-              .map((p, i) => `${i + 1}. @${p.jid.split('@')[0]} — *${F.formatNumber(p.damage)}* damage`)
+              .map(
+                (p, i) =>
+                  `${i + 1}. @${p.jid.split('@')[0]} — *${F.formatNumber(p.damage)}* damage`
+              )
               .join('\n');
-            const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
+            const totalDamage = participants.reduce(
+              (sum, p) => sum + p.damage,
+              0
+            );
 
             const text = [
               '🎉 *RAID BOSS MATI!*',
@@ -327,10 +370,12 @@ class RaidService {
               'Ketik `.raid claim` untuk klaim reward!',
             ].join('\n');
 
-            await sock.sendMessage(jidChat, {
-              text,
-              mentions: mentionJid,
-            }).catch(() => {});
+            await sock
+              .sendMessage(jidChat, {
+                text,
+                mentions: mentionJid,
+              })
+              .catch(() => {});
             await this.broadcast(sock, text, { exclude: [jidChat] });
           }
         }
@@ -409,8 +454,14 @@ class RaidService {
 
     const now = Date.now();
 
-    if (participant.status === 'breaktime' && participant.breaktime_until <= now) {
-      const newHp = Math.min(RAID_USER_HP, participant.hp + HP_RECOVERY_BREAKTIME);
+    if (
+      participant.status === 'breaktime' &&
+      participant.breaktime_until <= now
+    ) {
+      const newHp = Math.min(
+        RAID_USER_HP,
+        participant.hp + HP_RECOVERY_BREAKTIME
+      );
       const fullyHealed = newHp >= RAID_USER_HP;
       await raidModel.updateParticipant(raid.id, jid, {
         hp: fullyHealed ? RAID_USER_HP : newHp,
@@ -418,7 +469,10 @@ class RaidService {
         status: fullyHealed ? 'active' : 'breaktime',
         breaktimeUntil: fullyHealed ? 0 : participant.breaktime_until,
       });
-      return { hp: fullyHealed ? RAID_USER_HP : newHp, status: fullyHealed ? 'active' : 'breaktime' };
+      return {
+        hp: fullyHealed ? RAID_USER_HP : newHp,
+        status: fullyHealed ? 'active' : 'breaktime',
+      };
     }
 
     if (participant.status === 'stopped') {
@@ -442,10 +496,13 @@ class RaidService {
     const participant = await raidModel.getParticipant(raid.id, jid);
     if (!participant) throw new Error('Kamu tidak participate di raid ini.');
     if (participant.reward_claimed) throw new Error('Reward sudah diklaim.');
-    if (participant.damage <= 0) throw new Error('Kamu tidak memberikan damage, tidak ada reward.');
+    if (participant.damage <= 0)
+      throw new Error('Kamu tidak memberikan damage, tidak ada reward.');
 
-    const totalDamage = (await raidModel.getParticipants(raid.id))
-      .reduce((sum, p) => sum + p.damage, 0);
+    const totalDamage = (await raidModel.getParticipants(raid.id)).reduce(
+      (sum, p) => sum + p.damage,
+      0
+    );
     const contributionRatio = participant.damage / Math.max(1, totalDamage);
 
     const baseCash = 4000;
@@ -497,9 +554,12 @@ class RaidService {
     if (sock) {
       const participants = await raidModel.getParticipants(raid.id);
       if (participants.length > 0) {
-        const mentionJid = participants.map(p => p.jid);
+        const mentionJid = participants.map((p) => p.jid);
         const contributionList = participants
-          .map((p, i) => `${i + 1}. @${p.jid.split('@')[0]} — *${F.formatNumber(p.damage)}* damage`)
+          .map(
+            (p, i) =>
+              `${i + 1}. @${p.jid.split('@')[0]} — *${F.formatNumber(p.damage)}* damage`
+          )
           .join('\n');
         const totalDamage = participants.reduce((sum, p) => sum + p.damage, 0);
 

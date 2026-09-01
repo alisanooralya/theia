@@ -1,8 +1,4 @@
-import {
-  statsModel,
-  walletModel,
-  userModel,
-} from '#storage/models/index.js';
+import { statsModel, walletModel, userModel } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
 
 const CRIT_MULT = 1.5;
@@ -69,12 +65,15 @@ class DomainService {
     if (!config) throw new Error('Difficulty tidak valid.');
 
     const base = await statsModel.ensure(jid);
-    if (base.hp <= 0) throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
+    if (base.hp <= 0)
+      throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
 
     const pStats = await artifactService.getPlayerStats(jid);
     const now = Math.floor(Date.now() / 1000);
-    const effAtk = base.buff_expire > now ? pStats.atk + (base.buff_atk || 0) : pStats.atk;
-    const effDef = base.buff_expire > now ? pStats.def + (base.buff_def || 0) : pStats.def;
+    const effAtk =
+      base.buff_expire > now ? pStats.atk + (base.buff_atk || 0) : pStats.atk;
+    const effDef =
+      base.buff_expire > now ? pStats.def + (base.buff_def || 0) : pStats.def;
 
     const player = {
       hp: base.hp,
@@ -94,7 +93,12 @@ class DomainService {
 
     const rounds = [];
     for (let i = 0; i < MAX_ROUNDS && player.hp > 0 && boss.hp > 0; i++) {
-      const r = { round: i + 1, playerHp: player.hp, bossHp: boss.hp, events: [] };
+      const r = {
+        round: i + 1,
+        playerHp: player.hp,
+        bossHp: boss.hp,
+        events: [],
+      };
 
       const pDmg = calcDamage(player, boss);
       boss.hp = Math.max(0, boss.hp - pDmg.dmg);
@@ -132,7 +136,10 @@ class DomainService {
       const first = await artifactService.generateArtifact(jid);
       artifacts.push(first);
 
-      if (config.secondArtifactChance && Math.random() < config.secondArtifactChance) {
+      if (
+        config.secondArtifactChance &&
+        Math.random() < config.secondArtifactChance
+      ) {
         const second = await artifactService.generateArtifact(jid);
         artifacts.push(second);
       }

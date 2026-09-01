@@ -40,9 +40,12 @@ export function isInBattle(jid) {
 
 export function createBattle(challenger, target) {
   reapExpired();
-  if (challenger === target) throw new Error('Tidak bisa battle dengan diri sendiri.');
-  if (activeBattles.has(challenger)) throw new Error('Kamu sedang berada dalam battle lain.');
-  if (activeBattles.has(target)) throw new Error('Lawan sedang berada dalam battle lain.');
+  if (challenger === target)
+    throw new Error('Tidak bisa battle dengan diri sendiri.');
+  if (activeBattles.has(challenger))
+    throw new Error('Kamu sedang berada dalam battle lain.');
+  if (activeBattles.has(target))
+    throw new Error('Lawan sedang berada dalam battle lain.');
 
   const id = newBattleId();
   const meta = {

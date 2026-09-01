@@ -9,9 +9,18 @@ import {
 const SLOTS = {
   flower: { mainStat: 'hp', substats: false },
   feather: { mainStat: 'atk', substats: false },
-  sands: { mainStat: ['hp_percent', 'atk_percent', 'def_percent'], substats: true },
-  goblet: { mainStat: ['hp_percent', 'atk_percent', 'def_percent'], substats: true },
-  circlet: { mainStat: ['hp_percent', 'atk_percent', 'def_percent', 'crit_rate'], substats: true },
+  sands: {
+    mainStat: ['hp_percent', 'atk_percent', 'def_percent'],
+    substats: true,
+  },
+  goblet: {
+    mainStat: ['hp_percent', 'atk_percent', 'def_percent'],
+    substats: true,
+  },
+  circlet: {
+    mainStat: ['hp_percent', 'atk_percent', 'def_percent', 'crit_rate'],
+    substats: true,
+  },
 };
 
 const STAT_NAMES = {
@@ -71,11 +80,12 @@ function substatUpgradeFor(stat, fromLevel) {
   const v = SUBSTAT_VALUES[stat];
   if (!v) return 0;
   const nextMilestone = UPGRADE_MILESTONES.find((m) => m >= fromLevel) ?? 20;
-  const prevMilestone = [...UPGRADE_MILESTONES].reverse().find((m) => m < nextMilestone) ?? 1;
+  const prevMilestone =
+    [...UPGRADE_MILESTONES].reverse().find((m) => m < nextMilestone) ?? 1;
   const steps = UPGRADE_MILESTONES.length;
   const stepFrom = UPGRADE_MILESTONES.indexOf(nextMilestone);
   const stepSize = Math.floor((v.max - v.min) / steps);
-  const remainder = (v.max - v.min) - stepSize * steps;
+  const remainder = v.max - v.min - stepSize * steps;
   const extra = stepFrom < remainder ? 1 : 0;
   return stepSize + extra;
 }
@@ -130,18 +140,98 @@ function interpolateMainStat(slot, stat, level) {
 
 function randomName(slot) {
   const prefixes = {
-    flower: ['Flame', 'Rose', 'Lotus', 'Lily', 'Dawn', 'Star', 'Moon', 'Sun', 'Storm', 'Wind'],
-    feather: ['Storm', 'Wind', 'Sky', 'Cloud', 'Gale', 'Zephyr', 'Feather', 'Wing', 'Plume', 'Gust'],
-    sands: ['Time', 'Hour', 'Clock', 'Sand', 'Moment', 'Era', 'Age', 'Cycle', 'Epoch', 'Phase'],
-    goblet: ['Chalice', 'Cup', 'Vessel', 'Grail', 'Wine', 'Dew', 'Nectar', 'Elixir', 'Draught', 'Draft'],
-    circlet: ['Crown', 'Halo', 'Diadem', 'Wreath', 'Band', 'Circlet', 'Coronet', 'Tiara', 'Laurel', 'Ring'],
+    flower: [
+      'Flame',
+      'Rose',
+      'Lotus',
+      'Lily',
+      'Dawn',
+      'Star',
+      'Moon',
+      'Sun',
+      'Storm',
+      'Wind',
+    ],
+    feather: [
+      'Storm',
+      'Wind',
+      'Sky',
+      'Cloud',
+      'Gale',
+      'Zephyr',
+      'Feather',
+      'Wing',
+      'Plume',
+      'Gust',
+    ],
+    sands: [
+      'Time',
+      'Hour',
+      'Clock',
+      'Sand',
+      'Moment',
+      'Era',
+      'Age',
+      'Cycle',
+      'Epoch',
+      'Phase',
+    ],
+    goblet: [
+      'Chalice',
+      'Cup',
+      'Vessel',
+      'Grail',
+      'Wine',
+      'Dew',
+      'Nectar',
+      'Elixir',
+      'Draught',
+      'Draft',
+    ],
+    circlet: [
+      'Crown',
+      'Halo',
+      'Diadem',
+      'Wreath',
+      'Band',
+      'Circlet',
+      'Coronet',
+      'Tiara',
+      'Laurel',
+      'Ring',
+    ],
   };
   const suffixes = {
-    flower: ['Petal', 'Bloom', 'Flora', 'Blossom', 'Bud', 'Garden', 'Field', 'Meadow'],
+    flower: [
+      'Petal',
+      'Bloom',
+      'Flora',
+      'Blossom',
+      'Bud',
+      'Garden',
+      'Field',
+      'Meadow',
+    ],
     feather: ['Feather', 'Plume', 'Wing', 'Quill', 'Fletch', 'Down', 'Pinion'],
-    sands: ['Hourglass', 'Sands', 'Timer', 'Watch', 'Dial', 'Meridian', 'Equinox'],
+    sands: [
+      'Hourglass',
+      'Sands',
+      'Timer',
+      'Watch',
+      'Dial',
+      'Meridian',
+      'Equinox',
+    ],
     goblet: ['Goblet', 'Chalice', 'Cup', 'Vessel', 'Grail', 'Cradle', 'Basin'],
-    circlet: ['Crown', 'Circlet', 'Diadem', 'Halo', 'Wreath', 'Coronet', 'Tiara'],
+    circlet: [
+      'Crown',
+      'Circlet',
+      'Diadem',
+      'Halo',
+      'Wreath',
+      'Coronet',
+      'Tiara',
+    ],
   };
   const p = prefixes[slot];
   const s = suffixes[slot];
@@ -166,10 +256,8 @@ class ArtifactService {
   }
 
   async generateArtifact(jid, forceSlot = null) {
-    const slot = forceSlot || weightedRandom(
-      Object.keys(SLOTS),
-      [1, 1, 1, 1, 1]
-    );
+    const slot =
+      forceSlot || weightedRandom(Object.keys(SLOTS), [1, 1, 1, 1, 1]);
     const config = SLOTS[slot];
     const mainStat = Array.isArray(config.mainStat)
       ? config.mainStat[Math.floor(Math.random() * config.mainStat.length)]
@@ -226,21 +314,31 @@ class ArtifactService {
     const artifact = await artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
     const inventory = (await artifactModel.getInventory(jid)) || {
-      flower_id: null, feather_id: null, sands_id: null, goblet_id: null, circlet_id: null,
+      flower_id: null,
+      feather_id: null,
+      sands_id: null,
+      goblet_id: null,
+      circlet_id: null,
     };
     const slotKey = `${artifact.slot}_id`;
     inventory[slotKey] = artifact.id;
     await artifactModel.setInventory(
       jid,
-      inventory.flower_id, inventory.feather_id,
-      inventory.sands_id, inventory.goblet_id, inventory.circlet_id
+      inventory.flower_id,
+      inventory.feather_id,
+      inventory.sands_id,
+      inventory.goblet_id,
+      inventory.circlet_id
     );
     await this._clampHp(jid);
     return artifact;
   }
 
   async unequip(slot, jid) {
-    if (!SLOTS[slot]) throw new Error(`Slot tidak valid: ${slot}. Slot yang tersedia: flower, feather, sands, goblet, circlet.`);
+    if (!SLOTS[slot])
+      throw new Error(
+        `Slot tidak valid: ${slot}. Slot yang tersedia: flower, feather, sands, goblet, circlet.`
+      );
     const inventory = await artifactModel.getInventory(jid);
     if (!inventory) throw new Error('Tidak ada artifact yang terpasang.');
     const slotKey = `${slot}_id`;
@@ -249,8 +347,11 @@ class ArtifactService {
     inventory[slotKey] = null;
     await artifactModel.setInventory(
       jid,
-      inventory.flower_id, inventory.feather_id,
-      inventory.sands_id, inventory.goblet_id, inventory.circlet_id
+      inventory.flower_id,
+      inventory.feather_id,
+      inventory.sands_id,
+      inventory.goblet_id,
+      inventory.circlet_id
     );
     await this._clampHp(jid);
     return artifactModel.findById(artifactId);
@@ -268,7 +369,8 @@ class ArtifactService {
   async upgrade(jid, userId) {
     const artifact = await artifactModel.find(jid, userId);
     if (!artifact) throw new Error('Artifact tidak ditemukan.');
-    if (!this.canUpgrade(artifact)) throw new Error('Artifact sudah mencapai level maksimum (20).');
+    if (!this.canUpgrade(artifact))
+      throw new Error('Artifact sudah mencapai level maksimum (20).');
 
     const wallet = await walletModel.find(jid);
     const user = await userModel.findById(jid);
@@ -296,10 +398,14 @@ class ArtifactService {
       const userExp = user?.exp ?? 0;
       const reasons = [];
       if (walletCash < nextCost.coins) {
-        reasons.push(`koin tidak cukup (butuh ${nextCost.coins}, punya ${walletCash})`);
+        reasons.push(
+          `koin tidak cukup (butuh ${nextCost.coins}, punya ${walletCash})`
+        );
       }
       if (nextCost.exp > 0 && userExp < nextCost.exp) {
-        reasons.push(`EXP tidak cukup (butuh ${nextCost.exp}, punya ${userExp})`);
+        reasons.push(
+          `EXP tidak cukup (butuh ${nextCost.exp}, punya ${userExp})`
+        );
       }
       throw new Error(`Gagal upgrade: ${reasons.join(' & ')}.`);
     }
@@ -311,7 +417,11 @@ class ArtifactService {
         await userModel.addExp(jid, -totalCostExp, t);
       }
       artifact.level = targetLevel;
-      artifact.main_value = interpolateMainStat(artifact.slot, artifact.main_stat, artifact.level);
+      artifact.main_value = interpolateMainStat(
+        artifact.slot,
+        artifact.main_stat,
+        artifact.level
+      );
       for (let lv = fromLevel + 1; lv <= targetLevel; lv++) {
         if (UPGRADE_MILESTONES.includes(lv)) {
           const subKeys = Object.keys(artifact.substats);
@@ -351,8 +461,11 @@ class ArtifactService {
       if (unequipNeeded) {
         await artifactModel.setInventory(
           jid,
-          inventory.flower_id, inventory.feather_id,
-          inventory.sands_id, inventory.goblet_id, inventory.circlet_id,
+          inventory.flower_id,
+          inventory.feather_id,
+          inventory.sands_id,
+          inventory.goblet_id,
+          inventory.circlet_id,
           t
         );
       }
@@ -386,18 +499,36 @@ class ArtifactService {
         const artifact = await artifactModel.findById(artifactId);
         if (!artifact) continue;
         switch (artifact.main_stat) {
-          case 'hp': artifactHp += artifact.main_value; break;
-          case 'atk': artifactAtk += artifact.main_value; break;
-          case 'hp_percent': artifactHp += Math.floor(baseHp * artifact.main_value / 100); break;
-          case 'atk_percent': artifactAtk += Math.floor(baseAtk * artifact.main_value / 100); break;
-          case 'def_percent': artifactDef += Math.floor(baseDef * artifact.main_value / 100); break;
-          case 'crit_rate': artifactCritRate += artifact.main_value / 10; break;
+          case 'hp':
+            artifactHp += artifact.main_value;
+            break;
+          case 'atk':
+            artifactAtk += artifact.main_value;
+            break;
+          case 'hp_percent':
+            artifactHp += Math.floor((baseHp * artifact.main_value) / 100);
+            break;
+          case 'atk_percent':
+            artifactAtk += Math.floor((baseAtk * artifact.main_value) / 100);
+            break;
+          case 'def_percent':
+            artifactDef += Math.floor((baseDef * artifact.main_value) / 100);
+            break;
+          case 'crit_rate':
+            artifactCritRate += artifact.main_value / 10;
+            break;
         }
         for (const [stat, value] of Object.entries(artifact.substats)) {
           switch (stat) {
-            case 'hp': artifactHp += value; break;
-            case 'atk': artifactAtk += value; break;
-            case 'def': artifactDef += value; break;
+            case 'hp':
+              artifactHp += value;
+              break;
+            case 'atk':
+              artifactAtk += value;
+              break;
+            case 'def':
+              artifactDef += value;
+              break;
           }
         }
       }
@@ -422,7 +553,9 @@ class ArtifactService {
 
   formatArtifact(artifact) {
     const mainStatName = STAT_NAMES[artifact.main_stat] || artifact.main_stat;
-    const mainFormatted = this.getStatFormat(artifact.main_stat)(artifact.main_value);
+    const mainFormatted = this.getStatFormat(artifact.main_stat)(
+      artifact.main_value
+    );
     const subLines = Object.entries(artifact.substats).map(([stat, value]) => {
       const name = STAT_NAMES[stat] || stat;
       const formatted = this.getStatFormat(stat)(value);
@@ -446,7 +579,9 @@ class ArtifactService {
       formatted.substats.length > 0 ? 'Substats:' : 'Substats: (tidak ada)',
       ...formatted.substats,
       equipped ? 'Status: *Equipped*' : '',
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 }
 

@@ -31,9 +31,12 @@ export const ownerTools = [
       assertOwner(ctx);
       const [users] = await sql`SELECT COUNT(*)::int AS c FROM users`;
       const [groups] = await sql`SELECT COUNT(*)::int AS c FROM groups`;
-      const [premium] = await sql`SELECT COUNT(*)::int AS c FROM users WHERE premium = 1`;
-      const [banned] = await sql`SELECT COUNT(*)::int AS c FROM users WHERE banned = 1`;
-      const [transactions] = await sql`SELECT COUNT(*)::int AS c FROM transactions`;
+      const [premium] =
+        await sql`SELECT COUNT(*)::int AS c FROM users WHERE premium = 1`;
+      const [banned] =
+        await sql`SELECT COUNT(*)::int AS c FROM users WHERE banned = 1`;
+      const [transactions] =
+        await sql`SELECT COUNT(*)::int AS c FROM transactions`;
       const [items] = await sql`SELECT COUNT(*)::int AS c FROM items`;
       let quests = 0;
       try {

@@ -8,7 +8,10 @@ export default {
 
   init() {
     this._timers.push(
-      setInterval(() => this._cleanupCooldowns().catch(() => {}), 10 * 60 * 1000)
+      setInterval(
+        () => this._cleanupCooldowns().catch(() => {}),
+        10 * 60 * 1000
+      )
     );
     this._timers.push(
       setInterval(() => this._cleanupPremium().catch(() => {}), 60 * 60 * 1000)
@@ -52,8 +55,10 @@ export default {
     try {
       const userRows = await sql`SELECT COUNT(*)::int AS c FROM users`;
       const groupRows = await sql`SELECT COUNT(*)::int AS c FROM groups`;
-      const premiumRows = await sql`SELECT COUNT(*)::int AS c FROM users WHERE premium = 1`;
-      const txRows = await sql`SELECT COUNT(*)::int AS c FROM transactions WHERE created_at > (EXTRACT(EPOCH FROM NOW()))::BIGINT - 86400`;
+      const premiumRows =
+        await sql`SELECT COUNT(*)::int AS c FROM users WHERE premium = 1`;
+      const txRows =
+        await sql`SELECT COUNT(*)::int AS c FROM transactions WHERE created_at > (EXTRACT(EPOCH FROM NOW()))::BIGINT - 86400`;
       const users = userRows[0]?.c ?? 0;
       const groups = groupRows[0]?.c ?? 0;
       const premium = premiumRows[0]?.c ?? 0;
