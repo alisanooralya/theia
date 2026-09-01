@@ -1,6 +1,6 @@
 {
   "name": "theia",
-  "version": "4.7.2",
+  "version": "4.9.8",
   "description": "Production-grade WhatsApp bot framework",
   "type": "module",
   "main": "src/index.js",
@@ -9,7 +9,6 @@
     "dev": "node --watch src/index.js",
     "db:migrate": "node src/storage/migration.js",
     "db:seed": "node src/storage/seeds/initial-data.js",
-    "db:copy": "node src/storage/migrate-supabase-project.js"
   },
   "imports": {
     "#environment/*": "./src/environment/*",
