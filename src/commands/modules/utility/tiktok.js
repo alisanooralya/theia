@@ -11,8 +11,6 @@ export default {
     const url = ctx.args[0];
     if (!url) ctx.fail('Usage: `!tiktok <url>`');
 
-    await ctx.typing();
-
     try {
       const result = await downloaderService.tiktok(url);
 
@@ -43,7 +41,7 @@ export default {
         );
       }
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
   },
 };

@@ -19,7 +19,7 @@ export default {
         `✅ Redeem berhasil! Kamu mendapatkan ${F.formatNumber(reward.amount)} cash.`
       );
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(`❌ ${err.message}`);
     }
   },
 };

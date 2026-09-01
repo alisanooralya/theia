@@ -62,7 +62,7 @@ export const promoteCommand = {
         mentions: targets,
       });
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(`❌ ${err.message}`);
     }
   },
 };
@@ -85,7 +85,7 @@ export const demoteCommand = {
       const names = targets.map((j) => `@${j.split('@')[0]}`).join(', ');
       await ctx.reply(`✅ Admin ${names} dicabut.`, { mentions: targets });
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(`❌ ${err.message}`);
     }
   },
 };

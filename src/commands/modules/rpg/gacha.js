@@ -41,7 +41,7 @@ export default {
   aliases: ['gacha'],
   category: 'rpg',
   description: 'Gacha item dan artifact',
-  cooldown: 60 * 1_000,
+  cooldown: 60_000,
 
   async execute(ctx) {
     const rawCount = ctx.args[0];

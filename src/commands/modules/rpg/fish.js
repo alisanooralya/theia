@@ -55,7 +55,7 @@ export default {
         '🎣 Kamu mulai memancing... sabar ya, tunggu sebentar~'
       );
 
-      const delay = 3000 + Math.floor(Math.random() * 3000);
+      const delay = 3000 + Math.floor(Math.random() * 2000);
       await sleep(delay);
 
       const catchResult = pickFish();

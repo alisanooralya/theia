@@ -19,7 +19,7 @@ export default {
         `💰 *Penjualan Berhasil!*\n🪙 +${F.formatNumber(earned)}`
       );
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
   },
 };

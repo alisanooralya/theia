@@ -35,7 +35,7 @@ export default {
         { mentions: [targetJid] }
       );
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(`❌ ${err.message}`);
     }
   },
 };

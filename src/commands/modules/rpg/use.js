@@ -12,7 +12,7 @@ export default {
   aliases: ['pakai', 'makan', 'consume'],
   category: 'rpg',
   description: 'Pakai item consumable (food, buff)',
-  cooldown: 3_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     const parts = [...ctx.args];

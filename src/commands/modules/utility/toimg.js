@@ -14,7 +14,7 @@ export default {
       !quoted.isMedia ||
       !quoted.message.stickerMessage.mimetype?.includes('webp')
     )
-      return ctx.reply('Reply sticker dengan `!toimg`');
+      return ctx.fail('Reply sticker dengan `!toimg`');
 
     try {
       const buffer = await ctx.quoted.download();
@@ -23,7 +23,7 @@ export default {
       const imgBuffer = await webpToImage(buffer);
       await ctx.sendMedia('image', imgBuffer, '', { mimetype: 'image/jpeg' });
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
   },
 };

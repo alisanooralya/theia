@@ -141,13 +141,13 @@ async function buildResultText(
 export async function runBattle(ctx, challenger, target, battleId) {
   const aStats = await statsModel.ensure(challenger);
   const dStats = await statsModel.ensure(target);
-  if (aStats.hp <= 0) return ctx.reply('❤️ HP kamu 0! Pakai `!heal` dulu.');
+  if (aStats.hp <= 0) return ctx.fail('❤️ HP kamu 0! Pakai `!heal` dulu.');
   if (dStats.hp <= 0)
-    return ctx.reply('❤️ HP lawan sedang 0, tunggu dia heal dulu.');
+    return ctx.fail('❤️ HP lawan sedang 0, tunggu dia heal dulu.');
 
   if (!startBattle(battleId)) {
     cancelBattle(battleId);
-    return ctx.reply(
+    return ctx.fail(
       '❌ Battle tidak bisa dimulai (salah satu player sedang dalam battle lain).'
     );
   }
@@ -178,8 +178,7 @@ export async function runBattle(ctx, challenger, target, battleId) {
     battleMsg = await ctx.send(startText, { mentions });
   } catch (err) {
     cancelBattle(battleId);
-    logger.error({ err }, '[Battle] failed to send initial message');
-    return ctx.reply(`❌ Gagal memulai battle: ${err.message}`);
+    return ctx.fail(`❌ ${err.message}`);
   }
 
   const msgKey = battleMsg?.key;

@@ -9,15 +9,13 @@ export default {
 
   async execute(ctx) {
     const isMedia = ctx.quoted?.isMedia || ctx.msg?.isMedia;
-    if (!isMedia) return ctx.reply('Reply gambar/video dengan `!sticker`');
-
-    await ctx.typing();
+    if (!isMedia) return ctx.fail('Reply gambar/video dengan `!sticker`');
 
     try {
       let buffer;
       if (ctx.quoted?.isMedia) buffer = await ctx.quoted.download();
       if (!buffer) buffer = await ctx.downloadMedia();
-      if (!buffer) return ctx.reply('Gagal download media.');
+      if (!buffer) return ctx.fail('Gagal download media.');
 
       const meta = ctx.rawArgs?.trim()
         ? {
@@ -35,7 +33,7 @@ export default {
         contextInfo: { forwardingScore: 0, isForwarded: false },
       });
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
   },
 };

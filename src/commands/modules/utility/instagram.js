@@ -13,8 +13,6 @@ export default {
     const url = ctx.args[0];
     if (!url) ctx.fail('Usage: `!instagram <url>`');
 
-    await ctx.typing();
-
     try {
       const result = await instagramService.resolve(url);
 
@@ -36,7 +34,7 @@ export default {
         await ctx.sendMedia('image', buf, '', { mimetype: 'image/jpeg' });
       }
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
   },
 };

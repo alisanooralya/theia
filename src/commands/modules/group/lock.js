@@ -15,7 +15,7 @@ export const closeCommand = {
         '🔒 Grup ditutup! Sekarang hanya admin yang bisa mengirim pesan.'
       );
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(`❌ ${err.message}`);
     }
   },
 };
@@ -37,7 +37,7 @@ export const openCommand = {
         '🔓 Grup dibuka! Sekarang semua member bisa mengirim pesan.'
       );
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(`❌ ${err.message}`);
     }
   },
 };

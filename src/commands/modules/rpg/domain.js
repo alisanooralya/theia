@@ -55,7 +55,7 @@ export default {
         ].join('\n')
       );
 
-      await sleep(4000);
+      await sleep(3000);
 
       const result = await domain.simulateBattle(ctx.sender, sub);
 

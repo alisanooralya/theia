@@ -12,10 +12,7 @@ export default {
     const sub = ctx.args[0]?.toLowerCase();
     const audioOnly = sub === 'audio' || sub === 'a' || sub === 'mp3';
     const url = ctx.args.find((a) => a.includes('youtu')) || ctx.args[0];
-
     if (!url) ctx.fail('Usage: `!youtube <url>` | `!youtube audio <url>`');
-
-    await ctx.typing();
 
     try {
       const result = await downloaderService.youtube(url);
@@ -47,7 +44,7 @@ export default {
         );
       }
     } catch (err) {
-      await ctx.reply(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
   },
 };

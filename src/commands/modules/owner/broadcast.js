@@ -31,7 +31,7 @@ export default {
         ctx.fail('Usage: `!broadcast <group/user> <pesan>`');
       }
     } catch (err) {
-      await ctx.reply(`❌ Broadcast gagal: ${err.message}`);
+      return ctx.fail(`❌ Broadcast gagal: ${err.message}`);
     }
   },
 };
