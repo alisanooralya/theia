@@ -7,8 +7,8 @@ import {
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
 
-const COIN_PER_HOUR = 100;
-const HOUR_MS = 3_600_000;
+const COIN_PER_MINUTE = 2;
+const MINUTE_MS = 60_000;
 
 export default {
   name: 'afk',
@@ -28,8 +28,8 @@ export default {
 
     if (existing && !isAfkCmd) {
       const durMs = Date.now() - existing.started_at * 1000;
-      const hours = Math.floor(durMs / HOUR_MS);
-      const coins = hours * COIN_PER_HOUR;
+      const minutes = Math.floor(durMs / MINUTE_MS);
+      const coins = minutes * COIN_PER_MINUTE;
       if (coins > 0) await walletModel.reward(jid, coins, 'afk');
       await afkModel.remove(jid);
       await sock
