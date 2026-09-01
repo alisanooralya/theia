@@ -167,7 +167,6 @@ export async function runBattle(ctx, challenger, target, battleId) {
 
   let battleMsg;
   try {
-    await ctx.react('⚔️');
     const startText = buildStartText(
       aName,
       aStats.hp,
@@ -278,8 +277,6 @@ export default {
     if (aStats.hp <= 0) return ctx.fail('❤️ HP kamu 0! Pakai `!heal` dulu.');
     if (dStats.hp <= 0)
       return ctx.fail('❤️ HP lawan sedang 0, tunggu dia heal dulu.');
-
-    await ctx.react('⚔️');
 
     let battleId;
     try {

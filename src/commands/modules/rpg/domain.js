@@ -45,8 +45,6 @@ export default {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
       await statsModel.ensure(ctx.sender);
 
-      await ctx.react('⚔️');
-
       const statusMsg = await ctx.reply(
         [
           '╭─── ୨୧ ───╮',

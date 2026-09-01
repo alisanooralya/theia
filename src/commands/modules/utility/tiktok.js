@@ -14,7 +14,6 @@ export default {
     if (!url) ctx.fail('Usage: `!tiktok <url>`');
 
     await ctx.typing();
-    await ctx.react('⏳');
 
     try {
       const result = await tiktokService.resolve(url);
@@ -45,10 +44,7 @@ export default {
           { mimetype: 'audio/mpeg', ptt: false }
         );
       }
-
-      await ctx.react('✅');
     } catch (err) {
-      await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);
     }
   },

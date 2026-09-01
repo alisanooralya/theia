@@ -14,7 +14,6 @@ export default {
     if (!url) ctx.fail('Usage: `!instagram <url>`');
 
     await ctx.typing();
-    await ctx.react('⏳');
 
     try {
       const result = await instagramService.resolve(url);
@@ -36,10 +35,7 @@ export default {
         const buf = await instagramService.toBuffer(result.url);
         await ctx.sendMedia('image', buf, '', { mimetype: 'image/jpeg' });
       }
-
-      await ctx.react('✅');
     } catch (err) {
-      await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);
     }
   },

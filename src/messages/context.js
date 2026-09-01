@@ -74,14 +74,6 @@ export function buildContext(s, sock) {
       );
     },
 
-    react: (emoji, meta = {}) =>
-      sock.enqueueSend(
-        s.jid,
-        { react: { text: emoji, key: s.key } },
-        {},
-        bypassMeta(meta)
-      ),
-
     sendMedia: (type, data, caption = '', options = {}, meta = {}) =>
       sock.enqueueSend(
         s.jid,

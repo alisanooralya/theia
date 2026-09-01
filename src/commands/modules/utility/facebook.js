@@ -13,7 +13,6 @@ export default {
     if (!url) ctx.fail('Usage: `!facebook <url>`');
 
     await ctx.typing();
-    await ctx.react('⏳');
 
     try {
       const result = await facebookService.resolve(url);
@@ -22,9 +21,7 @@ export default {
         ? `${result.title}\n${result.hasHd ? '📺 HD tersedia' : ''}`
         : '';
       await ctx.sendMedia('video', buf, caption, { mimetype: 'video/mp4' });
-      await ctx.react('✅');
     } catch (err) {
-      await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);
     }
   },

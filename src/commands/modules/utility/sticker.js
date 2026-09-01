@@ -11,7 +11,6 @@ export default {
     const isMedia = ctx.quoted?.isMedia || ctx.msg?.isMedia;
     if (!isMedia) return ctx.reply('Reply gambar/video dengan `!sticker`');
 
-    await ctx.react('⏳');
     await ctx.typing();
 
     try {
@@ -35,9 +34,7 @@ export default {
         ptt: false,
         contextInfo: { forwardingScore: 0, isForwarded: false },
       });
-      await ctx.react('✅');
     } catch (err) {
-      await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);
     }
   },

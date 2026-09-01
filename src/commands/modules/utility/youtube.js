@@ -16,7 +16,6 @@ export default {
     if (!url) ctx.fail('Usage: `!youtube <url>` | `!youtube audio <url>`');
 
     await ctx.typing();
-    await ctx.react('⏳');
 
     try {
       const audioOnly = sub === 'audio' || sub === 'a' || sub === 'mp3';
@@ -32,7 +31,6 @@ export default {
           mimetype: 'audio/mpeg',
           ptt: false,
         });
-        await ctx.react('✅');
       } else if (result.mode === 'progressive') {
         const buf = await youtubeService.toBuffer(result.url);
         await ctx.sendMedia(
@@ -41,7 +39,6 @@ export default {
           `🎬 ${result.title}\n⏱ ${duration}\n📺 ${result.quality}`,
           { mimetype: 'video/mp4' }
         );
-        await ctx.react('✅');
       } else {
         const videoBuf = await youtubeService.toBuffer(result.videoUrl);
         await ctx.sendMedia(
@@ -50,10 +47,8 @@ export default {
           `🎬 ${result.title}\n⏱ ${duration}\n📺 ${result.quality}\n_Adaptive — audio terpisah_`,
           { mimetype: 'video/mp4' }
         );
-        await ctx.react('✅');
       }
     } catch (err) {
-      await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);
     }
   },

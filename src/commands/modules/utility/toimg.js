@@ -16,17 +16,13 @@ export default {
     )
       return ctx.reply('Reply sticker dengan `!toimg`');
 
-    await ctx.react('⏳');
-
     try {
       const buffer = await ctx.quoted.download();
       if (!buffer) return ctx.reply('Gagal download sticker.');
 
       const imgBuffer = await webpToImage(buffer);
-      ctx.sendMedia('image', imgBuffer, '', { mimetype: 'image/jpeg' });
-      ctx.react('✅');
+      await ctx.sendMedia('image', imgBuffer, '', { mimetype: 'image/jpeg' });
     } catch (err) {
-      await ctx.react('❌');
       await ctx.reply(`❌ ${err.message}`);
     }
   },
