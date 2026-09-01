@@ -13,7 +13,9 @@ export default {
 
   async execute(ctx) {
     const targetJid =
-      ctx.mentions[0] ?? (ctx.args[0] ? phoneToJid(ctx.args[0]) : null);
+      ctx.mentions[0] ??
+      ctx.quoted?.sender ??
+      (ctx.args[0] ? phoneToJid(ctx.args[0]) : null);
     const amount = parseInt(
       ctx.args.find((a) => /^\d+$/.test(a)) ?? ctx.args[1]
     );
