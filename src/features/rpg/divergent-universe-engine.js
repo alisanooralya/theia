@@ -175,11 +175,19 @@ export const DU_ENGINE_SOURCE = `
     return {cash:cash,exp:exp,cerelia:cerelia};
   }
   function makeDU(data){
-    function create(seed,initState){
-      var state=clone(initState);
-      var rng=mulberry32((seed>>>0)||1);
-      var actions=[];
-      var status='active';
+    function create(seed,initState,saved){
+      var state=saved&&saved.state?clone(saved.state):clone(initState);
+      var baseRng=mulberry32((seed>>>0)||1);
+      var rngCount=saved&&saved.rngCount?Number(saved.rngCount):0;
+      var rng;
+      function makeRng(){
+        var _rng=baseRng;
+        return function(){rngCount++;return _rng()}
+      }
+      rng=makeRng();
+      for(var k=0;k<rngCount;k++){baseRng()}
+      var actions=saved&&saved.actions?clone(saved.actions):[];
+      var status=saved&&saved.status?saved.status:'active';
       function actPath(id){
         if(state.path){throw new Error('Path run ini sudah dipilih.')}
         if(!data.paths[id]){throw new Error('Path tidak tersedia.')}
@@ -232,7 +240,10 @@ export const DU_ENGINE_SOURCE = `
         actExplore:actExplore,
         actChoose:actChoose,
         getMaxHp:function(){return maxHp(state,data)},
-        computeReward:function(){return computeReward(state,data)}
+        computeReward:function(){return computeReward(state,data)},
+        save:function(){
+          return {state:clone(state),actions:clone(actions),status:status,rngCount:rngCount};
+        }
       };
     }
     return {create:create};

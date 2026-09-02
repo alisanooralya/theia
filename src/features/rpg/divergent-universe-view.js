@@ -294,8 +294,13 @@ const CLIENT_APP = String.raw`
   var C = window.__DU__ || {};
   var data = C.data, seed = C.seed, init = C.init;
   if (!data || !DUEngine) { return; }
-  var game = DUEngine.makeDU(data).create(seed, init);
+
+  var STORE_KEY = 'du_run_' + seed;
+  var saved = null;
+  try { var raw = localStorage.getItem(STORE_KEY); if (raw) saved = JSON.parse(raw); } catch (e) {}
+  var game = DUEngine.makeDU(data).create(seed, init, saved);
   var busy = false;
+  var listView = null;
 
   var TYPE_META = {
     battle: { icon: '⚔', label: 'BATTLE' },
@@ -386,23 +391,14 @@ const CLIENT_APP = String.raw`
   }
 
   function toggleList(type) {
-    var ids = type === 'blessing' ? game.state.blessings : game.state.curios;
-    var items = ids.map(function (id) {
-      var it = type === 'blessing' ? findBlessing(id) : findCurio(id);
-      if (!it) return '';
-      var tag = it.path ? '<span class="tag">' + esc(pathById(it.path).name) + '</span>' : '';
-      var err = it.error ? '<span class="err">ERROR</span>' : '';
-      return '<div class="oitem"><b>' + esc(it.name) + tag + err + '</b><span>' + esc(it.text) + '</span></div>';
-    }).join('');
-    var title = type === 'blessing' ? '✦ Blessing' : '◆ Curio';
-    var body = items ? items : '<div class="oempty">Belum ada ' + (type === 'blessing' ? 'blessing' : 'curio') + ' pada run ini.</div>';
-    var ov = document.createElement('div');
-    ov.className = 'overlay';
-    ov.innerHTML = '<div class="obox"><div class="otitle">' + title + ' (' + ids.length + ')</div>' + body +
-      '<button class="oclose" onclick="this.parentNode.parentNode.remove()">TUTUP</button></div>';
-    document.body.appendChild(ov);
+    listView = type;
+    render();
   }
-  window.toggleList = toggleList;
+  function closeList() {
+    listView = null;
+    render();
+  }
+  window.closeList = closeList;
 
   function finishView() {
     var s = game.state;
@@ -432,9 +428,30 @@ const CLIENT_APP = String.raw`
     return last + hint + '<button class="explore" onclick="duExplore()">⚔ ' + label + '</button>';
   }
 
+  function listViewContent(type) {
+    var ids = type === 'blessing' ? game.state.blessings : game.state.curios;
+    var items = ids.map(function (id) {
+      var it = type === 'blessing' ? findBlessing(id) : findCurio(id);
+      if (!it) return '';
+      var tag = it.path ? '<span class="tag">' + esc(pathById(it.path).name) + '</span>' : '';
+      var err = it.error ? '<span class="err">ERROR</span>' : '';
+      return '<div class="oitem"><b>' + esc(it.name) + tag + err + '</b><span>' + esc(it.text) + '</span></div>';
+    }).join('');
+    var title = type === 'blessing' ? '✦ Blessing' : '◆ Curio';
+    var body = items || '<div class="oempty">Belum ada ' + (type === 'blessing' ? 'blessing' : 'curio') + ' pada run ini.</div>';
+    return '<div class="oview"><div class="ovwHd"><span class="otitle">' + title + ' (' + ids.length + ')</span><button class="ox" onclick="closeList()">✕</button></div>' + body + '</div>';
+  }
+
+  function persist() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(game.save()));
+    } catch (e) {}
+  }
+
   function render() {
     var content;
-    if (game.status !== 'active') content = finishView();
+    if (game.status !== 'active') { listView = null; content = finishView(); }
+    else if (listView) content = listViewContent(listView);
     else if (game.state.pending) content = pendingView();
     else content = exploreView();
     document.getElementById('app').innerHTML = header() + hud() + '<div id="content">' + content + '</div>' +
@@ -471,7 +488,7 @@ const CLIENT_APP = String.raw`
     var pt = pathById(id);
     showLoading('Sinkronisasi Path...', pt ? pt.name : '');
     setTimeout(function () {
-      try { game.actPath(id); } catch (e) { busy = false; flash(e.message); render(); return; }
+      try { game.actPath(id); persist(); } catch (e) { busy = false; flash(e.message); render(); return; }
       busy = false;
       render();
     }, 420);
@@ -481,7 +498,7 @@ const CLIENT_APP = String.raw`
     busy = true;
     showLoading('Memproses pilihan...', '');
     setTimeout(function () {
-      try { game.actChoose(i); } catch (e) { busy = false; flash(e.message); render(); return; }
+      try { game.actChoose(i); persist(); } catch (e) { busy = false; flash(e.message); render(); return; }
       busy = false;
       render();
     }, 420);
@@ -493,7 +510,7 @@ const CLIENT_APP = String.raw`
     showLoading('Memasuki node...', info ? info.badge : '');
     setTimeout(function () {
       var res;
-      try { res = game.actExplore(); } catch (e) { busy = false; flash(e.message); render(); return; }
+      try { res = game.actExplore(); persist(); } catch (e) { busy = false; flash(e.message); render(); return; }
       var battle = res && res.battle && res.battle.length ? res.battle : null;
       if (!battle) { busy = false; render(); return; }
       playBattle(battle, info ? info.node.name : '', info ? info.meta.label : '');
@@ -512,8 +529,11 @@ const CLIENT_APP = String.raw`
     var timer = setInterval(function () {
       if (idx >= battle.length) {
         clearInterval(timer);
-        busy = false;
-        render();
+        persist();
+        setTimeout(function () {
+          busy = false;
+          render();
+        }, 2000);
         return;
       }
       var r = battle[idx++];
@@ -677,12 +697,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Aria
 .flash{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(30,70,120,.95);color:#fff;font-size:11px;padding:8px 14px;border-radius:9px;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.4)}
 .overlay{position:fixed;inset:0;background:rgba(2,10,22,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
 .obox{width:100%;max-width:320px;background:#0a1f3a;border:1px solid rgba(126,200,255,.3);border-radius:14px;padding:14px;max-height:80vh;overflow-y:auto}
-.otitle{font-size:12px;font-weight:800;color:#9fd4ff;margin-bottom:8px;text-align:center;text-transform:uppercase;letter-spacing:.5px}
+.otitle{font-size:12px;font-weight:800;color:#9fd4ff;text-transform:uppercase;letter-spacing:.5px}
+.oview{background:rgba(8,22,42,.85);border:1px solid rgba(126,200,255,.25);border-radius:12px;padding:12px}
+.ovwHd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ox{background:rgba(64,156,255,.2);border:1px solid rgba(126,200,255,.4);color:#fff;width:28px;height:28px;border-radius:50%;font-size:13px;font-weight:700;line-height:1;cursor:pointer;flex-shrink:0}
+.ox:active{background:rgba(64,156,255,.4);transform:scale(.9)}
 .oitem{background:rgba(14,44,84,.6);border:1px solid rgba(126,200,255,.15);border-radius:9px;padding:8px 10px;margin-bottom:6px}
 .oitem b{display:block;font-size:10px;color:#dceeff}
 .oitem span{font-size:9px;color:#7fb8e8}
 .oempty{font-size:10px;color:#7fb8e8;text-align:center;padding:10px}
-.oclose{width:100%;padding:10px;border:0;border-radius:9px;background:rgba(64,156,255,.25);color:#fff;font-size:11px;font-weight:700;margin-top:6px}
 </style>
 <div class="wrap" id="app">Memuat...</div>
 <script>${DU_ENGINE_SOURCE}</script>
