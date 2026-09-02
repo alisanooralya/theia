@@ -8,9 +8,11 @@ logs/
 *.db-shm
 *.db-wal
 
+skills-lock.json
 package-lock.json
 opencode.json
 AGENTS.md
 tasks.md
 STYLE.md
 .omo/
+.agents/
