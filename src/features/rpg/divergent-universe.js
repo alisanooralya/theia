@@ -1329,7 +1329,7 @@ class DivergentUniverseService {
       relics: relicIds,
     };
     const relicText = relicDrops > 0 ? ` + ${relicDrops} relic` : '';
-    state.lastResult = `Divergent Universe ditaklukkan. Reward akhir: ${rewardCash} cash, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
+    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} cash, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
   }
 
   async _generateRelic(jid, t) {
