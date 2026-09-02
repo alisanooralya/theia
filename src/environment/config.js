@@ -15,8 +15,7 @@ export default {
 
   // ─── Supabase (Postgres) ───
   supabaseDbUrl:
-    'postgresql://postgres.epaydshzbasgkbwmgkij:AfbT7hHFafYXXIrJ@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres',
-    // new project db : postgresql://postgres.mwqgtnptlguvtyibschb:afHLPxpQ9WbNeQ8O@aws-0-us-east-2.pooler.supabase.com:6543/postgres
+    'postgresql://postgres.mwqgtnptlguvtyibschb:afHLPxpQ9WbNeQ8O@aws-0-us-east-2.pooler.supabase.com:6543/postgres',
 
   // ─── Auth Backend ───
   authBackend: 'sqlite',
