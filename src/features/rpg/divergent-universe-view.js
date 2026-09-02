@@ -297,6 +297,14 @@ const CLIENT_APP = String.raw`
   var game = DUEngine.makeDU(data).create(seed, init);
   var busy = false;
 
+  var TYPE_META = {
+    battle: { icon: '⚔', label: 'BATTLE' },
+    event: { icon: '🔮', label: 'EVENT' },
+    treasure: { icon: '💎', label: 'TREASURE' },
+    elite: { icon: '🛡', label: 'ELITE' },
+    boss: { icon: '☠', label: 'BOSS' }
+  };
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -314,7 +322,7 @@ const CLIENT_APP = String.raw`
   }
   function maxHp() { return game.getMaxHp(); }
   function hpPct() { var m = maxHp(); return Math.max(0, Math.min(100, (game.state.hp / m) * 100)); }
-  function hpColor() { var p = hpPct(); return p > 50 ? '#7ee787' : p > 25 ? '#f0c040' : '#ff4d5a'; }
+  function hpColor() { var p = hpPct(); return p > 50 ? 'linear-gradient(90deg,#0a6cc9,#3fb2ff)' : p > 25 ? 'linear-gradient(90deg,#e8960a,#ffc24d)' : 'linear-gradient(90deg,#d42a3d,#ff5c6b)'; }
 
   function nodeMap() {
     return game.state.nodes.map(function (n) {
@@ -322,7 +330,7 @@ const CLIENT_APP = String.raw`
       var cls = 'ntile';
       var icon;
       if (cleared) { cls += ' nclear'; icon = '✓'; }
-      else if (cur) { cls += ' ncur'; icon = n.type === 'battle' ? '⚔' : n.type === 'event' ? '◆' : n.type === 'treasure' ? '◆' : n.type === 'elite' ? 'E' : 'B'; }
+      else if (cur) { cls += ' ncur'; icon = TYPE_META[n.type] ? TYPE_META[n.type].icon : '◆'; }
       else if (n.type === 'boss') { cls += ' nboss'; icon = 'B'; }
       else if (n.type === 'elite') { cls += ' nelite'; icon = 'E'; }
       else { icon = '·'; }
@@ -342,8 +350,8 @@ const CLIENT_APP = String.raw`
     return '<div class="hpwrap"><div class="hplab"><span>HP</span><span>' + s.hp + '/' + m + '</span></div>' +
       '<div class="hpbar"><div class="hpfill" style="width:' + hpPct() + '%;background:' + hpColor() + '"></div></div></div>' +
       '<div class="stats"><div class="stat"><b>' + fmt(s.fragments) + '</b><span>Fragment</span></div>' +
-      '<div class="stat"><b>' + s.blessings.length + '</b><span>Blessing</span></div>' +
-      '<div class="stat"><b>' + s.curios.length + '</b><span>Curio</span></div></div>' +
+      '<div class="stat tap" onclick="toggleList(\'blessing\')"><b>' + s.blessings.length + '</b><span>Blessing ▾</span></div>' +
+      '<div class="stat tap" onclick="toggleList(\'curio\')"><b>' + s.curios.length + '</b><span>Curio ▾</span></div></div>' +
       '<div class="map">' + nodeMap() + '</div>';
   }
 
@@ -360,22 +368,41 @@ const CLIENT_APP = String.raw`
     var p = game.state.pending;
     if (!p) return '';
     if (p.type === 'path') {
-      return '<div class="sec">PILIH PATH</div>' + Object.keys(data.paths).map(function (id) {
+      return '<div class="sec">✧ PILIH PATH</div>' + Object.keys(data.paths).map(function (id) {
         var pt = data.paths[id];
-        return '<button class="popt" onclick="duPath(\'' + id + '\')"><b>' + esc(pt.name) + '</b><br><small>' + esc(pt.description) + '</small></button>';
+        return '<button class="popt" onclick="duPath(\'' + id + '\')"><b>⬡ ' + esc(pt.name) + '</b><br><small>' + esc(pt.description) + '</small></button>';
       }).join('');
     }
     if (p.type === 'blessing') {
-      return '<div class="sec">PILIH BLESSING</div>' + choiceCards(p.options.map(function (id) { return findBlessing(id); }).filter(Boolean));
+      return '<div class="sec">✦ PILIH BLESSING</div>' + choiceCards(p.options.map(function (id) { return findBlessing(id); }).filter(Boolean));
     }
     if (p.type === 'curio') {
-      return '<div class="sec">PILIH CURIO</div>' + choiceCards(p.options.map(function (id) { return findCurio(id); }).filter(Boolean));
+      return '<div class="sec">◆ PILIH CURIO</div>' + choiceCards(p.options.map(function (id) { return findCurio(id); }).filter(Boolean));
     }
     if (p.type === 'event') {
-      return '<div class="sec">EVENT: ' + esc(p.eventName) + '</div>' + choiceCards(p.options);
+      return '<div class="sec">🔮 EVENT: ' + esc(p.eventName) + '</div>' + choiceCards(p.options);
     }
     return '';
   }
+
+  function toggleList(type) {
+    var ids = type === 'blessing' ? game.state.blessings : game.state.curios;
+    var items = ids.map(function (id) {
+      var it = type === 'blessing' ? findBlessing(id) : findCurio(id);
+      if (!it) return '';
+      var tag = it.path ? '<span class="tag">' + esc(pathById(it.path).name) + '</span>' : '';
+      var err = it.error ? '<span class="err">ERROR</span>' : '';
+      return '<div class="oitem"><b>' + esc(it.name) + tag + err + '</b><span>' + esc(it.text) + '</span></div>';
+    }).join('');
+    var title = type === 'blessing' ? '✦ Blessing' : '◆ Curio';
+    var body = items ? items : '<div class="oempty">Belum ada ' + (type === 'blessing' ? 'blessing' : 'curio') + ' pada run ini.</div>';
+    var ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = '<div class="obox"><div class="otitle">' + title + ' (' + ids.length + ')</div>' + body +
+      '<button class="oclose" onclick="this.parentNode.parentNode.remove()">TUTUP</button></div>';
+    document.body.appendChild(ov);
+  }
+  window.toggleList = toggleList;
 
   function finishView() {
     var s = game.state;
@@ -393,14 +420,16 @@ const CLIENT_APP = String.raw`
       '<div class="toklab">Salin perintah lalu kirim ke bot:</div>' +
       '<div class="cmd" id="cmd" onclick="duCopy()">' + esc(cmd) + '</div>' +
       '<button class="copybtn" onclick="duCopy()">📋 SALIN PERINTAH</button>' +
-      '<div class="hint">Setelah kirim, bot akan memvalidasi dan memberikan reward.</div>';
+      '<div class="hint">Setelah kirim, bot memvalidasi & memberikan reward, lalu menutup panel ini.</div>';
   }
 
   function exploreView() {
     var s = game.state;
     var last = s.lastResult ? '<div class="lastr">' + esc(s.lastResult) + '</div>' : '';
-    var label = s.nodes[s.nodeIndex] ? 'EXPLORE NODE ' + (s.nodeIndex + 1) : 'EXPLORE';
-    return last + '<button class="explore" onclick="duExplore()">⚔ ' + label + '</button>';
+    var node = s.nodes[s.nodeIndex];
+    var hint = node ? '<div class="nodeBadge">Berikutnya: ' + (TYPE_META[node.type] ? TYPE_META[node.type].icon + ' ' + TYPE_META[node.type].label : '') + ' ' + esc(node.name) + '</div>' : '';
+    var label = node ? 'EXPLORE NODE ' + (s.nodeIndex + 1) : 'EXPLORE';
+    return last + hint + '<button class="explore" onclick="duExplore()">⚔ ' + label + '</button>';
   }
 
   function render() {
@@ -422,16 +451,25 @@ const CLIENT_APP = String.raw`
     return btoa(JSON.stringify(payload));
   }
 
-  function showLoading(msg) {
+  function showLoading(title, sub) {
     var content = document.getElementById('content');
     if (!content) return;
-    content.innerHTML = '<div class="loading"><div class="spin"></div><div class="loadingMsg">' + esc(msg) + '</div></div>';
+    content.innerHTML = '<div class="loading"><div class="spin"></div><div class="loadingMsg">' + esc(title) + '</div>' +
+      (sub ? '<div class="nodeBadge">' + sub + '</div>' : '') + '</div>';
+  }
+
+  function nodeInfo() {
+    var node = game.state.nodes[game.state.nodeIndex];
+    if (!node) return null;
+    var meta = TYPE_META[node.type] || { icon: '◆', label: 'NODE' };
+    return { node: node, meta: meta, badge: meta.icon + ' ' + meta.label + ' • ' + node.name };
   }
 
   window.duPath = function (id) {
     if (busy) return;
     busy = true;
-    showLoading('Sinkronisasi Path...');
+    var pt = pathById(id);
+    showLoading('Sinkronisasi Path...', pt ? pt.name : '');
     setTimeout(function () {
       try { game.actPath(id); } catch (e) { busy = false; flash(e.message); render(); return; }
       busy = false;
@@ -441,7 +479,7 @@ const CLIENT_APP = String.raw`
   window.duChoose = function (i) {
     if (busy) return;
     busy = true;
-    showLoading('Memproses pilihan...');
+    showLoading('Memproses pilihan...', '');
     setTimeout(function () {
       try { game.actChoose(i); } catch (e) { busy = false; flash(e.message); render(); return; }
       busy = false;
@@ -451,20 +489,26 @@ const CLIENT_APP = String.raw`
   window.duExplore = function () {
     if (busy) return;
     busy = true;
-    showLoading('Memasuki node...');
+    var info = nodeInfo();
+    showLoading('Memasuki node...', info ? info.badge : '');
     setTimeout(function () {
       var res;
       try { res = game.actExplore(); } catch (e) { busy = false; flash(e.message); render(); return; }
       var battle = res && res.battle && res.battle.length ? res.battle : null;
       if (!battle) { busy = false; render(); return; }
-      playBattle(battle);
-    }, 420);
+      playBattle(battle, info ? info.node.name : '', info ? info.meta.label : '');
+    }, 480);
   };
-  function playBattle(battle) {
+  function playBattle(battle, enemyName, enemyType) {
     var idx = 0;
     var content = document.getElementById('content');
-    content.innerHTML = '<div class="battle"><div class="btitle">⚔ BATTLE</div><div id="blog"></div></div>';
+    var m = maxHp();
+    content.innerHTML = '<div class="battle"><div class="btitle">' + (enemyType || 'BATTLE') + ' • ' + esc(enemyName || 'MUSUH') + '</div>' +
+      '<div class="bhpbar"><div class="bhpfill" id="bhpf" style="width:100%"></div></div>' +
+      '<div class="bhpnum">HP <span id="bhpx">' + game.state.hp + '</span>/' + m + '</div><div id="blog"></div></div>';
     var blog = document.getElementById('blog');
+    var bhpf = document.getElementById('bhpf');
+    var bhpx = document.getElementById('bhpx');
     var timer = setInterval(function () {
       if (idx >= battle.length) {
         clearInterval(timer);
@@ -473,10 +517,15 @@ const CLIENT_APP = String.raw`
         return;
       }
       var r = battle[idx++];
-      var line = '<div class="bline">Ronde ' + r.round + (r.crit ? ' • <b class="crit">CRIT</b>' : '') +
-        (r.hit ? ' • -' + r.damage + ' HP' : ' • <b class="dodge">DODGE</b>') + ' • HP ' + r.hp + '</div>';
+      var mark = r.crit ? ' <b class="crit">★ CRIT</b>' : '';
+      var dmgTxt = r.hit ? ' <b class="dmg">-' + r.damage + ' HP</b>' : ' <b class="dodge">DODGE</b>';
+      var line = '<div class="bline">Ronde ' + r.round + mark + dmgTxt + '</div>';
       blog.innerHTML += line;
-    }, 220);
+      var pct = Math.max(0, Math.min(100, (r.hp / m) * 100));
+      bhpf.style.width = pct + '%';
+      bhpx.textContent = r.hp;
+      blog.scrollTop = blog.scrollHeight;
+    }, 260);
   }
 
   function flash(msg) {
@@ -565,58 +614,75 @@ export function renderDuPlayHtml(run) {
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#0b0f0b;color:#e6e6e6;font-size:13px;line-height:1.45;padding:10px;overflow-x:hidden}
-.wrap{max-width:360px;margin:0 auto;background:linear-gradient(160deg,#101710,#171f17);border-radius:16px;padding:14px;border:1px solid rgba(126,231,135,.15)}
-.hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
-.tt{font-size:16px;font-weight:800;color:#b7f7c0;letter-spacing:.3px}
-.st{font-size:9px;font-weight:800;padding:3px 9px;border-radius:999px}
-.st.ok{background:#123;color:#64b5f6}.st.bad{background:#331111;color:#ff4d5a}.st.run{background:#0f2a0f;color:#7ee787}
-.chips{display:flex;gap:6px;margin-bottom:9px}
-.chip{font-size:9px;font-weight:700;background:#1c261c;color:#9ee0a6;padding:3px 8px;border-radius:6px;border:1px solid rgba(126,231,135,.2)}
-.hpwrap{margin-bottom:9px}
-.hplab{display:flex;justify-content:space-between;font-size:9px;color:#9fd9a7;margin-bottom:3px}
-.hpbar{height:12px;background:#111a11;border-radius:6px;overflow:hidden;border:1px solid rgba(126,231,135,.15)}
-.hpfill{height:100%;border-radius:6px;transition:width .4s ease}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:9px}
-.stat{background:#111a11;border:1px solid rgba(126,231,135,.12);border-radius:9px;padding:7px;text-align:center}
-.stat b{display:block;font-size:15px;color:#fff}
-.stat span{font-size:8px;color:#8fb896;text-transform:uppercase;letter-spacing:.5px}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#071425;color:#e4f0ff;font-size:13px;line-height:1.45;padding:10px;overflow-x:hidden}
+.wrap{max-width:360px;margin:0 auto;background:linear-gradient(165deg,#0c2240,#0a1a33);border-radius:18px;padding:14px;border:1px solid rgba(126,200,255,.18)}
+.hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tt{font-size:16px;font-weight:800;color:#9fd4ff;letter-spacing:.3px}
+.st{font-size:9px;font-weight:800;padding:3px 10px;border-radius:999px}
+.st.ok{background:rgba(64,156,255,.2);color:#64b5f6;border:1px solid rgba(100,181,246,.5)}
+.st.bad{background:rgba(255,77,90,.15);color:#ff6b7a;border:1px solid rgba(255,77,90,.4)}
+.st.run{background:rgba(56,200,255,.15);color:#7ec8ff;border:1px solid rgba(126,200,255,.4)}
+.chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.chip{font-size:9px;font-weight:700;background:rgba(20,60,110,.5);color:#a8d4ff;padding:3px 9px;border-radius:7px;border:1px solid rgba(126,200,255,.25)}
+.hpwrap{margin-bottom:10px}
+.hplab{display:flex;justify-content:space-between;font-size:9px;color:#a8d4ff;margin-bottom:3px}
+.hpbar{height:13px;background:#081a30;border-radius:7px;overflow:hidden;border:1px solid rgba(126,200,255,.2)}
+.hpfill{height:100%;border-radius:7px;transition:width .4s ease;background:linear-gradient(90deg,#0a6cc9,#3fb2ff)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}
+.stat{background:rgba(14,44,84,.6);border:1px solid rgba(126,200,255,.18);border-radius:11px;padding:8px 6px;text-align:center;cursor:pointer}
+.stat b{display:block;font-size:16px;color:#fff}
+.stat span{font-size:8px;color:#7fb8e8;text-transform:uppercase;letter-spacing:.5px}
+.stat.tap:active{background:rgba(30,80,150,.6)}
 .map{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-bottom:10px}
-.ntile{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;background:#0f140f;color:#4c5a4c;border:1px solid #1c261c}
-.ntile.nclear{background:#0d2b0d;color:#7ee787;border-color:#2a6b2a}
-.ntile.ncur{background:#1b3a6b;color:#fff;border-color:#64b5f6;box-shadow:0 0 6px rgba(100,181,246,.5)}
-.ntile.nboss{background:#4a1111;color:#ff6b6b;border-color:#ff4d5a}
-.ntile.nelite{background:#3d2811;color:#ffb36b;border-color:#f0a040}
-.sec{font-size:10px;font-weight:800;color:#b7f7c0;margin:8px 0 6px;text-transform:uppercase;letter-spacing:.5px}
-.lastr{background:#111a11;border:1px solid rgba(126,231,135,.12);border-radius:9px;padding:8px;font-size:10px;color:#cdebd2;white-space:pre-wrap;margin-bottom:8px}
-.explore{width:100%;padding:14px;border:0;border-radius:11px;background:linear-gradient(135deg,#2f8f46,#3faf5b);color:#fff;font-size:14px;font-weight:800;box-shadow:0 3px 0 #1c522b, inset 0 1px 0 rgba(255,255,255,.15);margin-top:4px}
-.explore:active{transform:translateY(2px);box-shadow:0 1px 0 #1c522b}
-.popt,.copt{width:100%;text-align:left;padding:10px 12px;border:1px solid #2a372a;border-radius:10px;background:#111a11;color:#e6e6e6;font-size:11px;margin-bottom:6px}
-.popt:active,.copt:active{background:#1a291a;transform:scale(.985)}
-.popt b{color:#b7f7c0;font-size:12px}
-.copt{display:flex;align-items:flex-start;gap:9px}
-.cnum{font-size:13px;font-weight:800;color:#64b5f6;min-width:16px}
-.ctext{font-size:11px;color:#d8eadb}
-.ctext small{color:#8fb896}
-.tag{font-size:8px;background:#123;color:#64b5f6;padding:1px 5px;border-radius:4px;margin-left:5px}
-.err{font-size:8px;background:#331111;color:#ff4d5a;padding:1px 5px;border-radius:4px;margin-left:5px}
-.battle{background:#0c120c;border:1px solid rgba(126,231,135,.2);border-radius:11px;padding:12px;min-height:120px}
-.btitle{font-size:13px;font-weight:800;color:#b7f7c0;margin-bottom:8px;text-align:center}
-.bline{font-size:10px;color:#d8eadb;padding:3px 0;border-bottom:1px dashed #1c261c}
-.crit{color:#ffd166}.dodge{color:#64b5f6}
-.loading{background:#0c120c;border:1px solid rgba(126,231,135,.2);border-radius:11px;padding:18px;text-align:center}
-.spin{width:26px;height:26px;border:3px solid #1c261c;border-top-color:#7ee787;border-radius:50%;margin:0 auto 10px;animation:spin 1s linear infinite}
+.ntile{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;background:#0a1e38;color:#3f6a9c;border:1px solid #12365f}
+.ntile.nclear{background:rgba(45,160,255,.25);color:#7ec8ff;border-color:rgba(126,200,255,.5)}
+.ntile.ncur{background:#1b5fa8;color:#fff;border-color:#7ec8ff;box-shadow:0 0 8px rgba(63,178,255,.6)}
+.ntile.nboss{background:rgba(255,77,90,.25);color:#ff8a94;border-color:rgba(255,77,90,.5)}
+.ntile.nelite{background:rgba(255,180,60,.2);color:#ffc878;border-color:rgba(255,180,60,.45)}
+.sec{font-size:10px;font-weight:800;color:#9fd4ff;margin:10px 0 7px;text-transform:uppercase;letter-spacing:.6px}
+.lastr{background:rgba(10,30,56,.7);border:1px solid rgba(126,200,255,.16);border-radius:11px;padding:9px;font-size:10px;color:#cfe6ff;white-space:pre-wrap;margin-bottom:9px}
+.explore{width:100%;padding:15px;border:0;border-radius:12px;background:linear-gradient(135deg,#0a6cc9,#3fb2ff);color:#fff;font-size:14px;font-weight:800;box-shadow:0 3px 0 #063a6b, inset 0 1px 0 rgba(255,255,255,.2);margin-top:4px;letter-spacing:.5px}
+.explore:active{transform:translateY(2px);box-shadow:0 1px 0 #063a6b}
+.popt,.copt{width:100%;text-align:left;padding:11px 13px;border:1px solid rgba(126,200,255,.2);border-radius:11px;background:rgba(12,36,68,.7);color:#e4f0ff;font-size:11px;margin-bottom:7px}
+.popt:active,.copt:active{background:rgba(24,64,116,.8);transform:scale(.985)}
+.popt b{color:#9fd4ff;font-size:12px}
+.popt small{color:#7fb8e8}
+.copt{display:flex;align-items:flex-start;gap:10px}
+.cnum{font-size:14px;font-weight:800;color:#7ec8ff;min-width:18px;text-align:center}
+.ctext{font-size:11px;color:#dceeff}
+.ctext small{color:#7fb8e8}
+.tag{font-size:8px;background:rgba(64,156,255,.2);color:#7ec8ff;padding:1px 6px;border-radius:4px;margin-left:5px}
+.err{font-size:8px;background:rgba(255,77,90,.2);color:#ff8a94;padding:1px 6px;border-radius:4px;margin-left:5px}
+.battle{background:rgba(8,22,42,.85);border:1px solid rgba(126,200,255,.25);border-radius:12px;padding:13px;min-height:130px}
+.btitle{font-size:14px;font-weight:800;color:#9fd4ff;margin-bottom:8px;text-align:center}
+.bhpbar{height:9px;background:#081a30;border-radius:6px;overflow:hidden;margin-bottom:5px;border:1px solid rgba(126,200,255,.15)}
+.bhpfill{height:100%;background:linear-gradient(90deg,#0a6cc9,#3fb2ff);transition:width .25s}
+.bhpnum{font-size:8px;color:#7fb8e8;text-align:center;margin-bottom:8px}
+.bline{font-size:10px;color:#dceeff;padding:4px 0;border-bottom:1px dashed #12365f;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.crit{color:#ffd166;font-weight:800}.dodge{color:#7ec8ff;font-weight:700}.dmg{color:#ff8a94}
+.loading{background:rgba(8,22,42,.85);border:1px solid rgba(126,200,255,.25);border-radius:12px;padding:20px;text-align:center}
+.spin{width:28px;height:28px;border:3px solid rgba(126,200,255,.2);border-top-color:#3fb2ff;border-radius:50%;margin:0 auto 10px;animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loadingMsg{font-size:11px;color:#9fd9a7}
-.fin{font-size:15px;font-weight:800;text-align:center;margin:6px 0 8px;color:#b7f7c0}
-.reward{background:#0d2b0d;border:1px solid #2a6b2a;border-radius:9px;padding:9px;font-size:11px;font-weight:700;color:#7ee787;text-align:center;margin-bottom:8px}
-.toklab{font-size:9px;color:#8fb896;margin:8px 0 4px}
-.cmd{background:#0a0f0a;border:1px solid #2a372a;border-radius:8px;padding:9px;font-size:9px;color:#9fd9a7;word-break:break-all;font-family:monospace;margin-bottom:8px}
-.copybtn{width:100%;padding:12px;border:0;border-radius:10px;background:linear-gradient(135deg,#1b6bb0,#2f8fd6);color:#fff;font-size:13px;font-weight:800;box-shadow:0 3px 0 #123a63}
+.loadingMsg{font-size:11px;color:#a8d4ff}
+.nodeBadge{display:inline-block;font-size:9px;font-weight:800;padding:3px 10px;border-radius:6px;background:rgba(45,160,255,.18);color:#7ec8ff;margin-top:7px}
+.fin{font-size:16px;font-weight:800;text-align:center;margin:6px 0 8px;color:#9fd4ff}
+.reward{background:rgba(45,160,255,.18);border:1px solid rgba(126,200,255,.4);border-radius:10px;padding:9px;font-size:11px;font-weight:700;color:#7ec8ff;text-align:center;margin-bottom:8px}
+.toklab{font-size:9px;color:#7fb8e8;margin:9px 0 4px}
+.cmd{background:#061527;border:1px solid rgba(126,200,255,.25);border-radius:9px;padding:10px;font-size:9px;color:#a8d4ff;word-break:break-all;font-family:monospace;margin-bottom:8px}
+.copybtn{width:100%;padding:13px;border:0;border-radius:11px;background:linear-gradient(135deg,#0a6cc9,#3fb2ff);color:#fff;font-size:13px;font-weight:800;box-shadow:0 3px 0 #063a6b}
 .copybtn:active{transform:translateY(2px)}
-.hint{font-size:8px;color:#7f9a84;text-align:center;margin-top:8px}
-.foot{font-size:8px;color:#5d745f;text-align:center;margin-top:10px}
-.flash{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#2a372a;color:#fff;font-size:11px;padding:8px 14px;border-radius:8px;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.hint{font-size:8px;color:#6d9cc9;text-align:center;margin-top:8px}
+.foot{font-size:8px;color:#5b88b5;text-align:center;margin-top:10px}
+.flash{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(30,70,120,.95);color:#fff;font-size:11px;padding:8px 14px;border-radius:9px;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.overlay{position:fixed;inset:0;background:rgba(2,10,22,.85);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.obox{width:100%;max-width:320px;background:#0a1f3a;border:1px solid rgba(126,200,255,.3);border-radius:14px;padding:14px;max-height:80vh;overflow-y:auto}
+.otitle{font-size:12px;font-weight:800;color:#9fd4ff;margin-bottom:8px;text-align:center;text-transform:uppercase;letter-spacing:.5px}
+.oitem{background:rgba(14,44,84,.6);border:1px solid rgba(126,200,255,.15);border-radius:9px;padding:8px 10px;margin-bottom:6px}
+.oitem b{display:block;font-size:10px;color:#dceeff}
+.oitem span{font-size:9px;color:#7fb8e8}
+.oempty{font-size:10px;color:#7fb8e8;text-align:center;padding:10px}
+.oclose{width:100%;padding:10px;border:0;border-radius:9px;background:rgba(64,156,255,.25);color:#fff;font-size:11px;font-weight:700;margin-top:6px}
 </style>
 <div class="wrap" id="app">Memuat...</div>
 <script>${DU_ENGINE_SOURCE}</script>

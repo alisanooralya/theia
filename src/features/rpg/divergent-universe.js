@@ -720,7 +720,9 @@ class DivergentUniverseService {
       const resultState = JSON.parse(JSON.stringify(game.state));
       delete resultState.seed;
       delete resultState.actions;
+      const playMsgId = state.playMsgId;
       run.state = resultState;
+      if (playMsgId) run.state.playMsgId = playMsgId;
       if (game.status === 'failed') {
         run.status = 'failed';
         run.state.pending = null;
@@ -947,7 +949,7 @@ class DivergentUniverseService {
   async _activeRun(jid, chatJid) {
     const run = await divergentRunModel.find(jid);
     if (!run || run.status !== 'active') {
-      throw new Error('Tidak ada run aktif. Mulai dengan `.du start`.');
+      throw new Error('Tidak ada run aktif. Mulai dengan `.du play`.');
     }
     return this._assertRunChat(run, chatJid);
   }
