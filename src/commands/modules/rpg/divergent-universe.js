@@ -45,7 +45,9 @@ export default {
       if (sub === 'play') {
         const difficulty = ctx.args[1]?.toLowerCase() || 'easy';
         if (!['easy', 'medium', 'hard'].includes(difficulty)) {
-          return ctx.fail('Difficulty tidak valid. Pilih easy, medium, atau hard.');
+          return ctx.fail(
+            'Difficulty tidak valid. Pilih easy, medium, atau hard.'
+          );
         }
         const run = await du.startPlay(
           ctx.sender,

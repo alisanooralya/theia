@@ -14,7 +14,6 @@ import SETTINGS from '#environment/settings.js';
 const RAID_BOSS_NAME = 'Raid Boss';
 const RAID_BOSS_HP = 500_000;
 const RAID_USER_HP = 2400;
-const RAID_DURATION = 24 * 60 * 60 * 1000;
 const BREAKTIME_DURATION = 60 * 60 * 1000;
 const HP_RECOVERY_STOP = 80;
 const HP_RECOVERY_BREAKTIME = 200;
@@ -24,53 +23,93 @@ const CRIT_MULT = 1.5;
 const ATTACK_INTERVAL = 30_000;
 
 const TZ = SETTINGS.timezone || 'Asia/Jakarta';
-const TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
-const RAID_START_WEEKDAY = 0;
-const RAID_START_HOUR = 1;
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const START_GRACE_MS = 5 * 60 * 1000;
 
 const activeAttacks = new Map();
 
-function toZoned(ms) {
-  return ms + TZ_OFFSET_MS;
-}
-function fromZoned(zms) {
-  return zms - TZ_OFFSET_MS;
-}
+const tzParts = new Intl.DateTimeFormat('en-CA', {
+  timeZone: TZ,
+  hourCycle: 'h23',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+});
 
-function getRaidStartForWeek(ms) {
-  const z = toZoned(ms);
-  const d = new Date(z);
-  const day = d.getUTCDay();
-  let candidate = Date.UTC(
-    d.getUTCFullYear(),
-    d.getUTCMonth(),
-    d.getUTCDate() - day,
-    RAID_START_HOUR,
-    0,
-    0
+function zonedParts(ms) {
+  return Object.fromEntries(
+    tzParts
+      .formatToParts(new Date(ms))
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, Number(part.value)])
   );
-  if (candidate > z) candidate -= WEEK_MS;
-  return fromZoned(candidate);
 }
 
-function getNextRaidStart(ms) {
-  const start = getRaidStartForWeek(ms);
-  return start + WEEK_MS;
+function zonedOffset(ms) {
+  const p = zonedParts(ms);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - ms;
 }
 
-function isWithinRaidWindow(ms) {
-  const start = getRaidStartForWeek(ms);
-  return ms >= start && ms < start + RAID_DURATION;
+function zonedToMs(year, month, day, hour, minute) {
+  const wall = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const guess = wall - zonedOffset(wall);
+  return wall - zonedOffset(guess);
 }
 
-function formatSchedule(ms) {
-  return new Date(ms).toLocaleString('id-ID', {
-    weekday: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: TZ,
-  });
+const tzDate = new Intl.DateTimeFormat('id-ID', {
+  timeZone: TZ,
+  weekday: 'long',
+  day: '2-digit',
+  month: 'short',
+});
+
+function pad2(value) {
+  return String(value).padStart(2, '0');
+}
+
+function parseRaidTime(input) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(input ?? '').trim());
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+  return { hour, minute };
+}
+
+export function formatRaidClock(ms) {
+  const p = zonedParts(Number(ms));
+  return `${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
+export function formatRaidSchedule(ms) {
+  const timestamp = Number(ms);
+  return `${tzDate.format(new Date(timestamp))} ${formatRaidClock(timestamp)}`;
+}
+
+function resolveRaidWindow(start, end, now = Date.now()) {
+  const today = zonedParts(now);
+  const at = (dayOffset, clock) =>
+    zonedToMs(
+      today.year,
+      today.month,
+      today.day + dayOffset,
+      clock.hour,
+      clock.minute
+    );
+
+  let dayOffset = 0;
+  let startAt = at(0, start);
+  if (startAt + START_GRACE_MS <= now) {
+    dayOffset = 1;
+    startAt = at(1, start);
+  }
+
+  let endAt = at(dayOffset, end);
+  if (endAt <= startAt) endAt = at(dayOffset + 1, end);
+
+  return { startAt, endAt };
 }
 
 function calcDamage(atk, critRate) {
@@ -120,105 +159,116 @@ async function getUserRaidStats(jid) {
 class RaidService {
   async getRaidInfo() {
     const active = await raidModel.getActive();
-    if (active && active.status === 'active') {
-      if (Date.now() >= active.end_at) {
-        await this.endRaid(null, null);
-        return null;
-      }
-      const now = Date.now();
-      const remaining = Math.max(0, active.end_at - now);
-      const participants = await raidModel.getParticipants(active.id);
-      return {
-        raid: active,
-        participants,
-        remaining,
-        isLive: true,
-      };
+    if (!active) return null;
+    if (Date.now() >= active.end_at) {
+      await this.endRaid(null, null);
+      return null;
     }
-    if (isWithinRaidWindow(Date.now())) {
-      const raid = await this.createScheduledRaid();
-      const participants = await raidModel.getParticipants(raid.id);
-      return {
-        raid,
-        participants,
-        remaining: Math.max(0, raid.end_at - Date.now()),
-        isLive: true,
-      };
-    }
-    return null;
+    const participants = await raidModel.getParticipants(active.id);
+    return {
+      raid: active,
+      participants,
+      remaining: Math.max(0, active.end_at - Date.now()),
+      isLive: true,
+    };
   }
 
-  async createScheduledRaid() {
-    const now = Date.now();
-    const startAt = getRaidStartForWeek(now);
-    const endAt = startAt + RAID_DURATION;
+  async scheduleRaid(startInput, endInput) {
+    const start = parseRaidTime(startInput);
+    const end = parseRaidTime(endInput);
+    if (!start || !end) {
+      throw new Error(
+        'Format waktu salah. Gunakan `HH:MM`, contoh: `.raidstart 19:00 22:00`'
+      );
+    }
+    if (start.hour === end.hour && start.minute === end.minute) {
+      throw new Error('Jam selesai tidak boleh sama dengan jam mulai.');
+    }
+
+    const existing = await raidModel.getCurrent();
+    if (existing) {
+      if (existing.status === 'active') {
+        throw new Error(
+          `Masih ada raid yang *active* sampai ${formatRaidSchedule(existing.end_at)}. Tunggu raid selesai dulu.`
+        );
+      }
+      throw new Error(
+        `Sudah ada raid *scheduled* pada ${formatRaidSchedule(existing.start_at)} - ${formatRaidClock(existing.end_at)}. Gunakan \`.raidstart cancel\` untuk membatalkannya.`
+      );
+    }
+
+    const { startAt, endAt } = resolveRaidWindow(start, end);
     const raid = await raidModel.create(
       RAID_BOSS_NAME,
       RAID_BOSS_HP,
       startAt,
-      endAt
+      endAt,
+      'scheduled'
     );
-    logger.info({ startAt, endAt }, '[Raid] scheduled raid created');
+    logger.info(
+      { raidId: raid.id, startAt, endAt },
+      '[Raid] raid scheduled manually'
+    );
     return raid;
   }
 
-  async createRaid() {
-    const existing = await raidModel.getActive();
-    if (
-      existing &&
-      existing.status === 'active' &&
-      Date.now() < existing.end_at
-    ) {
-      return existing;
-    }
-    return this.createScheduledRaid();
+  async cancelScheduledRaid() {
+    const scheduled = await raidModel.getScheduled();
+    if (!scheduled) return null;
+    await raidModel.updateStatus(scheduled.id, 'cancelled');
+    logger.info({ raidId: scheduled.id }, '[Raid] scheduled raid cancelled');
+    return scheduled;
   }
 
-  async startRaid() {
-    const existing = await raidModel.getActive();
-    if (
-      existing &&
-      existing.status === 'active' &&
-      Date.now() < existing.end_at
-    ) {
-      return existing;
-    }
-    return this.createScheduledRaid();
-  }
-
-  async ensureScheduledRaid() {
-    const existing = await raidModel.getActive();
-    if (existing && existing.status === 'active') {
-      if (Date.now() >= existing.end_at) {
-        await this.endRaid(null, null);
-        return { created: false, raid: null };
-      }
-      return { created: false, raid: existing };
-    }
-    if (isWithinRaidWindow(Date.now())) {
-      const raid = await this.createScheduledRaid();
-      return { created: true, raid };
-    }
-    return { created: false, raid: null };
-  }
-
-  getScheduleInfo() {
+  async processSchedule() {
     const now = Date.now();
-    const within = isWithinRaidWindow(now);
-    const currentStart = getRaidStartForWeek(now);
+    const result = { activated: null, ended: null };
+
+    const active = await raidModel.getActive();
+    if (active && now >= active.end_at) {
+      result.ended = active;
+      return result;
+    }
+    if (active) return result;
+
+    const due = await raidModel.getDueScheduled(now);
+    for (const raid of due) {
+      if (now >= raid.end_at) {
+        await raidModel.updateStatus(raid.id, 'cancelled');
+        logger.info(
+          { raidId: raid.id },
+          '[Raid] scheduled raid expired before start'
+        );
+        continue;
+      }
+      await raidModel.updateStatus(raid.id, 'active');
+      logger.info({ raidId: raid.id }, '[Raid] scheduled raid activated');
+      result.activated = await raidModel.getById(raid.id);
+      break;
+    }
+
+    return result;
+  }
+
+  async getScheduleInfo() {
+    const raid = await raidModel.getCurrent();
+    if (!raid) return { status: 'none', raid: null };
     return {
-      isLive: within,
-      currentStart,
-      currentEnd: currentStart + RAID_DURATION,
-      nextStart: getNextRaidStart(now),
-      duration: RAID_DURATION,
+      status: raid.status,
+      raid,
+      startAt: raid.start_at,
+      endAt: raid.end_at,
+      remaining:
+        raid.status === 'active'
+          ? Math.max(0, raid.end_at - Date.now())
+          : Math.max(0, raid.start_at - Date.now()),
     };
   }
 
   async join(jid) {
-    let raid = await raidModel.getActive();
-    if (!raid || raid.status !== 'active' || Date.now() >= raid.end_at) {
-      raid = await this.createScheduledRaid();
+    const raid = await raidModel.getActive();
+    if (!raid || Date.now() >= raid.end_at) {
+      throw new Error('Tidak ada raid aktif.');
     }
 
     let participant = await raidModel.getParticipant(raid.id, jid);

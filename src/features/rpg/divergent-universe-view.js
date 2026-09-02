@@ -3,12 +3,28 @@ import { F } from '#helpers/index.js';
 import { divergentUniverseService as du } from './divergent-universe.js';
 import { DU_ENGINE_SOURCE } from './divergent-universe-engine.js';
 
-const TYPE_ICON = { battle: '⚔', event: '🔮', treasure: '💎', elite: '🛡', boss: '☠' };
-const TYPE_LABEL = { battle: 'Battle', event: 'Event', treasure: 'Treasure', elite: 'Elite', boss: 'Boss' };
+const TYPE_ICON = {
+  battle: '⚔',
+  event: '🔮',
+  treasure: '💎',
+  elite: '🛡',
+  boss: '☠',
+};
+const TYPE_LABEL = {
+  battle: 'Battle',
+  event: 'Event',
+  treasure: 'Treasure',
+  elite: 'Elite',
+  boss: 'Boss',
+};
 
 function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  return String(s ?? '').replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
+        c
+      ]
   );
 }
 
@@ -32,10 +48,13 @@ function maxHp(state) {
 }
 
 function statusLabel(status) {
-  return status === 'active' ? 'AKTIF'
-    : status === 'completed' ? 'SELESAI'
-    : status === 'failed' ? 'GAGAL'
-    : 'DITINGGALKAN';
+  return status === 'active'
+    ? 'AKTIF'
+    : status === 'completed'
+      ? 'SELESAI'
+      : status === 'failed'
+        ? 'GAGAL'
+        : 'DITINGGALKAN';
 }
 
 function effectById(id) {
@@ -95,20 +114,29 @@ export function renderDuHtml(run) {
   const hpPct = Math.max(0, Math.min(100, (state.hp / mhp) * 100));
   const hpColor = hpPct > 50 ? '#7ee787' : hpPct > 25 ? '#f0c040' : '#ff4d5a';
 
-  const nodeTiles = state.nodes.map((n) => {
-    const cleared = n.cleared;
-    const current = n.position === currentIndex + 1;
-    let icon, label;
-    if (cleared) { icon = '✓'; label = ''; }
-    else if (current) { icon = TYPE_ICON[n.type] || '·'; label = esc(n.name); }
-    else { icon = n.type === 'boss' ? '☠' : n.type === 'elite' ? '🛡' : '·'; label = ''; }
-    const cls = [];
-    if (cleared) cls.push('nclear');
-    if (current) cls.push('ncurrent');
-    if (n.type === 'boss') cls.push('nboss');
-    else if (n.type === 'elite') cls.push('nelite');
-    return `<div class="ntile ${cls.join(' ')}">${icon}${label ? `<span class="nlabel">${label}</span>` : ''}</div>`;
-  }).join('');
+  const nodeTiles = state.nodes
+    .map((n) => {
+      const cleared = n.cleared;
+      const current = n.position === currentIndex + 1;
+      let icon, label;
+      if (cleared) {
+        icon = '✓';
+        label = '';
+      } else if (current) {
+        icon = TYPE_ICON[n.type] || '·';
+        label = esc(n.name);
+      } else {
+        icon = n.type === 'boss' ? '☠' : n.type === 'elite' ? '🛡' : '·';
+        label = '';
+      }
+      const cls = [];
+      if (cleared) cls.push('nclear');
+      if (current) cls.push('ncurrent');
+      if (n.type === 'boss') cls.push('nboss');
+      else if (n.type === 'elite') cls.push('nelite');
+      return `<div class="ntile ${cls.join(' ')}">${icon}${label ? `<span class="nlabel">${label}</span>` : ''}</div>`;
+    })
+    .join('');
 
   const pendingHtml = (() => {
     const p = state.pending;
@@ -117,21 +145,31 @@ export function renderDuHtml(run) {
       return '<div class="hint">Ketik <code>.du explore</code> untuk memasuki node berikutnya.</div>';
     }
     if (p.type === 'path') {
-      const items = Object.entries(du.paths).map(([id, path]) =>
-        `<div class="pathItem" onclick="copy('.du path ${id}')">⬡ ${esc(path.name)}<span class="pmuted">${esc(path.description)}</span></div>`
-      ).join('');
+      const items = Object.entries(du.paths)
+        .map(
+          ([id, path]) =>
+            `<div class="pathItem" onclick="copy('.du path ${id}')">⬡ ${esc(path.name)}<span class="pmuted">${esc(path.description)}</span></div>`
+        )
+        .join('');
       return `<div class="sectionTitle">Pilih Path</div><div class="pathList">${items}</div>`;
     }
-    const title = p.type === 'blessing' ? 'Pilih Blessing'
-      : p.type === 'curio' ? 'Pilih Curio'
-      : `Event: ${esc(p.eventName)}`;
-    const items = p.options.map((opt, i) => {
-      const item = typeof opt === 'string' ? effectById(opt) : opt;
-      if (!item) return '';
-      const pathTag = item.path ? ` <span class="tag">${esc(du.paths[item.path]?.name || '')}</span>` : '';
-      const errTag = item.error ? ' <span class="err">ERROR</span>' : '';
-      return `<div class="copt" onclick="copy('.du choose ${i + 1}')"><span class="cnum">${i + 1}</span><div class="ccont"><span class="cname">${esc(item.name)}${pathTag}${errTag}</span><span class="ctext">${esc(item.text)}</span></div></div>`;
-    }).join('');
+    const title =
+      p.type === 'blessing'
+        ? 'Pilih Blessing'
+        : p.type === 'curio'
+          ? 'Pilih Curio'
+          : `Event: ${esc(p.eventName)}`;
+    const items = p.options
+      .map((opt, i) => {
+        const item = typeof opt === 'string' ? effectById(opt) : opt;
+        if (!item) return '';
+        const pathTag = item.path
+          ? ` <span class="tag">${esc(du.paths[item.path]?.name || '')}</span>`
+          : '';
+        const errTag = item.error ? ' <span class="err">ERROR</span>' : '';
+        return `<div class="copt" onclick="copy('.du choose ${i + 1}')"><span class="cnum">${i + 1}</span><div class="ccont"><span class="cname">${esc(item.name)}${pathTag}${errTag}</span><span class="ctext">${esc(item.text)}</span></div></div>`;
+      })
+      .join('');
     return `<div class="sectionTitle">${esc(title)}</div><div class="choices">${items}</div>`;
   })();
 
@@ -139,9 +177,10 @@ export function renderDuHtml(run) {
     ? `<div class="reward">Reward: ${F.formatNumber(state.finalReward.cash)} cash + ${state.finalReward.exp} EXP</div>`
     : '';
 
-  const tipsHtml = run.status === 'failed' || run.status === 'abandoned'
-    ? '<div class="hint">Mulai run baru dengan <code>.du start</code></div>'
-    : '';
+  const tipsHtml =
+    run.status === 'failed' || run.status === 'abandoned'
+      ? '<div class="hint">Mulai run baru dengan <code>.du start</code></div>'
+      : '';
 
   const lastResult = state.lastResult
     ? `<div class="lastResult">${esc(state.lastResult)}</div>`
@@ -263,9 +302,7 @@ export async function sendDuHtml(ctx, run) {
       message: {
         richResponseMessage: {
           messageType: 1,
-          submessages: [
-            { messageType: 2, messageText: 'Divergent Universe' },
-          ],
+          submessages: [{ messageType: 2, messageText: 'Divergent Universe' }],
           unifiedResponse: {
             data: Buffer.from(
               JSON.stringify({
@@ -580,9 +617,7 @@ const CLIENT_APP = String.raw`
 
 function relayHtmlMessage(ctx, html, submessageText = 'Divergent Universe') {
   const responseId = randomUUID();
-  const sections = [
-    htmlLayout(html),
-  ];
+  const sections = [htmlLayout(html)];
   const msg = {
     messageContextInfo: {
       deviceListMetadata: {},
@@ -596,9 +631,7 @@ function relayHtmlMessage(ctx, html, submessageText = 'Divergent Universe') {
       message: {
         richResponseMessage: {
           messageType: 1,
-          submessages: [
-            { messageType: 2, messageText: submessageText },
-          ],
+          submessages: [{ messageType: 2, messageText: submessageText }],
           unifiedResponse: {
             data: Buffer.from(
               JSON.stringify({

@@ -103,7 +103,9 @@ class DownloaderService {
     );
     const images =
       Array.isArray(res?.images) && res.images.length > 0
-        ? res.images.map((i) => (typeof i === 'string' ? i : i?.url)).filter(Boolean)
+        ? res.images
+            .map((i) => (typeof i === 'string' ? i : i?.url))
+            .filter(Boolean)
         : Array.isArray(res?.image_urls) && res.image_urls.length > 0
           ? res.image_urls
           : Array.isArray(res?.slides) && res.slides.length > 0
@@ -152,11 +154,7 @@ class DownloaderService {
     const res = data.result ?? data.data ?? data;
 
     const title =
-      res?.title ??
-      res?.desc ??
-      res?.description ??
-      res?.metadata?.title ??
-      '';
+      res?.title ?? res?.desc ?? res?.description ?? res?.metadata?.title ?? '';
     const duration = parseDuration(
       res?.duration ?? res?.metadata?.duration ?? res?.durationLabel ?? 0
     );

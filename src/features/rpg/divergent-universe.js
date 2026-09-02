@@ -701,13 +701,11 @@ class DivergentUniverseService {
       const initialState = JSON.parse(JSON.stringify(state));
       delete initialState.seed;
       delete initialState.actions;
-      const { getDuEngine } = await import(
-        '#features/rpg/divergent-universe-engine.js'
-      );
-      const game = getDuEngine().makeDU(this.getEngineData()).create(
-        payload.seed,
-        initialState
-      );
+      const { getDuEngine } =
+        await import('#features/rpg/divergent-universe-engine.js');
+      const game = getDuEngine()
+        .makeDU(this.getEngineData())
+        .create(payload.seed, initialState);
       for (const action of payload.actions) {
         if (action.t === 'path') game.actPath(action.v);
         else if (action.t === 'explore') game.actExplore();

@@ -20,7 +20,8 @@ function wibMinutes() {
 
 async function loadLastSent() {
   try {
-    const rows = await sql`SELECT value FROM bot_state WHERE key = ${STATE_KEY}`;
+    const rows =
+      await sql`SELECT value FROM bot_state WHERE key = ${STATE_KEY}`;
     return rows[0]?.value ?? null;
   } catch {
     return null;

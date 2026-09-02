@@ -1,7 +1,7 @@
-import { raidService as raid } from '#features/rpg/raid.js';
 import { raidModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import { userModel } from '#storage/models/index.js';
+import { formatRaidClock, formatRaidSchedule } from '#features/rpg/raid.js';
 
 function bar(value, max, size = 10) {
   const filled = Math.max(0, Math.min(size, Math.round((value / max) * size)));
@@ -12,15 +12,6 @@ function formatTime(ms) {
   const hours = Math.floor(ms / (60 * 60 * 1000));
   const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
   return `${hours}j ${minutes}m`;
-}
-
-function formatScheduleLocal(ms) {
-  return new Date(ms).toLocaleString('id-ID', {
-    weekday: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-  });
 }
 
 function statusText(raidData, participant) {
@@ -34,17 +25,6 @@ function statusText(raidData, participant) {
         : isAttacking(participant?.jid)
           ? 'Attacking'
           : 'Active';
-
-  const endDate = new Date(raid.end_at);
-  const timeStr = endDate.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-  });
-  const dateStr = endDate.toLocaleDateString('id-ID', {
-    weekday: 'long',
-    timeZone: 'Asia/Jakarta',
-  });
 
   return [
     '⚔️ *RAID STATUS*',
@@ -63,7 +43,7 @@ function statusText(raidData, participant) {
     `Participant: *${participants.length}*`,
     `Total Damage: *${F.formatNumber(totalDamage)}*`,
     `Sisa Waktu: *${formatTime(remaining)}*`,
-    `Selesai: *${dateStr} ${timeStr}*`,
+    `Selesai: *${formatRaidSchedule(raid.end_at)}*`,
   ].join('\n');
 }
 
@@ -71,7 +51,7 @@ function helpText() {
   return [
     '⚔️ *RAID*',
     '',
-    'Raid Boss mingguan! Serang boss bareng-bareng!',
+    'Raid Boss! Serang boss bareng-bareng!',
     '',
     '`.raid` - Lihat status raid',
     '`.raid join` - Join raid',
@@ -80,7 +60,7 @@ function helpText() {
     '`.raid claim` - Klaim reward (jika raid selesai)',
     '',
     '*Info:*',
-    '- Raid aktif setiap Minggu 01:00 WIB',
+    '- Raid dijadwalkan manual oleh Owner',
     '- HP kamu: 2400 (fixed)',
     '- Jika kalah, masuk Breaktime 1 jam',
     '- Reward berdasarkan kontribusi damage',
@@ -95,7 +75,7 @@ export default {
   name: 'raid',
   aliases: ['raids'],
   category: 'rpg',
-  description: 'Raid Boss mingguan',
+  description: 'Raid Boss',
   cooldown: 5_000,
   groupOnly: true,
 
@@ -116,9 +96,7 @@ export default {
       }
 
       if (sub === 'join') {
-        const { raid: raidData, participant } = await raidService.join(
-          ctx.sender
-        );
+        await raidService.join(ctx.sender);
         return ctx.reply(
           `✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`
         );
@@ -154,9 +132,22 @@ export default {
 
       const raidData = await raidService.getRaidInfo();
       if (!raidData || !raidData.isLive) {
-        const sched = raidService.getScheduleInfo();
+        const sched = await raidService.getScheduleInfo();
+        if (sched.status === 'scheduled') {
+          return ctx.reply(
+            [
+              '⚔️ *RAID*',
+              '',
+              'Belum ada raid aktif.',
+              `Raid berikutnya: *${formatRaidSchedule(sched.startAt)}*`,
+              `Selesai: *${formatRaidClock(sched.endAt)}*`,
+              '',
+              'Ketik `.raid help` untuk info.',
+            ].join('\n')
+          );
+        }
         return ctx.reply(
-          `⚔️ *RAID*\n\nTidak ada raid aktif.\nRaid berikutnya: *${formatScheduleLocal(sched.nextStart)}*\n\nKetik \`.raid help\` untuk info.`
+          '⚔️ *RAID*\n\nTidak ada raid aktif dan belum ada jadwal.\nTunggu Owner menjadwalkan raid berikutnya.\n\nKetik `.raid help` untuk info.'
         );
       }
 
