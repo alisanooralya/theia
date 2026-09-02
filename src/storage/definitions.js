@@ -102,6 +102,14 @@ const STATIC_SCHEMA = [
   `,
 
   `
+  CREATE TABLE IF NOT EXISTS bot_state (
+    key         TEXT    PRIMARY KEY,
+    value       TEXT    NOT NULL DEFAULT '',
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
   CREATE TABLE IF NOT EXISTS transactions (
     id          BIGSERIAL PRIMARY KEY,
     from_jid    TEXT    NOT NULL,
