@@ -2,6 +2,7 @@ import { raidModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import { userModel } from '#storage/models/index.js';
 import { formatRaidClock, formatRaidSchedule } from '#features/rpg/raid.js';
+import { ButtonV2 } from '#messages/builder.js';
 
 function bar(value, max, size = 10) {
   const filled = Math.max(0, Math.min(size, Math.round((value / max) * size)));
@@ -47,6 +48,24 @@ function statusText(raidData, participant) {
   ].join('\n');
 }
 
+function endedText(raid, participant) {
+  const totalDamage = (participant?.damage ?? 0) > 0
+    ? `Damage: *${F.formatNumber(participant.damage)}*`
+    : 'Kamu tidak berpartisipasi di raid ini.';
+  return [
+    '🏁 *RAID SELESAI*',
+    '',
+    `Boss: *${raid.boss_name}*`,
+    `HP: ${bar(raid.boss_hp, raid.boss_max_hp, 15)} *${F.formatNumber(raid.boss_hp)} / ${F.formatNumber(raid.boss_max_hp)}*`,
+    '',
+    participant
+      ? `Damage: *${F.formatNumber(participant.damage)}*\nStatus: *${participant.reward_claimed ? 'Reward Diklaim' : 'Belum klaim'}*`
+      : 'Kamu belum join.',
+    '',
+    'Ketik `.raid claim` untuk klaim reward!',
+  ].join('\n');
+}
+
 function helpText() {
   return [
     '⚔️ *RAID*',
@@ -66,6 +85,35 @@ function helpText() {
     '- Reward berdasarkan kontribusi damage',
     '- Raid Coin bisa dipakai di Raid Shop',
   ].join('\n');
+}
+
+function raidButton(raid, participant) {
+  if (raid?.status === 'ended' || raid?.status === 'cleared') {
+    if (participant?.damage > 0 && !participant.reward_claimed)
+      return { text: 'CLAIM', id: '.raid claim' };
+    return null;
+  }
+  if (!participant) return { text: 'JOIN', id: '.raid join' };
+  if (isAttacking(participant.jid)) return { text: 'STOP', id: '.raid stop' };
+  return { text: 'ATTACK', id: '.raid attack' };
+}
+
+async function sendRaidButton(ctx, raidData, participant) {
+  const text = statusText(raidData, participant);
+  const btn = raidButton(raidData.raid, participant);
+  if (!btn) return ctx.reply(text);
+  const builder = new ButtonV2(ctx.sock).setBody(text);
+  builder.addButton(btn.text, btn.id);
+  await builder.send(ctx.jid);
+}
+
+async function sendEndedButton(ctx, raid, participant) {
+  const text = endedText(raid, participant);
+  const btn = raidButton(raid, participant);
+  if (!btn) return ctx.reply(text);
+  const builder = new ButtonV2(ctx.sock).setBody(text);
+  builder.addButton(btn.text, btn.id);
+  await builder.send(ctx.jid);
 }
 
 let raidService = null;
@@ -97,23 +145,23 @@ export default {
 
       if (sub === 'join') {
         await raidService.join(ctx.sender);
-        return ctx.reply(
-          `✅ Berhasil join Raid!\nGunakan \`.raid attack\` untuk mulai menyerang boss.`
-        );
+        const raidData = await raidService.getRaidInfo();
+        const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+        return sendRaidButton(ctx, raidData, participant);
       }
 
       if (sub === 'attack' || sub === 'serang') {
         await raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
-        return ctx.reply(
-          '⚔️ Menyerang boss!\nKetik `.raid stop` untuk berhenti.'
-        );
+        const raidData = await raidService.getRaidInfo();
+        const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+        return sendRaidButton(ctx, raidData, participant);
       }
 
       if (sub === 'stop') {
         await raidService.stop(ctx.sender);
-        return ctx.reply(
-          '🛑 Penyerangan dihentikan. HP akan recovery. Ketik `.raid attack` untuk lanjut.'
-        );
+        const raidData = await raidService.getRaidInfo();
+        const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+        return sendRaidButton(ctx, raidData, participant);
       }
 
       if (sub === 'claim') {
@@ -132,6 +180,11 @@ export default {
 
       const raidData = await raidService.getRaidInfo();
       if (!raidData || !raidData.isLive) {
+        const ended = await raidModel.getEnded();
+        if (ended) {
+          const participant = await raidModel.getParticipant(ended.id, ctx.sender);
+          return sendEndedButton(ctx, ended, participant);
+        }
         const sched = await raidService.getScheduleInfo();
         if (sched.status === 'scheduled') {
           return ctx.reply(
@@ -151,11 +204,8 @@ export default {
         );
       }
 
-      const participant = await raidModel.getParticipant(
-        raidData.raid.id,
-        ctx.sender
-      );
-      return ctx.reply(statusText(raidData, participant));
+      const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+      return sendRaidButton(ctx, raidData, participant);
     } catch (error) {
       return ctx.fail(error.message);
     }
