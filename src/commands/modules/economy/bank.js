@@ -7,11 +7,17 @@ function growthLine(interest) {
   return `\n🌱 Bunga bank *${interest.days} hari*: +${F.formatNumber(interest.interest)}${extra}`;
 }
 
+function depositFee(amount) {
+  const fee = Math.floor(amount * 0.05);
+  const net = amount - fee;
+  return `\n💸 Biaya admin 5%: *${F.formatNumber(fee)}*\n🏦 Masuk bank: *${F.formatNumber(net)}*`;
+}
+
 export default {
   name: 'bank',
   aliases: ['deposit', 'withdraw', 'tabung', 'ambil'],
   category: 'economy',
-  description: 'Deposit atau withdraw uang dari bank (bunga 0.8%/hari)',
+  description: 'Deposit atau withdraw uang dari bank (bunga 0.8%/hari, deposit kena admin 5%)',
   cooldown: 5_000,
 
   async execute(ctx) {
@@ -34,7 +40,7 @@ export default {
         await walletModel.deposit(ctx.sender, amount);
         const wallet = await walletModel.find(ctx.sender);
         await ctx.reply(
-          `✅ Deposit *${F.formatNumber(amount)}* ke bank berhasil!\n🏦 Bank: *${F.formatNumber(wallet.bank)}* / ${F.formatNumber(wallet.bank_limit)}${growthLine(interest)}`
+          `✅ Deposit *${F.formatNumber(amount)}* ke bank berhasil!\n🏦 Bank: *${F.formatNumber(wallet.bank)}* / ${F.formatNumber(wallet.bank_limit)}${depositFee(amount)}${growthLine(interest)}`
         );
       } else {
         await walletModel.withdraw(ctx.sender, amount);

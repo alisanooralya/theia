@@ -163,10 +163,16 @@ class WalletModel {
     await sql.begin(async (t) => {
       const w = await this.find(jid, t);
       if (!w || w.cash < amount) throw new Error('Saldo cash tidak cukup');
-      if (w.bank + amount > w.bank_limit)
+      const fee = Math.floor(amount * 0.05);
+      const net = amount - fee;
+      if (w.bank + net > w.bank_limit)
         throw new Error(`Limit bank terlampaui (max: ${w.bank_limit})`);
       await this.addCash(jid, -amount, t);
-      await this.addBank(jid, amount, t);
+      await this.addBank(jid, net, t);
+      await t`
+        INSERT INTO transactions (from_jid, to_jid, amount, type, note)
+        VALUES (${jid}, 'system', ${fee}, 'fee', ${'bank deposit admin fee'})
+      `;
     });
   }
 
