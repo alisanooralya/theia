@@ -398,6 +398,7 @@ const CLIENT_APP = String.raw`
     listView = null;
     render();
   }
+  window.toggleList = toggleList;
   window.closeList = closeList;
 
   function finishView() {
@@ -455,7 +456,7 @@ const CLIENT_APP = String.raw`
     else if (game.state.pending) content = pendingView();
     else content = exploreView();
     document.getElementById('app').innerHTML = header() + hud() + '<div id="content">' + content + '</div>' +
-      '<div class="foot">Main langsung di sini • hasil diverifikasi server</div>';
+      '<div class="foot">🔒 Jangan tutup chat • jika keluar progress hilang</div>';
   }
 
   function makeToken() {
@@ -533,7 +534,7 @@ const CLIENT_APP = String.raw`
         setTimeout(function () {
           busy = false;
           render();
-        }, 2000);
+        }, 1000);
         return;
       }
       var r = battle[idx++];
@@ -545,7 +546,7 @@ const CLIENT_APP = String.raw`
       bhpf.style.width = pct + '%';
       bhpx.textContent = r.hp;
       blog.scrollTop = blog.scrollHeight;
-    }, 260);
+    }, 700);
   }
 
   function flash(msg) {
