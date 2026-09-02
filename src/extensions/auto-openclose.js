@@ -25,9 +25,9 @@ async function sendAnnouncement(jid, wantClosed) {
   if (!sock) return;
   try {
     const text = '🌙 *Grup Ditutup*\n\nSelamat malam semuanya! Semoga istirahatmu nyenyak dan besok siap melanjutkan petualangan. Selamat tidur! 😴✨';
-    await sock.sendMessage(jid, { text }).catch(() => {});
-  } catch (err) {
-    logger.warn({ err: err.message, jid }, '[AutoOpenClose] announcement failed');
+    await sock.sendMessage(jid, { text });
+  } catch {
+    // ignore
   }
 }
 
@@ -43,7 +43,6 @@ async function applyState(jid, wantClosed) {
       wantClosed ? 'announcement' : 'not_announcement'
     );
     await sendAnnouncement(jid, wantClosed);
-    logger.info({ jid, wantClosed }, '[AutoOpenClose] group updated');
     return true;
   } catch (err) {
     logger.warn({ err: err.message, jid }, '[AutoOpenClose] update failed');
@@ -82,14 +81,12 @@ export default {
           const ok = await runForGroups(true);
           if (ok) {
             lastCloseKey = dayKey;
-            logger.info({ dayKey }, '[AutoOpenClose] groups closed');
           }
         } else if (minutes >= OPEN_MIN) {
           if (lastOpenKey === dayKey) return;
           const ok = await runForGroups(false);
           if (ok) {
             lastOpenKey = dayKey;
-            logger.info({ dayKey }, '[AutoOpenClose] groups opened');
           }
         }
       } catch (err) {
@@ -98,7 +95,6 @@ export default {
         running = false;
       }
     }, TICK_MS);
-    logger.info('[AutoOpenClose] Initialized — close 23:00, open 05:00 WIB');
   },
 
   destroy() {

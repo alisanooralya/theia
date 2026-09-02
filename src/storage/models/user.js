@@ -62,41 +62,6 @@ class UserModel {
     return streak;
   }
 
-  async incrementBankUpgrade(jid, client = sql) {
-    await client`
-      UPDATE users SET bank_upgrade_count = bank_upgrade_count + 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-  }
-
-  async getBankUpgradeCount(jid, client = sql) {
-    const user = await this.findById(jid, client);
-    return user?.bank_upgrade_count ?? 0;
-  }
-
-  async setPremium(jid, durationMs, client = sql) {
-    const expiresAt = Math.floor((Date.now() + durationMs) / 1000);
-    await client`
-      UPDATE users SET premium = 1, premium_exp = ${expiresAt}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-  }
-
-  async removePremium(jid, client = sql) {
-    await client`
-      UPDATE users SET premium = 0, premium_exp = 0, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-  }
-
-  async checkPremiumExpiry(jid, client = sql) {
-    const user = await this.findById(jid, client);
-    if (
-      user?.premium &&
-      user.premium_exp > 0 &&
-      user.premium_exp < Math.floor(Date.now() / 1000)
-    ) {
-      await this.removePremium(jid, client);
-    }
-  }
-
   async ban(jid, client = sql) {
     bannedCache.del(jid);
     await client`UPDATE users SET banned = 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}`;

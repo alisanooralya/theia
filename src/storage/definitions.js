@@ -9,12 +9,9 @@ const STATIC_SCHEMA = [
     push_name   TEXT    NOT NULL DEFAULT '',
     level       INTEGER NOT NULL DEFAULT 1,
     exp         INTEGER NOT NULL DEFAULT 0,
-    premium     INTEGER NOT NULL DEFAULT 0,
-    premium_exp INTEGER NOT NULL DEFAULT 0,
     banned      INTEGER NOT NULL DEFAULT 0,
     daily_streak INTEGER NOT NULL DEFAULT 0,
     last_daily  INTEGER NOT NULL DEFAULT 0,
-    bank_upgrade_count INTEGER NOT NULL DEFAULT 0,
     prison_until    INTEGER NOT NULL DEFAULT 0,
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
@@ -39,9 +36,6 @@ const STATIC_SCHEMA = [
     max_hp      INTEGER NOT NULL DEFAULT 1200,
     atk         INTEGER NOT NULL DEFAULT 30,
     def         INTEGER NOT NULL DEFAULT 20,
-    spd         INTEGER NOT NULL DEFAULT 10,
-    weapon_id   TEXT,
-    armor_id    TEXT,
     win         INTEGER NOT NULL DEFAULT 0,
     loss        INTEGER NOT NULL DEFAULT 0,
     win_streak  INTEGER NOT NULL DEFAULT 0,
@@ -49,7 +43,7 @@ const STATIC_SCHEMA = [
     buff_def    INTEGER NOT NULL DEFAULT 0,
     buff_expire INTEGER NOT NULL DEFAULT 0,
     buff_exp_mult INTEGER NOT NULL DEFAULT 1,
-    crit_rate    INTEGER NOT NULL DEFAULT 5,
+    crit_rate    INTEGER NOT NULL DEFAULT 10,
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
   `,
