@@ -28,7 +28,6 @@ export default {
       );
 
     try {
-      // Bunga harian di-settle dulu supaya saldo yang dipakai selalu terbaru.
       const interest = await walletModel.accrueBankInterest(ctx.sender);
 
       if (isDeposit) {
