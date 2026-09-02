@@ -17,7 +17,7 @@ export default {
   name: 'bank',
   aliases: ['deposit', 'withdraw', 'tabung', 'ambil'],
   category: 'economy',
-  description: 'Deposit atau withdraw uang dari bank (bunga 0.8%/hari, deposit kena admin 5%)',
+  description: 'Deposit atau withdraw uang dari bank',
   cooldown: 5_000,
 
   async execute(ctx) {
