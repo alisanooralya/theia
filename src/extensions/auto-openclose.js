@@ -19,6 +19,22 @@ function wibMinutes() {
   return { minutes, dayKey };
 }
 
+async function sendAnnouncement(jid, wantClosed) {
+  const sock = getSocket();
+  if (!sock) return;
+  try {
+    const meta = await sock.groupMetadata(jid);
+    const mentions = meta.participants.map((p) => p.id);
+    if (!mentions.length) return;
+    const text = wantClosed
+      ? '🌙 *Grup Ditutup* 🚪\n\nSelamat malam semuanya! Grup sedang ditutup otomatis sampai besok pagi. Semoga istirahatmu nyenyak dan besok siap melanjutkan petualangan. Selamat tidur! 😴✨'
+      : '☀️ *Grup Dibuka* 🔓\n\nSelamat pagi semuanya! Grup telah dibuka kembali. Selamat beraktivitas dan lanjutkan petualanganmu hari ini! 🎉⚔️';
+    await sock.sendMessage(jid, { text, mentions }).catch(() => {});
+  } catch (err) {
+    logger.warn({ err: err.message, jid }, '[AutoOpenClose] announcement failed');
+  }
+}
+
 async function applyState(jid, wantClosed) {
   const sock = getSocket();
   if (!sock) return;
@@ -31,6 +47,7 @@ async function applyState(jid, wantClosed) {
       wantClosed ? 'announcement' : 'not_announcement'
     );
     logger.info({ jid, wantClosed }, '[AutoOpenClose] group updated');
+    await sendAnnouncement(jid, wantClosed);
   } catch (err) {
     logger.warn({ err: err.message, jid }, '[AutoOpenClose] update failed');
   }
