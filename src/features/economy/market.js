@@ -17,6 +17,7 @@ import {
   readIndicators,
   readTrend,
 } from './market-engine.js';
+import { rollNews, newsPressure } from './market-news-engine.js';
 
 const money = (value) => Number(value).toLocaleString('id-ID');
 
@@ -96,8 +97,11 @@ class MarketService {
   /**
    * Satu langkah market untuk semua komoditas (dipakai scheduler via model).
    * Fungsi murni terhadap database — hanya menghitung state berikutnya.
+   *
+   * `context` membawa berita yang masih berlaku beserta catatan cooldown-nya,
+   * supaya berita bisa ikut menekan harga tanpa engine menyentuh database.
    */
-  computeNext(states, tickIndex) {
+  computeNext(states, tickIndex, context = {}) {
     const activeEventIds = states
       .filter((s) => Number(s.event_ticks) > 0)
       .map((s) => s.event_id);
@@ -115,14 +119,36 @@ class MarketService {
         newEvents.push({ ...rolled.event, ticks: rolled.ticks });
     }
 
+    // Berita baru selalu punya delay, jadi tick ini belum terpengaruh olehnya.
+    const rolledNews = rollNews({
+      tick: tickIndex,
+      active: context.news ?? [],
+      lastAny: context.lastNewsTick ?? 0,
+      lastByType: context.lastNewsTickByType ?? {},
+    });
+    const activeNews = rolledNews
+      ? [...(context.news ?? []), rolledNews]
+      : (context.news ?? []);
+
     const next = states.map((state) => {
-      const options = targets.includes(state.id)
-        ? { newEventId: rolled.event.id, newEventTicks: rolled.ticks }
-        : {};
+      const pressure = newsPressure(activeNews, state.id, tickIndex);
+      const options = {
+        newsBias: pressure.bias,
+        newsSwing: pressure.swing,
+      };
+      if (targets.includes(state.id)) {
+        options.newEventId = rolled.event.id;
+        options.newEventTicks = rolled.ticks;
+      }
       return stepCommodity(state, options);
     });
 
-    return { states: next, events: newEvents, tick: tickIndex };
+    return {
+      states: next,
+      events: newEvents,
+      news: rolledNews,
+      tick: tickIndex,
+    };
   }
 
   parseQuantity(raw) {

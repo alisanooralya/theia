@@ -1,6 +1,8 @@
 import { marketModel } from '#storage/models/market.js';
 import { marketService } from '#features/economy/market.js';
+import { marketNewsService } from '#features/economy/market-news.js';
 import { CHECK_INTERVAL_MS } from '#features/economy/market-config.js';
+import { getSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 
 /**
@@ -11,6 +13,9 @@ import { logger } from '#helpers/logger.js';
  * - restart bot tidak mereset harga / history / siklus
  * - tick yang terlewat saat bot mati akan dikejar (dibatasi konfigurasi)
  * - dua timer atau dua proses tidak bisa menjalankan tick jam yang sama
+ *
+ * Market News dibuat di dalam tick yang sama, lalu diumumkan terpisah supaya
+ * berita tetap terkirim walau socket belum siap saat berita muncul.
  */
 let timer = null;
 let running = false;
@@ -18,7 +23,8 @@ let running = false;
 async function runTick() {
   await marketService.ensureReady();
   const result = await marketModel.advance(
-    (states, tickIndex) => marketService.computeNext(states, tickIndex),
+    (states, tickIndex, context) =>
+      marketService.computeNext(states, tickIndex, context),
     Date.now()
   );
 
@@ -48,6 +54,23 @@ async function runTick() {
       `[Market] Event ekonomi: ${event.title}`
     );
   }
+
+  for (const news of result.news ?? []) {
+    logger.info(
+      { id: news.id, type: news.type, targets: news.targets },
+      `[Market] Berita baru: ${news.title}`
+    );
+  }
+}
+
+/** Pengumuman berita ke grup ber-setting `news`, aman dijalankan berulang. */
+async function runAnnouncement() {
+  const result = await marketNewsService.announcePending(getSocket());
+  if (!result.announced) return;
+  logger.info(
+    { sent: result.sent, failed: result.failed, groups: result.groups },
+    `[Market] ${result.announced} berita diumumkan`
+  );
 }
 
 export default {
@@ -61,6 +84,11 @@ export default {
         await runTick();
       } catch (err) {
         logger.warn({ err: err.message }, '[Market] Tick gagal');
+      }
+      try {
+        await runAnnouncement();
+      } catch (err) {
+        logger.warn({ err: err.message }, '[Market] Pengumuman berita gagal');
       } finally {
         running = false;
       }

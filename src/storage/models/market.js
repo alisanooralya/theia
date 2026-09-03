@@ -6,6 +6,7 @@ import {
   MAX_CATCHUP_TICKS,
 } from '#features/economy/market-config.js';
 import { initialCommodityState } from '#features/economy/market-engine.js';
+import { marketNewsModel } from '#storage/models/market-news.js';
 
 const COMMODITY_NUMERIC = [
   'price',
@@ -158,11 +159,33 @@ class MarketModel {
       const events = [];
       const historyRows = [];
 
+      // Berita ikut dikunci di transaksi yang sama supaya lifecycle-nya
+      // tidak pernah dijalankan dua kali untuk tick yang sama.
+      let news = await marketNewsModel.activeForUpdate(t);
+      const cooldown = await marketNewsModel.lastTicks(t);
+      const createdNews = [];
+
       for (let i = 0; i < ticks; i++) {
         const tickIndex = state.tick + i + 1;
-        const result = computeNext(states, tickIndex);
+        const result = computeNext(states, tickIndex, {
+          news,
+          lastNewsTick: cooldown.any,
+          lastNewsTickByType: cooldown.byType,
+        });
         states = result.states;
         events.push(...(result.events ?? []));
+
+        if (result.news) {
+          createdNews.push(result.news);
+          news = [...news, result.news];
+          cooldown.any = tickIndex;
+          cooldown.byType = {
+            ...cooldown.byType,
+            [result.news.type]: tickIndex,
+          };
+        }
+        news = news.filter((item) => Number(item.expire_tick) > tickIndex);
+
         for (const next of states) {
           historyRows.push({
             commodity_id: next.id,
@@ -207,7 +230,18 @@ class MarketModel {
         WHERE id = 1
       `;
 
-      return { applied: ticks, missed, tick, states, events };
+      // Berita disimpan lebih dulu, lalu yang masa berlakunya sudah lewat
+      // langsung ditandai EXPIRED — termasuk berita hasil catch-up yang
+      // sebenarnya sudah berakhir sebelum bot kembali online.
+      const savedNews = [];
+      for (const item of createdNews) {
+        const saved = await marketNewsModel.insert(item, t);
+        if (saved) savedNews.push(saved);
+      }
+      await marketNewsModel.expireDue(tick, t);
+      await marketNewsModel.skipStale(t);
+
+      return { applied: ticks, missed, tick, states, events, news: savedNews };
     });
   }
 

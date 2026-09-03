@@ -333,9 +333,33 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  `
+  CREATE TABLE IF NOT EXISTS market_news (
+    id            BIGSERIAL PRIMARY KEY,
+    news_key      TEXT    NOT NULL UNIQUE,
+    type          TEXT    NOT NULL,
+    template_id   TEXT    NOT NULL DEFAULT '',
+    title         TEXT    NOT NULL DEFAULT '',
+    message       TEXT    NOT NULL,
+    affected_commodities TEXT NOT NULL DEFAULT '',
+    hidden_outcome TEXT   NOT NULL,
+    hidden_impact TEXT    NOT NULL DEFAULT '{}',
+    status        TEXT    NOT NULL DEFAULT 'ACTIVE',
+    announce_status TEXT  NOT NULL DEFAULT 'PENDING',
+    start_tick    BIGINT  NOT NULL DEFAULT 0,
+    expire_tick   BIGINT  NOT NULL DEFAULT 0,
+    announced_at  BIGINT  NOT NULL DEFAULT 0,
+    created_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    expires_at    BIGINT  NOT NULL DEFAULT 0
+  )
+  `,
+
   `CREATE INDEX IF NOT EXISTS idx_market_history_commodity ON market_history(commodity_id, id DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_market_portfolio_jid ON market_portfolio(jid)`,
   `CREATE INDEX IF NOT EXISTS idx_market_trades_jid ON market_trades(jid, id DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_news_status ON market_news(status, id DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_news_announce ON market_news(announce_status, id)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_news_type_tick ON market_news(type, start_tick DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_owner      ON artifacts(owner_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_slot       ON artifacts(owner_jid, slot)`,
   `CREATE INDEX IF NOT EXISTS idx_relics_owner      ON relics(owner_jid)`,
@@ -363,6 +387,7 @@ const MIGRATIONS = [
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS greeting INTEGER NOT NULL DEFAULT 1`,
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS openclose INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS raid INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE groups ADD COLUMN IF NOT EXISTS news INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_upgrade_count INTEGER NOT NULL DEFAULT 0`,
@@ -388,6 +413,7 @@ const MIGRATIONS = [
   `SELECT setval(pg_get_serial_sequence('raid_participants', 'id'), COALESCE(MAX(id), 1)) FROM raid_participants`,
   `SELECT setval(pg_get_serial_sequence('market_history', 'id'), COALESCE(MAX(id), 1)) FROM market_history`,
   `SELECT setval(pg_get_serial_sequence('market_trades', 'id'), COALESCE(MAX(id), 1)) FROM market_trades`,
+  `SELECT setval(pg_get_serial_sequence('market_news', 'id'), COALESCE(MAX(id), 1)) FROM market_news`,
   `UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10`,
 ];
 

@@ -117,13 +117,20 @@ export function stepCommodity(state, options = {}) {
   const active = phaseConfig(phase);
   const event = eventTicks > 0 ? EVENT_MAP[eventId] : null;
 
+  // Tekanan berita (opsional) — ikut jadi komponen bias/volatilitas saja,
+  // bukan pengubah harga langsung, sehingga semua pagar harga tetap berlaku.
+  const newsBias = Number(options.newsBias) || 0;
+  const newsSwing = Number(options.newsSwing) || 1;
+
   // --- Komponen pergerakan harga ---
+  const sensitivity = 0.6 + commodity.phaseScale * 0.4;
   const bias =
     commodity.drift +
     active.bias * commodity.phaseScale +
-    (event?.bias ?? 0) * (0.6 + commodity.phaseScale * 0.4);
+    (event?.bias ?? 0) * sensitivity +
+    newsBias * sensitivity;
 
-  const swing = active.swing * (event?.swing ?? 1);
+  const swing = active.swing * (event?.swing ?? 1) * newsSwing;
   const noise = (Math.random() * 2 - 1) * commodity.noise * swing;
 
   // Gravity menarik harga ke basePrice supaya market tidak lepas kendali.

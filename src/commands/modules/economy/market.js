@@ -1,4 +1,5 @@
 import { marketService } from '#features/economy/market.js';
+import { marketNewsService } from '#features/economy/market-news.js';
 import { marketModel } from '#storage/models/market.js';
 import { userModel, walletModel } from '#storage/models/index.js';
 import { HISTORY_DISPLAY } from '#features/economy/market-config.js';
@@ -69,8 +70,30 @@ function marketView(list, wallet) {
     `Detail: \`${P}market <barang>\``,
     `Beli: \`${P}market buy <barang> <jumlah>\``,
     `Jual: \`${P}market sell <barang> <jumlah>\``,
+    `Berita: \`${P}market news\``,
     `Aset: \`${P}portfolio\``
   );
+  return lines.join('\n');
+}
+
+function newsView(list) {
+  if (!list.length) {
+    return [
+      '📰 *MARKET NEWS*',
+      '',
+      'Belum ada berita pasar.',
+      '',
+      `Pantau harga: \`${P}market\``,
+    ].join('\n');
+  }
+
+  const lines = ['📰 *MARKET NEWS*', ''];
+  for (const item of list) {
+    lines.push(`${item.emoji} *${item.label}* • ${item.age} lalu`);
+    if (item.commodities) lines.push(item.commodities);
+    lines.push(item.message, '');
+  }
+  lines.push('_Berita hanya informasi. Arah harga tetap ditentukan pasar._');
   return lines.join('\n');
 }
 
@@ -160,6 +183,7 @@ function sellView(result) {
 
 const BUY_WORDS = new Set(['buy', 'beli']);
 const SELL_WORDS = new Set(['sell', 'jual']);
+const NEWS_WORDS = new Set(['news', 'berita']);
 const LIST_WORDS = new Set(['', 'list', 'info']);
 
 const UNKNOWN = `❌ Komoditas tidak dikenal. Lihat daftarnya: \`${P}market\`.`;
@@ -190,6 +214,11 @@ export default {
       } catch (err) {
         return ctx.fail(`❌ ${err.message}`);
       }
+    }
+
+    if (NEWS_WORDS.has(sub)) {
+      const feed = await marketNewsService.feed();
+      return ctx.reply(newsView(feed));
     }
 
     if (!LIST_WORDS.has(sub)) {

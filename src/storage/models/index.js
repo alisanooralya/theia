@@ -14,3 +14,4 @@ export { relicModel } from './relic.js';
 export { artifactModel } from './artifact.js';
 export { raidModel } from './raid.js';
 export { marketModel } from './market.js';
+export { marketNewsModel } from './market-news.js';

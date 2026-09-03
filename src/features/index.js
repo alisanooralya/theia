@@ -4,6 +4,7 @@ export { battleService } from './combat/battle.js';
 export { robService } from './combat/rob.js';
 export { shopService } from './economy/shop.js';
 export { marketService } from './economy/market.js';
+export { marketNewsService } from './economy/market-news.js';
 export { divergentUniverseService } from './rpg/divergent-universe.js';
 export { relicService } from './rpg/relic.js';
 export { instagramService } from './platforms/instagram.js';
