@@ -1,6 +1,7 @@
 import { domainService as domain } from '#features/rpg/domain.js';
 import { userModel, statsModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
+import { ButtonV2 } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -34,7 +35,22 @@ export default {
     const sub = ctx.args[0]?.toLowerCase();
 
     try {
-      if (!sub) return ctx.fail(helpText());
+      if (!sub) {
+        const builder = new ButtonV2(ctx.sock)
+          .setBody(
+            [
+              '🏰 *DOMAIN*',
+              '',
+              'Farm Artifact dengan melawan Boss!',
+              '',
+              'Pilih difficulty untuk memulai:',
+            ].join('\n')
+          )
+          .addButton('EASY', '.domain easy')
+          .addButton('MEDIUM', '.domain medium')
+          .addButton('HARD', '.domain hard');
+        return builder.send(ctx.jid);
+      }
 
       const config = domain.getDifficultyConfig(sub);
       if (!config)
