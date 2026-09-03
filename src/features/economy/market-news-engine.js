@@ -77,9 +77,7 @@ function newsImpact(news) {
 }
 
 function templateWeight(template) {
-  const weights = template.targets.map(
-    (id) => NEWS_COMMODITY_WEIGHTS[id] ?? 1
-  );
+  const weights = template.targets.map((id) => NEWS_COMMODITY_WEIGHTS[id] ?? 1);
   const mean = weights.reduce((sum, w) => sum + w, 0) / (weights.length || 1);
   return mean * (template.weight ?? 1);
 }

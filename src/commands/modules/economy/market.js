@@ -53,8 +53,7 @@ function marketView(list, wallet) {
   for (const item of list) {
     lines.push(
       `${item.emoji} ${item.name}`,
-      `💰 ${money(item.price)}`,
-      changeLine(item.changePercent),
+      `💰 ${money(item.price)} ` + changeLine(item.changePercent),
       ''
     );
   }

@@ -149,8 +149,7 @@ class WalletModel {
   async transfer(fromJid, toJid, amount, note = '') {
     await sql.begin(async (t) => {
       const sender = await this.find(fromJid, t);
-      if (!sender || sender.cash < amount)
-        throw new Error('Coin tidak cukup');
+      if (!sender || sender.cash < amount) throw new Error('Coin tidak cukup');
       await this.addCash(fromJid, -amount, t);
       await this.addCash(toJid, amount, t);
       await t`

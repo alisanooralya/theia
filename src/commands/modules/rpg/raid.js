@@ -49,9 +49,10 @@ function statusText(raidData, participant) {
 }
 
 function endedText(raid, participant) {
-  const totalDamage = (participant?.damage ?? 0) > 0
-    ? `Damage: *${F.formatNumber(participant.damage)}*`
-    : 'Kamu tidak berpartisipasi di raid ini.';
+  const totalDamage =
+    (participant?.damage ?? 0) > 0
+      ? `Damage: *${F.formatNumber(participant.damage)}*`
+      : 'Kamu tidak berpartisipasi di raid ini.';
   return [
     '🏁 *RAID SELESAI*',
     '',
@@ -146,21 +147,30 @@ export default {
       if (sub === 'join') {
         await raidService.join(ctx.sender);
         const raidData = await raidService.getRaidInfo();
-        const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+        const participant = await raidModel.getParticipant(
+          raidData.raid.id,
+          ctx.sender
+        );
         return sendRaidButton(ctx, raidData, participant);
       }
 
       if (sub === 'attack' || sub === 'serang') {
         await raidService.startAttackLoop(ctx.sender, ctx.sock, ctx.jid);
         const raidData = await raidService.getRaidInfo();
-        const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+        const participant = await raidModel.getParticipant(
+          raidData.raid.id,
+          ctx.sender
+        );
         return sendRaidButton(ctx, raidData, participant);
       }
 
       if (sub === 'stop') {
         await raidService.stop(ctx.sender);
         const raidData = await raidService.getRaidInfo();
-        const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+        const participant = await raidModel.getParticipant(
+          raidData.raid.id,
+          ctx.sender
+        );
         return sendRaidButton(ctx, raidData, participant);
       }
 
@@ -182,7 +192,10 @@ export default {
       if (!raidData || !raidData.isLive) {
         const ended = await raidModel.getEnded();
         if (ended) {
-          const participant = await raidModel.getParticipant(ended.id, ctx.sender);
+          const participant = await raidModel.getParticipant(
+            ended.id,
+            ctx.sender
+          );
           return sendEndedButton(ctx, ended, participant);
         }
         const sched = await raidService.getScheduleInfo();
@@ -204,7 +217,10 @@ export default {
         );
       }
 
-      const participant = await raidModel.getParticipant(raidData.raid.id, ctx.sender);
+      const participant = await raidModel.getParticipant(
+        raidData.raid.id,
+        ctx.sender
+      );
       return sendRaidButton(ctx, raidData, participant);
     } catch (error) {
       return ctx.fail(error.message);

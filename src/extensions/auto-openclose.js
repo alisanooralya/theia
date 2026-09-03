@@ -24,7 +24,8 @@ async function sendAnnouncement(jid, wantClosed) {
   const sock = getSocket();
   if (!sock) return;
   try {
-    const text = '🌙 *Grup Ditutup*\n\nSelamat malam semuanya! Semoga istirahatmu nyenyak dan besok siap melanjutkan petualangan. Selamat tidur! 😴✨';
+    const text =
+      '🌙 *Grup Ditutup*\n\nSelamat malam semuanya! Semoga istirahatmu nyenyak dan besok siap melanjutkan petualangan. Selamat tidur! 😴✨';
     await sock.sendMessage(jid, { text });
   } catch {
     // ignore

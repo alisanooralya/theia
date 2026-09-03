@@ -149,8 +149,7 @@ export const NEWS_TEMPLATES = [
     targets: ['rice'],
     direction: -1,
     title: 'Panen Lancar',
-    message:
-      'Panen padi dilaporkan berjalan lancar di sentra produksi utama.',
+    message: 'Panen padi dilaporkan berjalan lancar di sentra produksi utama.',
   },
   {
     id: 'rice_logistics',
@@ -158,8 +157,7 @@ export const NEWS_TEMPLATES = [
     targets: ['rice'],
     direction: -1,
     title: 'Distribusi Normal',
-    message:
-      'Jalur distribusi pangan kembali normal setelah perbaikan akses.',
+    message: 'Jalur distribusi pangan kembali normal setelah perbaikan akses.',
   },
   {
     id: 'rice_reserve',
@@ -176,8 +174,7 @@ export const NEWS_TEMPLATES = [
     targets: ['rice'],
     direction: 1,
     title: 'Penimbunan Stok',
-    message:
-      'Ada kabar penimbunan beras di tingkat distributor mulai terjadi.',
+    message: 'Ada kabar penimbunan beras di tingkat distributor mulai terjadi.',
   },
   {
     id: 'rice_flood',
@@ -185,8 +182,7 @@ export const NEWS_TEMPLATES = [
     targets: ['rice'],
     direction: 1,
     title: 'Banjir Lahan Padi',
-    message:
-      'Banjir dilaporkan merusak lahan padi di wilayah produksi utama.',
+    message: 'Banjir dilaporkan merusak lahan padi di wilayah produksi utama.',
   },
 
   // --- Coffee: festival, panen, cuaca, ekspor ---
@@ -251,8 +247,7 @@ export const NEWS_TEMPLATES = [
     targets: ['oil'],
     direction: -1,
     title: 'Kapasitas Produksi',
-    message:
-      'Beberapa produsen mengumumkan penambahan kapasitas produksi Oil.',
+    message: 'Beberapa produsen mengumumkan penambahan kapasitas produksi Oil.',
   },
   {
     id: 'oil_industry',
@@ -374,8 +369,7 @@ export const NEWS_TEMPLATES = [
     targets: ['diamond'],
     direction: -1,
     title: 'Pelepasan Cadangan',
-    message:
-      'Cadangan Diamond dalam jumlah besar dilaporkan dilepas ke pasar.',
+    message: 'Cadangan Diamond dalam jumlah besar dilaporkan dilepas ke pasar.',
   },
 
   // --- Multi komoditas ---

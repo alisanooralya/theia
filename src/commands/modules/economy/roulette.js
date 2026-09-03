@@ -28,8 +28,7 @@ export default {
     if (bet < 100) return ctx.reply('Minimal taruhan: 🪙100');
 
     const wallet = await walletModel.find(ctx.sender);
-    if (!wallet || wallet.cash < bet)
-      return ctx.reply('Coin tidak cukup.');
+    if (!wallet || wallet.cash < bet) return ctx.reply('Coin tidak cukup.');
 
     await walletModel.addCash(ctx.sender, -bet);
 
