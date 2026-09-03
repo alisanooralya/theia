@@ -43,7 +43,7 @@ async function sendLinkPreview(
   return sock.relayMessage(jid, result.message, { messageId: result.key.id });
 }
 
-const WELCOME_IMAGE = './welcome.jpg';
+const WELCOME_IMAGE = './temp/welcome.jpg';
 const WELCOME_TEKS = `✦ ─── 𓂃 ࣪˖ ִֶָ☾ ─── ✦
 
    THE GENSHIN TEA PARTY

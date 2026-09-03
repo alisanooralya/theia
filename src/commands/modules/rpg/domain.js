@@ -18,6 +18,7 @@ export default {
     try {
       if (!sub) {
         const builder = new ButtonV2(ctx.sock)
+          .setThumbnail('temp/domain.jpg')
           .setBody(
             [
               '🏰 *DOMAIN*',
