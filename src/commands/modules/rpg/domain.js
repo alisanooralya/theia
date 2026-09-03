@@ -12,13 +12,14 @@ export default {
   category: 'rpg',
   description: 'Farm Artifact dengan melawan Boss',
   cooldown: 3 * 60 * 60 * 1_000,
+  manualCooldown: true,
   isProblem: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
 
-    try {
-      if (!sub) {
+    if (!sub) {
+      try {
         const image = await readFile('temp/domain.jpg');
         const builder = new ButtonV2(ctx.sock)
           .setThumbnail(image)
@@ -38,17 +39,26 @@ export default {
           .addButton('MEDIUM', '.domain medium')
           .addButton('HARD', '.domain hard');
         return builder.send(ctx.jid);
+      } catch (error) {
+        return ctx.fail(error.message);
       }
+    }
 
-      const config = domain.getDifficultyConfig(sub);
-      if (!config)
-        return ctx.fail(
-          'Difficulty tidak valid. Pilih: easy, medium, atau hard.'
-        );
+    const config = domain.getDifficultyConfig(sub);
+    if (!config)
+      return ctx.fail(
+        'Difficulty tidak valid. Pilih: easy, medium, atau hard.'
+      );
 
-      await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-      await statsModel.ensure(ctx.sender);
+    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    await statsModel.ensure(ctx.sender);
 
+    // Cooldown dipasang sebelum pertempuran supaya tidak bisa dipakai dua kali,
+    // lalu dilepas lagi kalau pertempuran gagal jalan.
+    await ctx.applyCooldown();
+
+    let battleDone = false;
+    try {
       const statusMsg = await ctx.reply(
         [
           `🏰 DOMAIN • ${config.name.toUpperCase()}`,
@@ -60,6 +70,7 @@ export default {
       await sleep(3000);
 
       const result = await domain.simulateBattle(ctx.sender, sub);
+      battleDone = true;
 
       let finalText;
       if (result.won) {
@@ -78,6 +89,7 @@ export default {
         edit: statusMsg.key,
       });
     } catch (error) {
+      if (!battleDone) await ctx.clearCooldown();
       return ctx.fail(error.message);
     }
   },

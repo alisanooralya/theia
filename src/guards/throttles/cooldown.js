@@ -8,9 +8,11 @@ export async function checkCooldown(ctx, command) {
 
   const remaining = await cooldownModel.check(ctx.sender, command.name);
   if (remaining > 0) {
-    ctx.reply(
-      `Tunggu ${F.formatDuration(remaining)} sebelum pakai \`${command.name}\` lagi.`
-    );
+    await ctx
+      .reply(
+        `Tunggu ${F.formatDuration(remaining)} sebelum pakai \`${command.name}\` lagi.`
+      )
+      .catch(() => {});
     return false;
   }
 
@@ -21,4 +23,8 @@ export async function applyCooldown(ctx, command) {
   const ms = command.cooldown ?? COOLDOWN_DEFAULT;
   if (ms <= 0) return;
   await cooldownModel.set(ctx.sender, command.name, ms);
+}
+
+export async function clearCooldown(ctx, command) {
+  await cooldownModel.clear(ctx.sender, command.name);
 }

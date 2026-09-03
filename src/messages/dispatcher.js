@@ -1,7 +1,7 @@
 import { commandRegistry } from '#commands/registry.js';
 import { buildContext } from '#messages/context.js';
 import { runPipeline } from '#guards/pipeline.js';
-import { applyCooldown } from '#guards/throttles/cooldown.js';
+import { applyCooldown, clearCooldown } from '#guards/throttles/cooldown.js';
 import { groupModel } from '#storage/models/index.js';
 import { logger } from '#helpers/logger.js';
 import { CommandError } from '#helpers/command-error.js';
@@ -33,6 +33,10 @@ export async function dispatch(parsed, sock) {
 
   const ctx = buildContext(parsed, sock);
 
+  // Command dengan `manualCooldown` menentukan sendiri kapan cooldown dipasang.
+  ctx.applyCooldown = () => applyCooldown(ctx, command);
+  ctx.clearCooldown = () => clearCooldown(ctx, command);
+
   logger.debug(
     { command: command.name, sender: ctx.sender },
     'Command dispatched'
@@ -43,7 +47,7 @@ export async function dispatch(parsed, sock) {
 
     await ctx.typing();
     await command.execute(ctx);
-    await applyCooldown(ctx, command);
+    if (!command.manualCooldown) await applyCooldown(ctx, command);
   } catch (err) {
     if (err instanceof CommandError) {
       await ctx.reply(err.message).catch(() => {});
