@@ -12,6 +12,7 @@ export default {
   category: 'rpg',
   description: 'Farm Artifact dengan melawan Boss',
   cooldown: 3 * 60 * 60 * 1_000,
+  isProblem: true,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
