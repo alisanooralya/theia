@@ -8,28 +8,28 @@ const DIFFICULTY = {
   easy: {
     name: 'Easy',
     boss: { name: 'Slime', hp: 500, atk: 50, def: 20 },
-    coin: [100, 200],
+    coin: [100, 250],
     exp: [20, 40],
     artifactChance: 1.0,
     artifactCount: 1,
   },
   medium: {
     name: 'Medium',
-    boss: { name: 'Golem', hp: 1000, atk: 100, def: 350 },
-    coin: [300, 500],
+    boss: { name: 'Golem', hp: 1500, atk: 100, def: 350 },
+    coin: [350, 500],
     exp: [50, 80],
     artifactChance: 1.0,
     artifactCount: 2,
-    secondArtifactChance: 0.1,
+    secondArtifactChance: 0.2,
   },
   hard: {
     name: 'Hard',
-    boss: { name: 'Dragon', hp: 2000, atk: 180, def: 500 },
-    coin: [700, 1000],
+    boss: { name: 'Dragon', hp: 3000, atk: 190, def: 500 },
+    coin: [800, 1000],
     exp: [100, 150],
     artifactChance: 1.0,
     artifactCount: 2,
-    secondArtifactChance: 0.3,
+    secondArtifactChance: 0.4,
   },
 };
 
@@ -154,51 +154,45 @@ class DomainService {
   async formatRoundPlayer(jid, round, config) {
     const pStats = await artifactService.getPlayerStats(jid);
     return [
-      '╭─── ୨୧ ───╮',
-      `│ 🏰 DOMAIN • ${config.name.toUpperCase()}`,
-      '│',
-      `│ ⚔️ Round ${round.round}`,
-      '│',
-      `│ 👤 Player`,
-      `│ ❤️ ${bar(round.playerHp, pStats.hp)} ${round.playerHp}/${pStats.hp}`,
-      '│',
-      `│ 👹 ${config.boss.name}`,
-      `│ ❤️ ${bar(round.bossHp, config.boss.hp)} ${round.bossHp}/${config.boss.hp}`,
-      '╰──────────╯',
+      `🏰 DOMAIN • ${config.name.toUpperCase()}`,
+      '',
+      `⚔️ Round ${round.round}`,
+      '',
+      `👤 Player`,
+      `❤️ ${bar(round.playerHp, pStats.hp)} ${round.playerHp}/${pStats.hp}`,
+      '',
+      `👹 ${config.boss.name}`,
+      `❤️ ${bar(round.bossHp, config.boss.hp)} ${round.bossHp}/${config.boss.hp}`,
     ].join('\n');
   }
 
   formatVictory(config, rewards, rounds) {
     const lines = [
-      '╭─── ୨୧ ───╮',
-      '│ 🏰 DOMAIN CLEAR',
-      '│',
-      `│ 👹 ${config.boss.name} defeated!`,
-      `│ ⚔️ ${rounds} round${rounds > 1 ? 's' : ''}`,
-      '│',
-      '│ 🎁 Rewards',
-      `│ • 🪙 +${rewards.coin} Coin`,
-      `│ • ⭐ +${rewards.exp} EXP`,
+      '🏰 DOMAIN CLEAR',
+      '',
+      `👹 ${config.boss.name} defeated!`,
+      `⚔️ ${rounds} round${rounds > 1 ? 's' : ''}`,
+      '',
+      '🎁 Rewards',
+      `🪙 +${rewards.coin} Coin`,
+      `⭐ +${rewards.exp} EXP`,
     ];
 
     for (const art of rewards.artifacts) {
-      lines.push(`│ • 🧿 Artifact #${art.user_id}`);
+      lines.push(`🧿 Artifact #${art.user_id}`);
     }
 
-    lines.push('╰──────────╯');
     return lines.join('\n');
   }
 
   formatDefeat(config, rounds) {
     return [
-      '╭─── ୨୧ ───╮',
-      '│ 🏰 DOMAIN FAILED',
-      '│',
-      '│ 💀 You were defeated.',
-      `│ ⚔️ Survived ${rounds} round${rounds > 1 ? 's' : ''}`,
-      '│',
-      '│ Tidak ada reward.',
-      '╰──────────╯',
+      '🏰 DOMAIN FAILED',
+      '',
+      '💀 You were defeated.',
+      `⚔️ Survived ${rounds} round${rounds > 1 ? 's' : ''}`,
+      '',
+      'Tidak ada reward.',
     ].join('\n');
   }
 }

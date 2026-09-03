@@ -5,25 +5,6 @@ import { ButtonV2 } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function helpText() {
-  return [
-    '🏰 *DOMAIN*',
-    '',
-    'Farm Artifact dengan melawan Boss!',
-    '',
-    '`.domain <difficulty>` - mulai battle',
-    '',
-    '*Difficulty:*',
-    '- Easy: Boss lemah, 1 artifact',
-    '- Medium: Boss sedang, 1-2 artifact',
-    '- Hard: Boss kuat, 1-2 artifact',
-    '',
-    '*Reward:*',
-    '- Menang: Artifact + Coin + EXP',
-    '- Kalah: Tidak ada reward',
-  ].join('\n');
-}
-
 export default {
   name: 'domain',
   aliases: ['domains'],
@@ -41,7 +22,10 @@ export default {
             [
               '🏰 *DOMAIN*',
               '',
-              'Farm Artifact dengan melawan Boss!',
+              '*Difficulty:*',
+              '- Easy: Boss lemah, 1 artifact',
+              '- Medium: Boss sedang, 1-2 artifact',
+              '- Hard: Boss kuat, 1-2 artifact',
               '',
               'Pilih difficulty untuk memulai:',
             ].join('\n')
@@ -63,11 +47,9 @@ export default {
 
       const statusMsg = await ctx.reply(
         [
-          '╭─── ୨୧ ───╮',
-          `│ 🏰 DOMAIN • ${config.name.toUpperCase()}`,
-          '│',
-          '│ ⚔️ Preparing battle...',
-          '╰──────────╯',
+          `🏰 DOMAIN • ${config.name.toUpperCase()}`,
+          '',
+          '⚔️ Preparing battle...',
         ].join('\n')
       );
 
