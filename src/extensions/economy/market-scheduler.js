@@ -5,18 +5,6 @@ import { CHECK_INTERVAL_MS } from '#features/economy/market-config.js';
 import { getSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 
-/**
- * Scheduler harga Virtual Market.
- *
- * Timer hanya berperan sebagai pemicu; sumber kebenaran ada di tabel
- * market_state (bucket jam + row lock). Jadi:
- * - restart bot tidak mereset harga / history / siklus
- * - tick yang terlewat saat bot mati akan dikejar (dibatasi konfigurasi)
- * - dua timer atau dua proses tidak bisa menjalankan tick jam yang sama
- *
- * Market News dibuat di dalam tick yang sama, lalu diumumkan terpisah supaya
- * berita tetap terkirim walau socket belum siap saat berita muncul.
- */
 let timer = null;
 let running = false;
 
@@ -63,7 +51,6 @@ async function runTick() {
   }
 }
 
-/** Pengumuman berita ke grup ber-setting `news`, aman dijalankan berulang. */
 async function runAnnouncement() {
   const result = await marketNewsService.announcePending(getSocket());
   if (!result.announced) return;
@@ -94,7 +81,6 @@ export default {
       }
     }, CHECK_INTERVAL_MS);
 
-    // Sekali di awal: menutup tick yang terlewat selagi bot mati.
     runTick().catch((err) =>
       logger.warn({ err: err.message }, '[Market] Tick awal gagal')
     );

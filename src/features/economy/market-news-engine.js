@@ -17,14 +17,6 @@ import {
   NEWS_COMMODITY_WEIGHTS,
 } from './market-news-config.js';
 
-/**
- * Engine Market News — murni fungsi, tanpa akses database.
- *
- * Berita tidak pernah mengubah harga secara langsung. Yang dihasilkan di sini
- * hanya tekanan (bias & swing) yang dipakai market engine sebagai salah satu
- * komponen pergerakan harga, sehingga semua pagar harga tetap berlaku.
- */
-
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -49,7 +41,6 @@ function pickWeighted(entries) {
   return pool[pool.length - 1][0];
 }
 
-/** Jumlah berita aktif per komoditas, dipakai untuk membatasi penumpukan. */
 function countByCommodity(activeNews) {
   const counter = {};
   for (const news of activeNews) {
@@ -82,10 +73,6 @@ function templateWeight(template) {
   return mean * (template.weight ?? 1);
 }
 
-/**
- * Bobot efek berita pada satu tick: naik bertahap lalu mereda.
- * Mengembalikan 0 selama masa delay dan setelah masa berlaku habis.
- */
 export function newsWeight(elapsed, total, delay, ramp) {
   const span = Math.max(1, Number(total) - Number(delay));
   const active = Number(elapsed) - Number(delay);
@@ -97,11 +84,6 @@ export function newsWeight(elapsed, total, delay, ramp) {
   return Math.max(0, rise * fade);
 }
 
-/**
- * Total tekanan berita untuk satu komoditas pada tick tertentu.
- * Hasil dibatasi konfigurasi supaya berita tidak pernah lebih kuat dari
- * siklus market maupun event ekonomi.
- */
 export function newsPressure(newsList, commodityId, tick) {
   let bias = 0;
   let swing = 1;
@@ -129,7 +111,6 @@ export function newsPressure(newsList, commodityId, tick) {
   };
 }
 
-/** Komoditas yang benar-benar terdampak — bisa sebagian saat PARTIAL. */
 function resolveAffected(template, outcome) {
   if (outcome !== 'PARTIAL' || template.targets.length < 2)
     return [...template.targets];
@@ -139,18 +120,6 @@ function resolveAffected(template, outcome) {
   return kept.length ? kept : [template.targets[0]];
 }
 
-/**
- * Coba munculkan satu berita global untuk tick ini.
- *
- * context:
- * - tick       : nomor tick yang sedang dihitung
- * - active     : berita yang masih berlaku
- * - lastAny    : tick berita terakhir (tipe apa pun)
- * - lastByType : tick berita terakhir per tipe
- *
- * Mengembalikan null kalau tidak ada berita, atau objek berita siap simpan.
- * Efeknya tidak pernah langsung terasa pada tick ini karena selalu ada delay.
- */
 export function rollNews(context = {}) {
   const tick = Number(context.tick) || 0;
   const active = context.active ?? [];
@@ -167,7 +136,6 @@ export function rollNews(context = {}) {
   const type = NEWS_TYPES[typeId];
   if (!type) return null;
 
-  // Tipe langka tetap langka: kalau masih cooldown, tick ini tanpa berita.
   const lastSameType = Number(lastByType[type.id]) || 0;
   if (lastSameType > 0 && tick - lastSameType < type.cooldown) return null;
 

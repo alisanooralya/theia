@@ -48,16 +48,11 @@ function mapState(row) {
   };
 }
 
-/** Bucket jam — penanda tick supaya tidak dobel setelah restart. */
 export function currentBucket(nowMs = Date.now()) {
   return Math.floor(nowMs / TICK_MS);
 }
 
 class MarketModel {
-  /**
-   * Membuat baris state & komoditas yang belum ada. Idempoten, aman dipanggil
-   * berulang kali (startup, command pertama, dsb). Harga existing tidak diubah.
-   */
   async ensure(client = sql) {
     await client`
       INSERT INTO market_state (id, tick, bucket, last_tick_at)
@@ -119,13 +114,6 @@ class MarketModel {
     return rows.map((row) => Number(row.price)).reverse();
   }
 
-  /**
-   * Menjalankan perubahan harga dalam satu transaksi ber-lock.
-   *
-   * `computeNext(states, tickIndex)` adalah fungsi murni dari engine yang
-   * mengembalikan state komoditas berikutnya. Lock pada market_state membuat
-   * tick tidak mungkin dijalankan dua kali walau ada beberapa scheduler.
-   */
   async advance(computeNext, nowMs = Date.now()) {
     const bucket = currentBucket(nowMs);
 
@@ -135,8 +123,6 @@ class MarketModel {
       `;
       const state = mapState(stateRows[0] ?? null);
       if (!state) return { applied: 0, skipped: true };
-
-      // Bucket pertama kali (DB baru): jadikan baseline, jangan gerakkan harga.
       if (state.bucket <= 0) {
         await t`
           UPDATE market_state
@@ -159,8 +145,6 @@ class MarketModel {
       const events = [];
       const historyRows = [];
 
-      // Berita ikut dikunci di transaksi yang sama supaya lifecycle-nya
-      // tidak pernah dijalankan dua kali untuk tick yang sama.
       let news = await marketNewsModel.activeForUpdate(t);
       const cooldown = await marketNewsModel.lastTicks(t);
       const createdNews = [];
@@ -230,9 +214,6 @@ class MarketModel {
         WHERE id = 1
       `;
 
-      // Berita disimpan lebih dulu, lalu yang masa berlakunya sudah lewat
-      // langsung ditandai EXPIRED — termasuk berita hasil catch-up yang
-      // sebenarnya sudah berakhir sebelum bot kembali online.
       const savedNews = [];
       for (const item of createdNews) {
         const saved = await marketNewsModel.insert(item, t);
@@ -269,7 +250,6 @@ class MarketModel {
     return mapHolding(rows[0] ?? null);
   }
 
-  /** Total P/L yang sudah direalisasikan, termasuk posisi yang habis. */
   async realizedTotal(jid, client = sql) {
     const rows = await client`
       SELECT COALESCE(SUM(realized_pl), 0)::BIGINT AS total
@@ -278,7 +258,6 @@ class MarketModel {
     return Number(rows[0]?.total ?? 0);
   }
 
-  /** Harga dibaca di dalam transaksi pemanggil (anti stale price). */
   async lockPrice(commodityId, client) {
     const rows = await client`
       SELECT id, price FROM market_commodities WHERE id = ${commodityId}
@@ -326,7 +305,6 @@ class MarketModel {
     `;
   }
 
-  /** Total nilai komoditas milik satu player pada harga sekarang. */
   async totalAssetValue(jid, client = sql) {
     const rows = await client`
       SELECT COALESCE(SUM(p.quantity * c.price), 0)::BIGINT AS value

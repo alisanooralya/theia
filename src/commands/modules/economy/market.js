@@ -3,10 +3,7 @@ import { marketNewsService } from '#features/economy/market-news.js';
 import { marketModel } from '#storage/models/market.js';
 import { userModel, walletModel } from '#storage/models/index.js';
 import { HISTORY_DISPLAY } from '#features/economy/market-config.js';
-import SETTINGS from '#environment/settings.js';
 import { F } from '#helpers/index.js';
-
-const P = SETTINGS.prefix;
 
 function money(value) {
   return Number(value).toLocaleString('id-ID');
@@ -59,18 +56,18 @@ function marketView(list, wallet) {
   }
 
   lines.push(...eventLines(list));
-  lines.push('╰──────────────╯', '');
+  lines.push('');
 
   if (wallet) lines.push(`💰 Coin: *${money(wallet.cash)}*`);
   const countdown = F.formatDuration(marketService.nextUpdateIn());
   lines.push(`⏳ Update harga: ${countdown}`);
   lines.push(
     '',
-    `Detail: \`${P}market <barang>\``,
-    `Beli: \`${P}market buy <barang> <jumlah>\``,
-    `Jual: \`${P}market sell <barang> <jumlah>\``,
-    `Berita: \`${P}market news\``,
-    `Aset: \`${P}portfolio\``
+    `Detail: \`market\` <barang>`,
+    `Beli: \`.market\` buy <barang> <jumlah>`,
+    `Jual: \`.market\` sell <barang> <jumlah>`,
+    `Berita: \`.market\` news`,
+    `Aset: \`.aset\``
   );
   return lines.join('\n');
 }
@@ -81,8 +78,6 @@ function newsView(list) {
       '📰 *MARKET NEWS*',
       '',
       'Belum ada berita pasar.',
-      '',
-      `Pantau harga: \`${P}market\``,
     ].join('\n');
   }
 
@@ -106,20 +101,12 @@ function detailView(item, holding) {
     `${item.emoji} *${item.name.toUpperCase()}*`,
     `_${item.character}_`,
     '',
-    'Harga',
-    money(item.price),
+    'Harga: ' + money(item.price),
+    'Perubahan: ' + `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(1)}%`,
     '',
-    'Perubahan',
-    `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(1)}%`,
-    '',
-    'Trend',
-    item.trend,
-    '',
-    'Demand',
-    item.demand,
-    '',
-    'Supply',
-    item.supply,
+    'Trend: ' + item.trend,
+    'Demand ' + item.demand,
+    'Supply: ' + item.supply,
   ];
 
   if (recent) lines.push('', 'Recent', recent);
@@ -143,13 +130,13 @@ function detailView(item, holding) {
     );
   }
 
-  lines.push('', `Beli: \`${P}market buy ${item.id} <jumlah>\``);
+  lines.push('', `Beli: \`.market\` buy ${item.id} <jumlah>`);
   return lines.join('\n');
 }
 
 function tradeLine(result) {
   const { emoji } = result.commodity;
-  return `${emoji} ${money(result.quantity)} unit @ ${money(result.unitPrice)}`;
+  return `${emoji} ${money(result.quantity)} unit`;
 }
 
 function buyView(result) {
@@ -185,7 +172,7 @@ const SELL_WORDS = new Set(['sell', 'jual']);
 const NEWS_WORDS = new Set(['news', 'berita']);
 const LIST_WORDS = new Set(['', 'list', 'info']);
 
-const UNKNOWN = `❌ Komoditas tidak dikenal. Lihat daftarnya: \`${P}market\`.`;
+const UNKNOWN = `❌ Komoditas tidak dikenal. Lihat daftarnya: \`.market\`.`;
 
 export default {
   name: 'market',
@@ -211,7 +198,7 @@ export default {
         const result = await marketService.sell(ctx.sender, id, ctx.args[2]);
         return ctx.reply(sellView(result));
       } catch (err) {
-        return ctx.fail(`❌ ${err.message}`);
+        return ctx.fail(err.message);
       }
     }
 

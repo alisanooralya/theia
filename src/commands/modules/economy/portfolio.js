@@ -18,7 +18,6 @@ function emptyView(cash) {
     '',
     `🪙 Coin: ${money(cash)}`,
     '',
-    '╰──────────────────╯',
   ].join('\n');
 }
 
@@ -62,10 +61,6 @@ export default {
       '',
       `💰 Coin: ${money(data.cash)}`,
       `📊 Net worth: ${money(data.totalAsset)}`,
-      '',
-      '╰──────────────────╯',
-      '',
-      `Jual: \`market\` sell <barang> <jumlah>`
     );
 
     return ctx.reply(lines.join('\n'));

@@ -3,8 +3,8 @@
  * Ubah nilai di sini untuk tuning tanpa menyentuh engine.
  */
 
-// Interval resmi perubahan harga (1 jam).
-export const TICK_MS = 60 * 60 * 1000;
+// Interval resmi perubahan harga (2 jam).
+export const TICK_MS = 2 * 60 * 60 * 1000;
 
 // Frekuensi scheduler mengecek apakah bucket jam sudah berganti.
 export const CHECK_INTERVAL_MS = 60 * 1000;

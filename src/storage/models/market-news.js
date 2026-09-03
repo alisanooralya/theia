@@ -33,15 +33,7 @@ function mapNews(row) {
   return news;
 }
 
-/**
- * Penyimpanan Market News.
- *
- * Semua berita bersifat global (satu berita untuk seluruh bot). Pengiriman ke
- * grup dijaga kolom announce_status supaya tidak pernah terkirim dua kali,
- * termasuk saat ada dua timer atau bot baru direstart.
- */
 class MarketNewsModel {
-  /** Berita yang masih berlaku, dibaca di dalam transaksi tick. */
   async activeForUpdate(client) {
     const rows = await client`
       SELECT * FROM market_news WHERE status = 'ACTIVE' ORDER BY id
@@ -57,7 +49,6 @@ class MarketNewsModel {
     return rows.map(mapNews);
   }
 
-  /** Tick berita terakhir per tipe — dipakai engine untuk cooldown. */
   async lastTicks(client = sql) {
     const rows = await client`
       SELECT type, MAX(start_tick)::BIGINT AS tick
@@ -73,10 +64,6 @@ class MarketNewsModel {
     return { any, byType };
   }
 
-  /**
-   * Simpan berita baru. news_key unik, jadi proses ganda tidak bisa
-   * menghasilkan berita kembar walau dipanggil bersamaan.
-   */
   async insert(news, client = sql) {
     const nowSec = Math.floor(Date.now() / 1000);
     const lifetimeSec = Math.round(
@@ -103,7 +90,6 @@ class MarketNewsModel {
     return mapNews(rows[0] ?? null);
   }
 
-  /** Berita yang masa berlakunya habis berhenti memengaruhi market. */
   async expireDue(tick, client = sql) {
     const result = await client`
       UPDATE market_news SET status = 'EXPIRED'
@@ -112,7 +98,6 @@ class MarketNewsModel {
     return result.count ?? 0;
   }
 
-  /** Berita yang belum sempat diumumkan tapi sudah kedaluwarsa dilewati. */
   async skipStale(client = sql) {
     const result = await client`
       UPDATE market_news SET announce_status = 'SKIPPED'
@@ -130,10 +115,6 @@ class MarketNewsModel {
     return rows.map(mapNews);
   }
 
-  /**
-   * Klaim hak kirim satu berita. Hanya satu pemanggil yang bisa berhasil,
-   * sehingga pengumuman tidak pernah dobel.
-   */
   async claimAnnouncement(id, client = sql) {
     const rows = await client`
       UPDATE market_news
@@ -152,7 +133,6 @@ class MarketNewsModel {
     `;
   }
 
-  /** Berita terbaru untuk `.market news` (aktif maupun yang baru berakhir). */
   async recent(limit = NEWS_FEED_LIMIT, client = sql) {
     const rows = await client`
       SELECT * FROM market_news

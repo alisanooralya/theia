@@ -11,12 +11,6 @@ import {
   MAX_TICK_CHANGE,
 } from './market-config.js';
 
-/**
- * Engine harga Virtual Market — murni fungsi, tanpa akses database.
- * Harga hanya digerakkan sistem (cycle + noise + event + karakter komoditas),
- * bukan oleh transaksi player.
- */
-
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -59,7 +53,6 @@ export function initialCommodityState(id) {
   };
 }
 
-/** Event baru — hanya dipilih untuk komoditas yang belum kena event. */
 export function rollEvent(activeEventIds = []) {
   if (Math.random() >= EVENT_CHANCE) return null;
   const pool = EVENTS.filter((e) => !activeEventIds.includes(e.id));
@@ -68,10 +61,6 @@ export function rollEvent(activeEventIds = []) {
   return { event, ticks: randInt(event.min, event.max) };
 }
 
-/**
- * Hitung satu langkah harga untuk satu komoditas.
- * Menerima state tersimpan, mengembalikan state berikutnya.
- */
 export function stepCommodity(state, options = {}) {
   const commodity = COMMODITIES[state.id];
   if (!commodity) throw new Error(`Komoditas tidak dikenal: ${state.id}`);
@@ -83,13 +72,11 @@ export function stepCommodity(state, options = {}) {
   let eventId = state.event_id ?? '';
   let eventTicks = Number(state.event_ticks) || 0;
 
-  // Event baru menimpa event lama untuk komoditas ini.
   if (options.newEventId) {
     eventId = options.newEventId;
     eventTicks = Number(options.newEventTicks) || 0;
   }
 
-  // --- Fase: bubble bisa pecah lebih awal, player tidak diberi tahu. ---
   const currentPhase = phaseConfig(phase);
   let popped = false;
   if (phase === 'bubble' && currentPhase.popChance) {
@@ -104,7 +91,6 @@ export function stepCommodity(state, options = {}) {
 
   if (!popped && phaseTicks <= 0) {
     const candidates = phaseConfig(phase).next.map(([next, weight]) => {
-      // Karakter komoditas menentukan seberapa sering crash terjadi.
       const adjusted = next === 'crash' ? weight * commodity.crashRisk : weight;
       return [next, Math.max(0.0001, adjusted)];
     });
@@ -117,12 +103,9 @@ export function stepCommodity(state, options = {}) {
   const active = phaseConfig(phase);
   const event = eventTicks > 0 ? EVENT_MAP[eventId] : null;
 
-  // Tekanan berita (opsional) — ikut jadi komponen bias/volatilitas saja,
-  // bukan pengubah harga langsung, sehingga semua pagar harga tetap berlaku.
   const newsBias = Number(options.newsBias) || 0;
   const newsSwing = Number(options.newsSwing) || 1;
 
-  // --- Komponen pergerakan harga ---
   const sensitivity = 0.6 + commodity.phaseScale * 0.4;
   const bias =
     commodity.drift +
@@ -133,7 +116,6 @@ export function stepCommodity(state, options = {}) {
   const swing = active.swing * (event?.swing ?? 1) * newsSwing;
   const noise = (Math.random() * 2 - 1) * commodity.noise * swing;
 
-  // Gravity menarik harga ke basePrice supaya market tidak lepas kendali.
   const ratio = price / commodity.basePrice;
   const pull = -Math.log(ratio) * commodity.gravity;
 
@@ -175,7 +157,6 @@ export function stepCommodity(state, options = {}) {
   };
 }
 
-/** Indikator visual demand/supply — diturunkan dari fase & momentum. */
 export function readIndicators(state) {
   const momentum = Number(state.momentum) || 0;
   const phase = PHASES[state.phase] ? state.phase : DEFAULT_PHASE;
@@ -201,7 +182,6 @@ export function readIndicators(state) {
   return { demand, supply };
 }
 
-/** Label trend untuk tampilan, tanpa membocorkan fase. */
 export function readTrend(changePercent) {
   if (changePercent >= 15) return '📈 Strong';
   if (changePercent >= 3) return '📈 Up';

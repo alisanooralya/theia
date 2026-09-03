@@ -21,13 +21,8 @@ import { rollNews, newsPressure } from './market-news-engine.js';
 
 const money = (value) => Number(value).toLocaleString('id-ID');
 
-/**
- * Virtual Market — layanan jual beli komoditas.
- * Semua transaksi player melawan sistem, harga digerakkan scheduler.
- */
 class MarketService {
   constructor() {
-    // Seed tabel hanya perlu dipastikan sekali per proses.
     this._ready = null;
   }
 
@@ -35,7 +30,6 @@ class MarketService {
     return COMMODITIES;
   }
 
-  /** Normalisasi input user menjadi id komoditas. */
   resolveId(input) {
     if (!input) return null;
     const key = String(input).trim().toLowerCase();
@@ -61,7 +55,6 @@ class MarketService {
     return states.map((state) => this.decorate(state));
   }
 
-  /** Sisa waktu menuju perubahan harga berikutnya (batas bucket jam). */
   nextUpdateIn(nowMs = Date.now()) {
     return TICK_MS - (nowMs % TICK_MS);
   }
@@ -94,13 +87,6 @@ class MarketService {
     };
   }
 
-  /**
-   * Satu langkah market untuk semua komoditas (dipakai scheduler via model).
-   * Fungsi murni terhadap database — hanya menghitung state berikutnya.
-   *
-   * `context` membawa berita yang masih berlaku beserta catatan cooldown-nya,
-   * supaya berita bisa ikut menekan harga tanpa engine menyentuh database.
-   */
   computeNext(states, tickIndex, context = {}) {
     const activeEventIds = states
       .filter((s) => Number(s.event_ticks) > 0)
@@ -119,7 +105,6 @@ class MarketService {
         newEvents.push({ ...rolled.event, ticks: rolled.ticks });
     }
 
-    // Berita baru selalu punya delay, jadi tick ini belum terpengaruh olehnya.
     const rolledNews = rollNews({
       tick: tickIndex,
       active: context.news ?? [],
@@ -160,10 +145,6 @@ class MarketService {
     return qty;
   }
 
-  /**
-   * Beli komoditas. Coin dipotong dan average cost diperbarui dalam satu
-   * transaksi database, sehingga tidak ada celah duplikasi Coin.
-   */
   async buy(jid, commodityId, qty) {
     await this.ensureReady();
     const meta = COMMODITIES[commodityId];
@@ -171,7 +152,6 @@ class MarketService {
     const quantity = this.parseQuantity(qty);
 
     return sql.begin(async (t) => {
-      // Lock wallet dulu supaya urutan lock konsisten (wallet -> portfolio).
       const walletRows = await t`
         SELECT cash FROM wallets WHERE jid = ${jid} FOR UPDATE
       `;
@@ -196,7 +176,6 @@ class MarketService {
       const newQty = prevQty + quantity;
       const newCost = prevCost + total;
 
-      // Guard tambahan: kalau row tidak terupdate berarti saldo tidak cukup.
       const debited = await t`
         UPDATE wallets
         SET cash = cash - ${total},
@@ -236,10 +215,6 @@ class MarketService {
     });
   }
 
-  /**
-   * Jual komoditas pada harga market saat ini.
-   * Profit dihitung dari average cost; sisa stok mempertahankan average cost.
-   */
   async sell(jid, commodityId, qty) {
     await this.ensureReady();
     const meta = COMMODITIES[commodityId];
@@ -271,7 +246,6 @@ class MarketService {
           'Nilai jual terlalu besar. Jual sebagian dulu atau tabung Coin.'
         );
 
-      // Average cost dipertahankan untuk sisa stok.
       const avgCost = prevQty > 0 ? prevCost / prevQty : 0;
       const newQty = prevQty - quantity;
       const costOut = newQty === 0 ? prevCost : Math.round(avgCost * quantity);
@@ -317,7 +291,6 @@ class MarketService {
     });
   }
 
-  /** Ringkasan aset player: qty, average cost, harga sekarang, P/L. */
   async portfolio(jid) {
     await this.ensureReady();
     const holdings = await marketModel.getPortfolio(jid);
