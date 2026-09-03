@@ -14,9 +14,7 @@ export async function buildAgentContext(parsed, sock) {
   const isOwner =
     isOwnerJid(userId) || (parsed.senderAlt && isOwnerJid(parsed.senderAlt));
 
-  await userModel.checkPremiumExpiry(userId);
   const user = (await userModel.findById(userId)) ?? null;
-  const isPremium = user?.premium === 1;
 
   return {
     // identity (authenticated only)
@@ -25,8 +23,7 @@ export async function buildAgentContext(parsed, sock) {
     jid: parsed.jid,
     isGroup: parsed.isGroup,
     isOwner,
-    isPremium,
-    level: resolveLevel({ isOwner, isPremium }),
+    level: resolveLevel({ isOwner }),
 
     // minimal context for the model (safe subset only)
     quoted: parsed.quoted

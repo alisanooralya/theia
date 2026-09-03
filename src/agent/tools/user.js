@@ -12,7 +12,7 @@ export const userTools = [
   {
     name: 'get_user_info',
     description:
-      'Ambil info user yang sedang chat (nama, level, exp, status premium, status banned).',
+      'Ambil info user yang sedang chat (nama, level, exp, status banned).',
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
@@ -25,32 +25,7 @@ export const userTools = [
           pushName: user.push_name || null,
           level: user.level,
           exp: user.exp,
-          premium: user.premium === 1,
           banned: user.banned === 1,
-        },
-      };
-    },
-  },
-  {
-    name: 'check_premium',
-    description:
-      'Cek status premium user yang sedang chat (aktif/tidak + tanggal kedaluwarsa).',
-    permission: 'user',
-    parameters: { type: 'object', properties: {}, additionalProperties: false },
-    async execute(_args, ctx) {
-      await userModel.checkPremiumExpiry(ctx.userId);
-      const user = await userModel.findById(ctx.userId);
-      if (!user)
-        return { success: false, error: 'User belum terdaftar di database.' };
-      const active = user.premium === 1;
-      return {
-        success: true,
-        data: {
-          premium: active,
-          expiresAt:
-            active && user.premium_exp > 0
-              ? new Date(user.premium_exp * 1000).toISOString()
-              : null,
         },
       };
     },

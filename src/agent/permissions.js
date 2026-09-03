@@ -9,18 +9,16 @@
 
 export const LEVELS = Object.freeze({
   user: 0,
-  premium: 1,
   owner: 2,
 });
 
 /**
  * Resolve the caller's permission level from their authenticated context.
- * @param {{ isOwner: boolean, isPremium: boolean }} caller
- * @returns {'user'|'premium'|'owner'}
+ * @param {{ isOwner: boolean }} caller
+ * @returns {'user'|'owner'}
  */
 export function resolveLevel(caller) {
   if (caller?.isOwner) return 'owner';
-  if (caller?.isPremium) return 'premium';
   return 'user';
 }
 

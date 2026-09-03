@@ -29,13 +29,11 @@ export default {
       walletModel.find(jid),
       statsModel.ensure(jid),
     ]);
-    await userModel.checkPremiumExpiry(jid);
 
     const finalStats = await artifactService.getPlayerStats(jid);
     const expNeeded = await userModel.expForLevel(user.level + 1);
     const expPct = Math.round((user.exp / expNeeded) * 100);
     const winrate = await statsModel.winrate(jid);
-    const premiumBadge = user.premium ? ' 👑' : '';
 
     const inv = await artifactService.getInventory(jid);
     const slotLines = await Promise.all(
@@ -49,7 +47,7 @@ export default {
     );
 
     const text = [
-      `╭──┄  *${user.push_name || 'Unknown'}*${premiumBadge}  ┄──`,
+      `╭──┄  *${user.push_name || 'Unknown'}*  ┄──`,
       `│• ⭐ Lv. ${user.level} - ${user.exp}/${expNeeded} (${expPct}%)`,
       '│',
       `│• ❤️ ${stats.hp}/${finalStats.hp}`,

@@ -24,15 +24,13 @@ export const ownerTools = [
   {
     name: 'owner_get_stats',
     description:
-      'Lihat statistik database bot (jumlah user, group, premium, banned, transaksi, dll).',
+      'Lihat statistik database bot (jumlah user, group, banned, transaksi, dll).',
     permission: 'owner',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
       assertOwner(ctx);
       const [users] = await sql`SELECT COUNT(*)::int AS c FROM users`;
       const [groups] = await sql`SELECT COUNT(*)::int AS c FROM groups`;
-      const [premium] =
-        await sql`SELECT COUNT(*)::int AS c FROM users WHERE premium = 1`;
       const [banned] =
         await sql`SELECT COUNT(*)::int AS c FROM users WHERE banned = 1`;
       const [transactions] =
@@ -46,67 +44,12 @@ export const ownerTools = [
       const counts = {
         users: users?.c ?? 0,
         groups: groups?.c ?? 0,
-        premium: premium?.c ?? 0,
         banned: banned?.c ?? 0,
         transactions: transactions?.c ?? 0,
         items: items?.c ?? 0,
         quests,
       };
       return { success: true, data: counts };
-    },
-  },
-  {
-    name: 'owner_set_premium',
-    description:
-      'Berikan atau cabut status premium untuk nomor WhatsApp tertentu (khusus owner).',
-    permission: 'owner',
-    parameters: {
-      type: 'object',
-      properties: {
-        phone: {
-          type: 'string',
-          description: 'Nomor WhatsApp target, contoh: 6281234567890',
-        },
-        action: {
-          type: 'string',
-          enum: ['add', 'remove'],
-          description: 'add = berikan premium, remove = cabut premium',
-        },
-        days: {
-          type: 'number',
-          description:
-            'Durasi premium dalam hari (default 30, hanya untuk action=add)',
-        },
-      },
-      required: ['phone', 'action'],
-      additionalProperties: false,
-    },
-    async execute(args, ctx) {
-      assertOwner(ctx);
-      const phone = String(args.phone ?? '').replace(/\D/g, '');
-      if (!phone || phone.length < 8 || phone.length > 15) {
-        return { success: false, error: 'Nomor target tidak valid.' };
-      }
-      const targetJid = phoneToJid(phone);
-      if (args.action === 'remove') {
-        await userModel.removePremium(targetJid);
-        return {
-          success: true,
-          message: `Premium ${phone} dicabut.`,
-          data: { phone, action: 'remove' },
-        };
-      }
-      if (args.action === 'add') {
-        const days = Math.max(1, Math.floor(Number(args.days) || 30));
-        await userModel.ensure(targetJid);
-        await userModel.setPremium(targetJid, days * 24 * 60 * 60 * 1000);
-        return {
-          success: true,
-          message: `Premium ${phone} aktif selama ${days} hari.`,
-          data: { phone, action: 'add', days },
-        };
-      }
-      return { success: false, error: 'Action harus add atau remove.' };
     },
   },
   {
