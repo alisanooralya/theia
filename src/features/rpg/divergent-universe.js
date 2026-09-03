@@ -191,7 +191,7 @@ const CURIOS = [
   {
     id: 'silver_coin',
     name: 'Silver Coin',
-    text: 'Reward akhir cash +30%.',
+    text: 'Reward akhir coin +30%.',
     cashMult: 0.3,
   },
   {
@@ -1327,7 +1327,7 @@ class DivergentUniverseService {
       relics: relicIds,
     };
     const relicText = relicDrops > 0 ? ` + ${relicDrops} relic` : '';
-    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} cash, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
+    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
   }
 
   async _generateRelic(jid, t) {

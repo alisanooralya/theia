@@ -8,7 +8,7 @@ export default {
   name: 'rob',
   aliases: ['rampok', 'mencuri'],
   category: 'rpg',
-  description: 'Rampok cash user lain',
+  description: 'Rampok coin user lain',
   cooldown: 24 * 60 * 60 * 1000,
 
   async execute(ctx) {

@@ -29,7 +29,7 @@ export default {
       userModel.addExp(ctx.sender, job.exp),
     ]);
 
-    let text = `💼 *Bekerja*\n\nKamu kerja sebagai *${job.name}*\n🪙 +${F.formatNumber(reward)} cash\n⭐ +${job.exp} EXP`;
+    let text = `💼 *Bekerja*\n\nKamu kerja sebagai *${job.name}*\n🪙 +${F.formatNumber(reward)} coin\n⭐ +${job.exp} EXP`;
     if (leveledUp)
       text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
     await ctx.reply(text);

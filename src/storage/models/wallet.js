@@ -122,7 +122,7 @@ class WalletModel {
   async addCash(jid, amount, client = sql) {
     const w = await this.find(jid, client);
     if (amount < 0 && w && w.cash < Math.abs(amount))
-      throw new Error('Saldo cash tidak cukup');
+      throw new Error('Coin tidak cukup');
     await client`
       UPDATE wallets SET cash = cash + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
     `;
@@ -150,7 +150,7 @@ class WalletModel {
     await sql.begin(async (t) => {
       const sender = await this.find(fromJid, t);
       if (!sender || sender.cash < amount)
-        throw new Error('Saldo cash tidak cukup');
+        throw new Error('Coin tidak cukup');
       await this.addCash(fromJid, -amount, t);
       await this.addCash(toJid, amount, t);
       await t`
@@ -162,7 +162,7 @@ class WalletModel {
   async deposit(jid, amount) {
     await sql.begin(async (t) => {
       const w = await this.find(jid, t);
-      if (!w || w.cash < amount) throw new Error('Saldo cash tidak cukup');
+      if (!w || w.cash < amount) throw new Error('Coin tidak cukup');
       const fee = Math.floor(amount * 0.05);
       const net = amount - fee;
       if (w.bank + net > w.bank_limit)

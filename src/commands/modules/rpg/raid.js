@@ -171,7 +171,7 @@ export default {
             '🎁 *RAID REWARD*',
             '',
             `Contribution: *${F.formatNumber(result.contribution)}*`,
-            `🪙 +${F.formatNumber(result.cash)} Cash`,
+            `🪙 +${F.formatNumber(result.cash)} Coin`,
             `⭐ +${result.exp} EXP`,
             `💠 +${result.raidCoin} Raid Coin`,
           ].join('\n')

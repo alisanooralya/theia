@@ -18,7 +18,7 @@ class RobService {
 
     if (!targetWallet || targetWallet.cash < MIN_CASH)
       throw new Error(
-        `Target tidak punya cukup cash untuk dirampok (min: 🪙${MIN_CASH}).`
+        `Target tidak punya cukup coin untuk dirampok (min: 🪙${MIN_CASH}).`
       );
 
     const atkAdv = robberStats.atk - targetStats.def;

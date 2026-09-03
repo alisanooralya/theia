@@ -57,7 +57,7 @@ export const userTools = [
   },
   {
     name: 'get_balance',
-    description: 'Cek saldo uang (cash dan bank) user yang sedang chat.',
+    description: 'Cek saldo uang (coin dan bank) user yang sedang chat.',
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {

@@ -42,7 +42,7 @@ export default {
     ]);
     const streak = await userModel.recordDaily(ctx.sender);
 
-    let text = `🎁 *Daily Reward!*\n\n🪙 +${F.formatNumber(cash)} cash\n⭐ +${exp} EXP\n🔥 Streak: *${streak} hari*`;
+    let text = `🎁 *Daily Reward!*\n\n🪙 +${F.formatNumber(cash)} coin\n⭐ +${exp} EXP\n🔥 Streak: *${streak} hari*`;
     if (leveledUp)
       text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
     await ctx.reply(text);

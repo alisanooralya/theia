@@ -29,7 +29,7 @@ export default {
 
     const wallet = await walletModel.find(ctx.sender);
     if (!wallet || wallet.cash < bet)
-      return ctx.reply('Saldo cash tidak cukup.');
+      return ctx.reply('Coin tidak cukup.');
 
     await walletModel.addCash(ctx.sender, -bet);
 

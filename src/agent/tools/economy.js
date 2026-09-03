@@ -12,7 +12,7 @@ export const economyTools = [
   {
     name: 'transfer_money',
     description:
-      'Transfer uang (cash) dari user yang sedang chat ke nomor WhatsApp lain. ' +
+      'Transfer uang (coin) dari user yang sedang chat ke nomor WhatsApp lain. ' +
       'Parameter toPhone adalah nomor tujuan (hanya angka, dengan atau tanpa awalan negara). Pajak 5% ditanggung pengirim.',
     permission: 'user',
     parameters: {

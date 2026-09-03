@@ -50,7 +50,7 @@ export default {
       );
     } else {
       await ctx.reply(
-        `❤️ *Heal berhasil!* (-🪙${F.formatNumber(cost)})\nHP: ${newHp}/${maxHp}\n💡 Kamu belum full HP. Coba lagi jika punya cukup cash (butuh 🪙${F.formatNumber(fullPrice - cost)} lagi).`
+        `❤️ *Heal berhasil!* (-🪙${F.formatNumber(cost)})\nHP: ${newHp}/${maxHp}\n💡 Kamu belum full HP. Coba lagi jika punya cukup coin (butuh 🪙${F.formatNumber(fullPrice - cost)} lagi).`
       );
     }
   },

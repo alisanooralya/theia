@@ -15,7 +15,7 @@ export default {
     const durationMs = Number(ctx.args[2]);
 
     if (!code || !Number.isSafeInteger(amount) || amount <= 0)
-      ctx.fail('Usage: `!redeemcode <kode> <cash> <expired_ms>`');
+      ctx.fail('Usage: `!redeemcode <kode> <coin> <expired_ms>`');
     if (!Number.isSafeInteger(durationMs) || durationMs <= 0)
       ctx.fail('Expired harus berupa angka milidetik lebih dari 0.');
 
@@ -26,7 +26,7 @@ export default {
         Date.now() + durationMs
       );
       await ctx.reply(
-        `✅ Redeem code \`${redeemCode.code}\` dibuat dengan hadiah ${F.formatNumber(amount)} cash.\n`
+        `✅ Redeem code \`${redeemCode.code}\` dibuat dengan hadiah ${F.formatNumber(amount)} coin.\n`
       );
     } catch (err) {
       ctx.fail(err.message);

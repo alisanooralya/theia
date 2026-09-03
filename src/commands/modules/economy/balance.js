@@ -17,7 +17,7 @@ export default {
     const text = [
       `💰 *Dompet ${user.push_name || 'Kamu'}*`,
       '',
-      `🪙 Cash  : *${F.formatNumber(wallet?.cash ?? 0)}*`,
+      `🪙 Coin  : *${F.formatNumber(wallet?.cash ?? 0)}*`,
       `🏦 Bank  : *${F.formatNumber(wallet?.bank ?? 0)}* / ${F.formatNumber(wallet?.bank_limit ?? 5_000_000)}`,
       `📊 Total : *${F.formatNumber(total)}*`,
       `⭐ Level : *${user.level}* (${F.formatNumber(user.exp)} / ${F.formatNumber(await userModel.expForLevel(user.level + 1))} EXP)`,

@@ -23,7 +23,7 @@ class ShopService {
     const wallet = await walletModel.find(jid);
     if (!wallet || wallet.cash < total)
       throw new Error(
-        `Saldo cash tidak cukup. Butuh 🪙${total.toLocaleString()}.`
+        `Coin tidak cukup. Butuh 🪙${total.toLocaleString()}.`
       );
 
     await sql.begin(async (t) => {

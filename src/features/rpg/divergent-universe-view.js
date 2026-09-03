@@ -174,7 +174,7 @@ export function renderDuHtml(run) {
   })();
 
   const rewardHtml = state.finalReward
-    ? `<div class="reward">Reward: ${F.formatNumber(state.finalReward.cash)} cash + ${state.finalReward.exp} EXP</div>`
+    ? `<div class="reward">Reward: ${F.formatNumber(state.finalReward.cash)} coin + ${state.finalReward.exp} EXP</div>`
     : '';
 
   const tipsHtml =
@@ -446,7 +446,7 @@ const CLIENT_APP = String.raw`
     var reward = '';
     if (isWin) {
       var r = game.computeReward();
-      reward = '<div class="reward">Reward: ' + fmt(r.cash) + ' cash • ' + fmt(r.exp) + ' EXP • ' + r.cerelia + ' Cerelia</div>';
+      reward = '<div class="reward">Reward: ' + fmt(r.cash) + ' coin • ' + fmt(r.exp) + ' EXP • ' + r.cerelia + ' Cerelia</div>';
     }
     var token = makeToken();
     var cmd = '.du finish ' + token;

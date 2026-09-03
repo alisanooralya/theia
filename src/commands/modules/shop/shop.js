@@ -39,7 +39,7 @@ export default {
 
     const grouped = await shopService.getShopItems();
     const wallet = await walletModel.find(ctx.sender);
-    let text = `🏪 *Toko Theia*\n${wallet ? `💰 Cash: *${F.formatNumber(wallet.cash)}*\n\n` : '\n'}`;
+    let text = `🏪 *Toko Theia*\n${wallet ? `💰 Coin: *${F.formatNumber(wallet.cash)}*\n\n` : '\n'}`;
 
     text += `📖 *Cara Pakai:*\n`;
     text += `• Beli: \`.shop buy <id> [jumlah]\`\n`;
