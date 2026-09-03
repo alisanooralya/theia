@@ -272,6 +272,70 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  `
+  CREATE TABLE IF NOT EXISTS market_commodities (
+    id            TEXT    PRIMARY KEY,
+    price         BIGINT  NOT NULL DEFAULT 0,
+    prev_price    BIGINT  NOT NULL DEFAULT 0,
+    phase         TEXT    NOT NULL DEFAULT 'normal',
+    phase_ticks   INTEGER NOT NULL DEFAULT 0,
+    momentum      REAL    NOT NULL DEFAULT 0,
+    event_id      TEXT    NOT NULL DEFAULT '',
+    event_ticks   INTEGER NOT NULL DEFAULT 0,
+    updated_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_state (
+    id            SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    tick          BIGINT  NOT NULL DEFAULT 0,
+    bucket        BIGINT  NOT NULL DEFAULT 0,
+    last_tick_at  BIGINT  NOT NULL DEFAULT 0
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_history (
+    id            BIGSERIAL PRIMARY KEY,
+    commodity_id  TEXT    NOT NULL REFERENCES market_commodities(id) ON DELETE CASCADE,
+    price         BIGINT  NOT NULL,
+    tick          BIGINT  NOT NULL DEFAULT 0,
+    created_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_portfolio (
+    jid           TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    commodity_id  TEXT    NOT NULL REFERENCES market_commodities(id) ON DELETE CASCADE,
+    quantity      BIGINT  NOT NULL DEFAULT 0,
+    total_cost    BIGINT  NOT NULL DEFAULT 0,
+    realized_pl   BIGINT  NOT NULL DEFAULT 0,
+    updated_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    PRIMARY KEY (jid, commodity_id),
+    CONSTRAINT market_portfolio_qty_positive CHECK (quantity >= 0),
+    CONSTRAINT market_portfolio_cost_positive CHECK (total_cost >= 0)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_trades (
+    id            BIGSERIAL PRIMARY KEY,
+    jid           TEXT    NOT NULL,
+    commodity_id  TEXT    NOT NULL,
+    side          TEXT    NOT NULL,
+    quantity      BIGINT  NOT NULL,
+    unit_price    BIGINT  NOT NULL,
+    total         BIGINT  NOT NULL,
+    profit        BIGINT  NOT NULL DEFAULT 0,
+    created_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `CREATE INDEX IF NOT EXISTS idx_market_history_commodity ON market_history(commodity_id, id DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_portfolio_jid ON market_portfolio(jid)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_trades_jid ON market_trades(jid, id DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_owner      ON artifacts(owner_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_slot       ON artifacts(owner_jid, slot)`,
   `CREATE INDEX IF NOT EXISTS idx_relics_owner      ON relics(owner_jid)`,
@@ -322,6 +386,8 @@ const MIGRATIONS = [
   `SELECT setval(pg_get_serial_sequence('artifacts', 'id'), COALESCE(MAX(id), 1)) FROM artifacts`,
   `SELECT setval(pg_get_serial_sequence('raids', 'id'), COALESCE(MAX(id), 1)) FROM raids`,
   `SELECT setval(pg_get_serial_sequence('raid_participants', 'id'), COALESCE(MAX(id), 1)) FROM raid_participants`,
+  `SELECT setval(pg_get_serial_sequence('market_history', 'id'), COALESCE(MAX(id), 1)) FROM market_history`,
+  `SELECT setval(pg_get_serial_sequence('market_trades', 'id'), COALESCE(MAX(id), 1)) FROM market_trades`,
   `UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10`,
 ];
 
