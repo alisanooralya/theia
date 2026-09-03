@@ -1,3 +1,4 @@
+import { readFile } from 'fs/promises';
 import { domainService as domain } from '#features/rpg/domain.js';
 import { userModel, statsModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
@@ -17,8 +18,9 @@ export default {
 
     try {
       if (!sub) {
+        const image = await readFile('temp/domain.jpg');
         const builder = new ButtonV2(ctx.sock)
-          .setThumbnail('temp/domain.jpg')
+          .setThumbnail(image)
           .setBody(
             [
               '🏰 *DOMAIN*',
