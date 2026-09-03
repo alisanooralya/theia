@@ -87,11 +87,14 @@ export async function onGroupParticipantsUpdate(
   if (!id || !participants?.length) return;
 
   try {
+    const meta = await sock.groupMetadata(id).catch(() => null);
+    await groupModel.ensure(id, meta?.subject || '');
+
     const group = await groupModel.find(id);
 
     if (action === 'add') {
       if (!group?.welcome) return;
-      const meta = await sock.groupMetadata(id).catch(() => null);
+      const groupName = meta?.subject ?? 'this grup';
 
       for (const participant of participants) {
         const jid = participant.phoneNumber || participant.id;
@@ -99,7 +102,6 @@ export async function onGroupParticipantsUpdate(
 
         const caption = WELCOME_TEKS.replace(/%name/, `@${jid.split('@')[0]}`);
         const image = await readFile(WELCOME_IMAGE);
-        const groupName = meta?.subject ?? 'this grup';
 
         let inviteUrl = 'https://hoyolab.com';
         await sendLinkPreview(
@@ -119,7 +121,6 @@ export async function onGroupParticipantsUpdate(
       if (!group?.welcome) return;
       for (const participant of participants) {
         const jid = participant.phoneNumber || participant.id;
-        const meta = await sock.groupMetadata(id).catch(() => null);
         const groupName = meta?.subject ?? 'this group';
         await sock.sendMessage(id, {
           text: `@${jid.split('@')[0]} has left ${groupName}. Goodbye!`,

@@ -30,7 +30,9 @@ class GroupModel {
     groupCache.del(jid);
     await client`
       INSERT INTO groups (jid, name) VALUES (${jid}, ${name})
-      ON CONFLICT (jid) DO UPDATE SET name = EXCLUDED.name, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      ON CONFLICT (jid) DO UPDATE SET
+        name = CASE WHEN ${name} <> '' THEN EXCLUDED.name ELSE groups.name END,
+        updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
     `;
     return this.find(jid, client);
   }

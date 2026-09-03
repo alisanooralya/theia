@@ -15,8 +15,18 @@ export default {
     if (!parsed.isGroup) return true;
     if (!parsed.sender) return true;
     try {
+      let groupName = '';
+      try {
+        const existing = await groupModel.find(parsed.jid);
+        if (existing?.name) {
+          groupName = existing.name;
+        } else {
+          const meta = await sock.groupMetadata(parsed.jid);
+          groupName = meta.subject || '';
+        }
+      } catch {}
       await Promise.all([
-        groupModel.ensure(parsed.jid),
+        groupModel.ensure(parsed.jid, groupName),
         userModel.ensure(parsed.sender, { pushName: parsed.pushName || '' }),
       ]);
     } catch {}
