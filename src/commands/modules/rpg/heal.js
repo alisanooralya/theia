@@ -6,7 +6,7 @@ export default {
   name: 'heal',
   aliases: ['sembuh', 'recover'],
   category: 'rpg',
-  description: 'Heal HP (semakin banyak bayar, semakin banyak HP)',
+  description: 'Heal HP',
   cooldown: 6 * 60 * 60 * 1000,
 
   async execute(ctx) {

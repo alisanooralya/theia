@@ -22,7 +22,6 @@ function changeLine(changePercent) {
   return `${pct > 0 ? '📈' : '📉'} ${pct > 0 ? '+' : ''}${pct.toFixed(0)}%`;
 }
 
-// Ringkas angka untuk baris history: 5600 -> 5.6k
 function compact(value) {
   const num = Number(value);
   if (Math.abs(num) >= 1_000_000)
@@ -169,7 +168,7 @@ export default {
   name: 'market',
   aliases: ['pasar', 'mkt'],
   category: 'economy',
-  description: 'Lihat harga & trading komoditas di Virtual Market',
+  description: 'Lihat harga & trading komoditas',
   cooldown: 5_000,
 
   async execute(ctx) {

@@ -1,8 +1,5 @@
 import { marketService } from '#features/economy/market.js';
 import { userModel } from '#storage/models/index.js';
-import SETTINGS from '#environment/settings.js';
-
-const P = SETTINGS.prefix;
 
 function money(value) {
   return Number(value).toLocaleString('id-ID');
@@ -22,8 +19,6 @@ function emptyView(cash) {
     `🪙 Coin: ${money(cash)}`,
     '',
     '╰──────────────────╯',
-    '',
-    `Mulai beli: \`${P}market buy rice 10\``,
   ].join('\n');
 }
 
@@ -31,7 +26,7 @@ export default {
   name: 'portfolio',
   aliases: ['porto', 'aset'],
   category: 'economy',
-  description: 'Lihat aset komoditas Market & profit/loss kamu',
+  description: 'Lihat aset & profit/loss kamu',
   cooldown: 5_000,
 
   async execute(ctx) {
@@ -70,7 +65,7 @@ export default {
       '',
       '╰──────────────────╯',
       '',
-      `Jual: \`${P}market sell <barang> <jumlah>\``
+      `Jual: \`market\` sell <barang> <jumlah>`
     );
 
     return ctx.reply(lines.join('\n'));
