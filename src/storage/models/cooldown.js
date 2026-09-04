@@ -28,6 +28,24 @@ class CooldownModel {
     await client`DELETE FROM cooldowns WHERE key = ${`${jid}:${command}`}`;
   }
 
+  async getByUser(jid, client = sql) {
+    const prefix = `${jid}:`;
+    const rows =
+      await client`SELECT key, expires_at FROM cooldowns WHERE key LIKE ${prefix + '%'}`;
+    const now = Date.now();
+    const active = [];
+    for (const row of rows) {
+      const remaining = row.expires_at * 1000 - now;
+      if (remaining <= 0) {
+        await client`DELETE FROM cooldowns WHERE key = ${row.key}`;
+        continue;
+      }
+      const command = row.key.slice(prefix.length);
+      active.push({ command, remaining });
+    }
+    return active;
+  }
+
   async cleanup(client = sql) {
     const result = await client`
       DELETE FROM cooldowns WHERE expires_at < (EXTRACT(EPOCH FROM NOW()))::BIGINT
