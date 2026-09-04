@@ -46,11 +46,6 @@ function calcDamage(attacker, defender) {
   return { dmg: Math.max(1, dmg), crit };
 }
 
-function bar(value, max, size = 10) {
-  const filled = Math.max(0, Math.min(size, Math.round((value / max) * size)));
-  return '█'.repeat(filled) + '░'.repeat(size - filled);
-}
-
 class DomainService {
   get difficulty() {
     return DIFFICULTY;
@@ -149,21 +144,6 @@ class DomainService {
     await userModel.addExp(jid, expReward);
 
     return { coin: coinReward, exp: expReward, artifacts };
-  }
-
-  async formatRoundPlayer(jid, round, config) {
-    const pStats = await artifactService.getPlayerStats(jid);
-    return [
-      `🏰 DOMAIN • ${config.name.toUpperCase()}`,
-      '',
-      `⚔️ Round ${round.round}`,
-      '',
-      `👤 Player`,
-      `❤️ ${bar(round.playerHp, pStats.hp)} ${round.playerHp}/${pStats.hp}`,
-      '',
-      `👹 ${config.boss.name}`,
-      `❤️ ${bar(round.bossHp, config.boss.hp)} ${round.bossHp}/${config.boss.hp}`,
-    ].join('\n');
   }
 
   formatVictory(config, rewards, rounds) {

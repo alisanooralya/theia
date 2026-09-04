@@ -1,7 +1,6 @@
 import { readFile } from 'fs/promises';
 import { domainService as domain } from '#features/rpg/domain.js';
 import { userModel, statsModel } from '#storage/models/index.js';
-import { F } from '#helpers/index.js';
 import { ButtonV2 } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
