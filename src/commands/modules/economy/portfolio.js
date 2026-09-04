@@ -60,7 +60,7 @@ export default {
       `🪙 ${money(data.marketValue)}`,
       '',
       `💰 Coin: ${money(data.cash)}`,
-      `📊 Net worth: ${money(data.totalAsset)}`,
+      `📊 Net worth: ${money(data.totalAsset)}`
     );
 
     return ctx.reply(lines.join('\n'));

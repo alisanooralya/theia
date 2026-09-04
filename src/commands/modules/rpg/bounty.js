@@ -3,8 +3,15 @@ import { userModel, statsModel } from '#storage/models/index.js';
 import { Button } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const WIB_OFFSET = 7;
 
-// Satu list untuk semua buronan: user langsung pilih target tanpa pesan kedua.
+function wibDayKey(tsSec) {
+  const d = new Date(tsSec * 1000);
+  const utc = d.getTime() + d.getTimezoneOffset() * 60_000;
+  const wib = new Date(utc + WIB_OFFSET * 3_600_000);
+  return wib.toISOString().slice(0, 10);
+}
+
 function bountyMenu(ctx) {
   const builder = new Button(ctx.sock)
     .setTitle('🎯 BOUNTY')
@@ -14,11 +21,11 @@ function bountyMenu(ctx) {
     .addSelection('🎯 Pilih Buronan');
 
   for (const [key, config] of Object.entries(bounty.difficulty)) {
-    builder.makeSection(config.label, bounty.rewardRange(config));
+    builder.makeSection(config.label);
 
     for (const target of config.targets) {
       builder.makeRow(
-        config.label,
+        '',
         `${target.emoji} ${target.name}`,
         `${bounty.targetStatLine(target)} • ${bounty.rewardRange(config)}`,
         `.bounty ${key} ${target.id}`
@@ -34,8 +41,7 @@ export default {
   aliases: ['buronan'],
   category: 'rpg',
   description: 'Kejar buronan untuk hadiah Coin',
-  cooldown: 2 * 60 * 60 * 1_000,
-  manualCooldown: true,
+  cooldown: 0,
 
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
@@ -78,18 +84,22 @@ export default {
         ].join('\n')
       );
 
-    await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+    const user = await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     await statsModel.ensure(ctx.sender);
+
+    const todayKey = wibDayKey(Math.floor(Date.now() / 1000));
+    const lastKey = user.last_bounty ? wibDayKey(user.last_bounty) : null;
+    if (lastKey === todayKey) {
+      return ctx.reply(
+        '❌ Kamu sudah berburu hari ini. Reset berikutnya jam *00:00 WIB*.'
+      );
+    }
 
     try {
       await bounty.ensureAlive(ctx.sender);
     } catch (error) {
       return ctx.fail(error.message);
     }
-
-    // Cooldown baru dipasang saat perburuan benar-benar dimulai, lalu dilepas
-    // lagi kalau pertempuran gagal jalan.
-    await ctx.applyCooldown();
 
     let battleDone = false;
     try {
@@ -106,6 +116,8 @@ export default {
 
       const result = await bounty.simulateBattle(ctx.sender, sub, target.id);
       battleDone = true;
+
+      await userModel.recordBounty(ctx.sender);
 
       let finalText;
       if (result.won) {
@@ -125,7 +137,6 @@ export default {
         edit: statusMsg.key,
       });
     } catch (error) {
-      if (!battleDone) await ctx.clearCooldown();
       return ctx.fail(error.message);
     }
   },

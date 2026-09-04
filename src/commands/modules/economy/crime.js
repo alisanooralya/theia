@@ -114,7 +114,6 @@ function crimeStatLine(crime) {
   return `🪙 ${min / 1000}k-${max / 1000}k • Sukses ${chance}% • Bui ${hours}j`;
 }
 
-// Satu list berisi semua aksi: user langsung pilih kriminal yang dikerjakan.
 function crimeMenu(ctx) {
   const builder = new Button(ctx.sock)
     .setTitle('🕵️ CRIME')
@@ -122,7 +121,7 @@ function crimeMenu(ctx) {
     .setBody('Pilih aksi kriminal yang mau kamu kerjakan')
     .setFooter('Tertangkap = denda + penjara')
     .addSelection('🕵️ Pilih Kriminal')
-    .makeSection('Daftar Kriminal', 'Pilih risikomu');
+    .makeSection('Daftar Kriminal');
 
   for (const crime of CRIMES) {
     builder.makeRow(

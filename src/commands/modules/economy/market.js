@@ -74,11 +74,7 @@ function marketView(list, wallet) {
 
 function newsView(list) {
   if (!list.length) {
-    return [
-      '📰 *MARKET NEWS*',
-      '',
-      'Belum ada berita pasar.',
-    ].join('\n');
+    return ['📰 *MARKET NEWS*', '', 'Belum ada berita pasar.'].join('\n');
   }
 
   const lines = ['📰 *MARKET NEWS*', ''];
@@ -102,7 +98,8 @@ function detailView(item, holding) {
     `_${item.character}_`,
     '',
     'Harga: ' + money(item.price),
-    'Perubahan: ' + `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(1)}%`,
+    'Perubahan: ' +
+      `${item.changePercent >= 0 ? '+' : ''}${item.changePercent.toFixed(1)}%`,
     '',
     'Trend: ' + item.trend,
     'Demand ' + item.demand,

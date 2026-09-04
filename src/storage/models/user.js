@@ -94,6 +94,14 @@ class UserModel {
       ORDER BY u.level DESC, u.exp DESC LIMIT ${limit}
     `;
   }
+
+  async recordBounty(jid, client = sql) {
+    const nowSec = Math.floor(Date.now() / 1000);
+    await client`
+      UPDATE users SET last_bounty = ${nowSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
+    return nowSec;
+  }
 }
 
 export const userModel = new UserModel();
