@@ -200,9 +200,8 @@ class ExpeditionService {
     const option = this.getOption(row.type, row.duration);
 
     return [
-      '🧭 *EXPEDITION DIMULAI*',
-      '',
       `${category.emoji} ${category.name} • ${option.name}`,
+      '',
       `⏳ Durasi: ${this.durationLabel(option)}`,
       `🏁 Selesai: ${this.formatClock(Number(row.ends_at) * 1000)}`,
       `🎁 Reward: ${this.rewardLine(row)}`,
@@ -215,9 +214,8 @@ class ExpeditionService {
     const { row, option, category } = state;
 
     return [
-      '🧭 *EXPEDITION*',
-      '',
       `${category.emoji} ${category.name} • ${option.name}`,
+      '',
       `⏳ Durasi: ${this.durationLabel(option)}`,
       `📍 Status: ${state.finished ? 'Selesai' : 'Berjalan'}`,
       state.finished
@@ -225,9 +223,7 @@ class ExpeditionService {
         : `⏱️ Sisa waktu: ${F.formatDuration(state.remainingMs)}`,
       `🎁 Reward: ${this.rewardLine(row)}`,
       '',
-      state.finished
-        ? 'Ketik `.expedition claim` untuk mencairkan reward.'
-        : 'Reward cair setelah expedition selesai.',
+      state.finished ?? 'Reward cair setelah expedition selesai.',
     ].join('\n');
   }
 

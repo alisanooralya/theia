@@ -209,9 +209,7 @@ class WorkService {
       `🪙 Estimasi: ${this.coinRange(job)}`,
       `⭐ Estimasi: ${this.expRange(job)}`,
       '',
-      state.finished
-        ? ''
-        : 'Upah cair setelah pekerjaan selesai.',
+      state.finished ?? 'Upah cair setelah pekerjaan selesai.',
     ].join('\n');
   }
 
