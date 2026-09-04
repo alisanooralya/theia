@@ -2,8 +2,6 @@ import { statsModel, walletModel, userModel } from '#storage/models/index.js';
 import { domainService } from '#features/rpg/domain.js';
 import { F } from '#helpers/index.js';
 
-// Combat memakai mesin Domain (simulateBattleAgainst), jadi di sini cukup
-// mendefinisikan buronan + hadiah Coin per difficulty.
 const DIFFICULTY = {
   easy: {
     name: 'Easy',
@@ -15,25 +13,25 @@ const DIFFICULTY = {
         id: 'copet',
         name: 'Copet Pasar',
         emoji: '🪙',
-        hp: 3_500,
-        atk: 250,
-        def: 120,
+        hp: 2_450,
+        atk: 175,
+        def: 84,
       },
       {
         id: 'garong',
         name: 'Garong Kampung',
         emoji: '🗡️',
-        hp: 4_200,
-        atk: 300,
-        def: 150,
+        hp: 2_940,
+        atk: 210,
+        def: 105,
       },
       {
         id: 'rampok',
         name: 'Rampok Jalanan',
         emoji: '🪓',
-        hp: 5_000,
-        atk: 350,
-        def: 180,
+        hp: 3_500,
+        atk: 245,
+        def: 126,
       },
     ],
   },
@@ -47,25 +45,25 @@ const DIFFICULTY = {
         id: 'bandit',
         name: 'Bandit Elite',
         emoji: '🏹',
-        hp: 12_000,
-        atk: 550,
-        def: 400,
+        hp: 8_400,
+        atk: 385,
+        def: 280,
       },
       {
         id: 'preman',
         name: 'Preman Pelabuhan',
         emoji: '🥊',
-        hp: 14_000,
-        atk: 650,
-        def: 480,
+        hp: 9_800,
+        atk: 455,
+        def: 336,
       },
       {
         id: 'sindikat',
         name: 'Bos Sindikat',
         emoji: '🎭',
-        hp: 16_000,
-        atk: 750,
-        def: 550,
+        hp: 11_200,
+        atk: 525,
+        def: 385,
       },
     ],
   },
@@ -79,25 +77,25 @@ const DIFFICULTY = {
         id: 'assassin',
         name: 'Shadow Assassin',
         emoji: '🥷',
-        hp: 25_000,
-        atk: 1_200,
-        def: 700,
+        hp: 15_750,
+        atk: 756,
+        def: 441,
       },
       {
         id: 'warlord',
         name: 'Warlord',
         emoji: '⚔️',
-        hp: 30_000,
-        atk: 1_400,
-        def: 850,
+        hp: 18_900,
+        atk: 882,
+        def: 536,
       },
       {
         id: 'overlord',
         name: 'Cursed Overlord',
         emoji: '👹',
-        hp: 35_000,
-        atk: 1_600,
-        def: 1_000,
+        hp: 22_050,
+        atk: 1_008,
+        def: 630,
       },
     ],
   },
@@ -124,7 +122,6 @@ class BountyService {
     return config.targets.find((target) => target.id === id) ?? null;
   }
 
-  // Dipakai command sebelum cooldown dipasang, supaya pesan gagalnya jelas.
   async ensureAlive(jid) {
     const base = await statsModel.ensure(jid);
     if (!base || base.hp <= 0)
