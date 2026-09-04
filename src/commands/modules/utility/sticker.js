@@ -1,5 +1,5 @@
 import { toStickerBuffer } from '#features/media/sticker.js';
-import { uploadToUguu } from '#uploader';
+import { uploadToUguu } from '#helpers/uploader.js';
 
 async function addTextToImage(buffer, text) {
   const url = await uploadToUguu(buffer);
