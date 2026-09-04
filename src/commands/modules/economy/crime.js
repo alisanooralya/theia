@@ -10,7 +10,7 @@ const CRIMES = [
     name: 'jambret',
     emoji: '👜',
     label: '🟡 SEDANG',
-    reward: [3000, 5000],
+    reward: [4000, 6000],
     penalty: [1000, 3000],
     exp: 25,
     successChance: 0.55,
@@ -22,7 +22,7 @@ const CRIMES = [
     name: 'hacker',
     emoji: '💻',
     label: '🔴 NEKAT',
-    reward: [5000, 8000],
+    reward: [6000, 9000],
     penalty: [2000, 6000],
     exp: 35,
     successChance: 0.4,
@@ -34,7 +34,7 @@ const CRIMES = [
     name: 'copet',
     emoji: '👛',
     label: '🟢 AMAN',
-    reward: [2000, 3000],
+    reward: [3000, 4000],
     penalty: [500, 1500],
     exp: 15,
     successChance: 0.75,
@@ -46,7 +46,7 @@ const CRIMES = [
     name: 'judi online',
     emoji: '🎰',
     label: '🎲 GAMBLING',
-    reward: [2500, 4000],
+    reward: [3500, 5000],
     penalty: [500, 2000],
     exp: 20,
     gamble: true,
@@ -62,7 +62,7 @@ const CRIMES = [
     name: 'skimming ATM',
     emoji: '💳',
     label: '🔴 NEKAT',
-    reward: [8000, 10000],
+    reward: [9000, 11000],
     penalty: [3000, 8000],
     exp: 40,
     successChance: 0.35,
@@ -111,7 +111,7 @@ function crimeStatLine(crime) {
   const [min, max] = crime.reward;
   const hours = Math.round(crime.prisonMs / 3_600_000);
   const chance = Math.round(successChance(crime) * 100);
-  return `🪙 ${min / 1000}k-${max / 1000}k • Sukses ${chance}% • Bui ${hours}j`;
+  return `🪙 ${min / 1000}k-${max / 1000}k • Sukses ${chance}% • Jail ${hours}j`;
 }
 
 function crimeMenu(ctx) {
