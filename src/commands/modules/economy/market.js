@@ -63,7 +63,7 @@ function marketView(list, wallet) {
   lines.push(`⏳ Update harga: ${countdown}`);
   lines.push(
     '',
-    `Detail: \`market\` <barang>`,
+    `Detail: \`.market\` <barang>`,
     `Beli: \`.market\` buy <barang> <jumlah>`,
     `Jual: \`.market\` sell <barang> <jumlah>`,
     `Berita: \`.market\` news`,
