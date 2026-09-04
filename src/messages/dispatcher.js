@@ -37,11 +37,6 @@ export async function dispatch(parsed, sock) {
   ctx.applyCooldown = () => applyCooldown(ctx, command);
   ctx.clearCooldown = () => clearCooldown(ctx, command);
 
-  logger.debug(
-    { command: command.name, sender: ctx.sender },
-    'Command dispatched'
-  );
-
   try {
     if (!(await runPipeline(ctx, command))) return;
 

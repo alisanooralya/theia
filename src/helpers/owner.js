@@ -11,7 +11,6 @@ export function isOwnerJid(jid) {
 export function addOwnerJid(jid) {
   if (jid && !ownerJids.has(jid)) {
     ownerJids.add(jid);
-    logger.debug({ jid }, 'Owner JID added');
   }
 }
 
@@ -35,7 +34,7 @@ export async function resolveOwnerLids(sock) {
         resolved++;
       }
     } catch {
-      logger.debug({ pnJid }, 'Owner LID not resolvable yet');
+      // LID not resolvable yet
     }
   }
   if (resolved > 0) logger.info({ resolved }, 'Owner LIDs resolved');

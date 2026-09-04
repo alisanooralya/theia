@@ -90,7 +90,6 @@ export async function loadExtensions() {
       if (typeof ext.init === 'function') await ext.init();
       orchestrator.register(ext);
       loaded++;
-      logger.debug({ name: ext.name ?? file }, 'Extension loaded');
     } catch (err) {
       logger.error({ err, file }, 'Failed to load extension');
     }

@@ -27,8 +27,7 @@ export default {
 
   async _cleanupCooldowns() {
     try {
-      const deleted = await cooldownModel.cleanup();
-      if (deleted > 0) logger.debug(`[Scheduler] Cleaned ${deleted} cooldowns`);
+      await cooldownModel.cleanup();
     } catch (err) {
       logger.warn({ err: err.message }, '[Scheduler] Cooldown cleanup failed');
     }

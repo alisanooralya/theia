@@ -23,8 +23,6 @@ export async function onMessagesUpsert({ messages, type }, sock) {
         await sock.readMessages([msg.key]).catch(() => {});
       }
 
-      logger.trace({ jid: parsed.jid, type: parsed.type }, 'Message received');
-
       const proceed = await orchestrator.runProcessors(parsed, sock);
       if (!proceed) continue;
 

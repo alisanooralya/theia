@@ -127,9 +127,7 @@ const TOXIC_RE = new RegExp(
 export default {
   name: 'anti-toxic',
 
-  init() {
-    logger.debug('[AntiToxic] Initialized');
-  },
+  init() {},
 
   async processMessage(s, sock) {
     if (!s.isGroup || s.fromMe) return true;

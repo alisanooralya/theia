@@ -24,7 +24,6 @@ export function registerEvents(sock, createClient) {
         if (lid && pn) {
           if (SETTINGS.ownerNumber.includes(pn)) addOwnerJid(lid);
           if (SETTINGS.ownerNumber.includes(lid)) addOwnerJid(pn);
-          logger.debug({ lid, pn }, 'LID mapping');
         }
       }
     } catch (err) {
@@ -36,33 +35,18 @@ export function registerEvents(sock, createClient) {
     onMessagesUpsert(payload, sock);
   });
 
-  sock.ev.on('messages.update', (updates) => {
-    logger.trace({ count: updates.length }, 'messages.update');
-  });
+  sock.ev.on('messages.update', () => {});
 
-  sock.ev.on('messages.delete', (item) => {
-    logger.trace({ item }, 'messages.delete');
-  });
+  sock.ev.on('messages.delete', () => {});
 
-  sock.ev.on('messages.reaction', (reactions) => {
-    if (Array.isArray(reactions))
-      logger.trace({ count: reactions.length }, 'messages.reaction');
-  });
+  sock.ev.on('messages.reaction', () => {});
 
   sock.ev.on('group-participants.update', (payload) => {
     if (!payload) return;
     onGroupParticipantsUpdate(payload, sock);
   });
 
-  sock.ev.on('groups.update', (updates) => {
-    if (Array.isArray(updates))
-      logger.trace({ count: updates.length }, 'groups.update');
-  });
+  sock.ev.on('groups.update', () => {});
 
-  sock.ev.on('call', (calls) => {
-    if (Array.isArray(calls))
-      logger.debug({ count: calls.length }, 'call event');
-  });
-
-  logger.debug('Events registered');
+  sock.ev.on('call', () => {});
 }
