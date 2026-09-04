@@ -1,6 +1,6 @@
 import { logger } from '#helpers/logger.js';
 
-const RATE_LIMIT_MS = 1_000;
+const RATE_LIMIT_MS = 1_800;
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 1_000;
 

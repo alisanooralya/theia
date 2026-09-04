@@ -51,9 +51,6 @@ export default {
 
     await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
     await statsModel.ensure(ctx.sender);
-
-    // Cooldown dipasang sebelum pertempuran supaya tidak bisa dipakai dua kali,
-    // lalu dilepas lagi kalau pertempuran gagal jalan.
     await ctx.applyCooldown();
 
     let battleDone = false;

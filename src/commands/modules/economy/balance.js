@@ -21,7 +21,6 @@ export default {
       `🏦 Bank  : *${F.formatNumber(wallet?.bank ?? 0)}* / ${F.formatNumber(wallet?.bank_limit ?? 5_000_000)}`,
       `📊 Total : *${F.formatNumber(total)}*`,
       `⭐ Level : *${user.level}* (${F.formatNumber(user.exp)} / ${F.formatNumber(await userModel.expForLevel(user.level + 1))} EXP)`,
-      `📈 Bunga : *${(walletModel.interestRate * 100).toFixed(1)}%* / hari (saldo bank)`,
     ];
 
     if (interest.applied) {
