@@ -5,7 +5,6 @@ import { F } from '#helpers/index.js';
 
 const COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
-// Satu list: tiap kategori jadi section, tiap durasi jadi baris pilihan.
 function expeditionMenu(ctx) {
   const builder = new Button(ctx.sock)
     .setTitle('🧭 EXPEDITION')
@@ -19,7 +18,7 @@ function expeditionMenu(ctx) {
 
     for (const [key, option] of Object.entries(category.options)) {
       builder.makeRow(
-        category.label,
+        '',
         `${category.emoji} ${option.name}`,
         expedition.optionLine(option),
         `.expedition ${type} ${key}`
@@ -30,7 +29,6 @@ function expeditionMenu(ctx) {
   return builder.send(ctx.jid);
 }
 
-// Expedition selesai dapat tombol CLAIM; yang masih jalan cukup teks.
 function statusMessage(ctx, state) {
   const text = expedition.formatStatus(state);
   if (!state.finished) return ctx.reply(text);
@@ -67,7 +65,6 @@ export default {
       if (!state.finished) return statusMessage(ctx, state);
 
       const result = await expedition.claim(ctx.sender);
-      // Cooldown 12 jam baru berjalan setelah reward benar-benar cair.
       await ctx.applyCooldown();
 
       return ctx.reply(

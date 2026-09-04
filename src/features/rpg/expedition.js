@@ -9,15 +9,6 @@ import SETTINGS from '#environment/settings.js';
 
 const HOUR = 60 * 60 * 1000;
 
-/**
- * Semua angka balancing ada di sini.
- *
- * Skalanya dipatok ke aktivitas yang sudah ada supaya tidak keluar jalur:
- * work (100-5000 / 3 jam) dan crime (2k-10k / 1 jam) untuk Coin, serta
- * crime (15-40 EXP) dan domain (20-150 EXP) untuk EXP. Karena expedition
- * pasif dan tanpa risiko, hasil per jamnya sengaja di bawah keduanya.
- * Ubah `durationMs`, `coin`, atau `exp` di bawah untuk tuning.
- */
 const EXPEDITION = {
   coin: {
     name: 'Coin Expedition',
@@ -28,19 +19,19 @@ const EXPEDITION = {
       short: {
         name: 'Short',
         durationMs: 1 * HOUR,
-        coin: [1500, 2500],
+        coin: [2000, 3500],
         exp: [0, 0],
       },
       long: {
         name: 'Long',
         durationMs: 4 * HOUR,
-        coin: [5000, 8000],
+        coin: [5500, 8500],
         exp: [0, 0],
       },
       extended: {
         name: 'Extended',
         durationMs: 8 * HOUR,
-        coin: [10_000, 15_000],
+        coin: [13_500, 15_000],
         exp: [0, 0],
       },
     },
@@ -55,19 +46,19 @@ const EXPEDITION = {
         name: 'Short',
         durationMs: 1 * HOUR,
         coin: [0, 0],
-        exp: [25, 40],
+        exp: [30, 40],
       },
       long: {
         name: 'Long',
         durationMs: 4 * HOUR,
         coin: [0, 0],
-        exp: [120, 180],
+        exp: [125, 185],
       },
       extended: {
         name: 'Extended',
         durationMs: 8 * HOUR,
         coin: [0, 0],
-        exp: [260, 380],
+        exp: [265, 390],
       },
     },
   },
@@ -127,10 +118,6 @@ class ExpeditionService {
     return clockFormat.format(new Date(ms));
   }
 
-  /**
-   * Status dihitung dari timestamp di database, bukan dari timer di memori,
-   * jadi tetap benar walau bot sempat mati di tengah expedition.
-   */
   async getState(jid) {
     const row = await expeditionModel.find(jid);
     if (!row || row.status !== 'active') {
@@ -179,10 +166,6 @@ class ExpeditionService {
     return row;
   }
 
-  /**
-   * Penutupan baris dan pembayaran reward dijalankan dalam satu transaksi:
-   * kalau salah satu gagal, expedition tetap belum terklaim.
-   */
   async claim(jid) {
     const result = await sql.begin(async (t) => {
       const row = await expeditionModel.claim(jid, t);
