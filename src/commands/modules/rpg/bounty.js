@@ -8,21 +8,18 @@ function difficultyMenu(ctx) {
   const builder = new Button(ctx.sock)
     .setTitle('🎯 BOUNTY')
     .setSubtitle('Basmi buronan, kumpulkan Coin')
-    .setBody(
-      [
-        'Pilih tingkat kesulitan buronan:',
-        '',
-        ...Object.values(bounty.difficulty).map(
-          (config) => `- ${config.name}: ${bounty.rewardRange(config)}`
-        ),
-        '',
-        'Kalah = tanpa reward, HP tetap berkurang.',
-      ].join('\n')
-    )
-    .setFooter('Pilih difficulty untuk lihat daftar buronan');
+    .setBody('Pilih tingkat kesulitan buronan')
+    .setFooter('Kalah = tanpa reward, HP tetap berkurang')
+    .addSelection('🎯 Pilih Difficulty')
+    .makeSection('Tingkat Kesulitan');
 
   for (const [key, config] of Object.entries(bounty.difficulty)) {
-    builder.addReply(config.name.toUpperCase(), `.bounty ${key}`);
+    builder.makeRow(
+      config.label,
+      config.name,
+      `${bounty.rewardRange(config)} • ${config.targets.length} buronan`,
+      `.bounty ${key}`
+    );
   }
 
   return builder.send(ctx.jid);
@@ -32,9 +29,9 @@ function targetMenu(ctx, difficulty, config) {
   const builder = new Button(ctx.sock)
     .setTitle(`🎯 BOUNTY • ${config.name.toUpperCase()}`)
     .setSubtitle(`Hadiah: ${bounty.rewardRange(config)}`)
-    .setBody('Pilih buronan yang ingin kamu kejar:')
+    .setBody('Pilih buronan yang ingin kamu kejar')
     .setFooter('Statistik buronan tertera di tiap pilihan')
-    .addSelection('PILIH BURONAN')
+    .addSelection('🎯 Pilih Buronan')
     .makeSection(`Target ${config.name}`);
 
   for (const target of config.targets) {

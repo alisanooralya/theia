@@ -7,6 +7,7 @@ import { F } from '#helpers/index.js';
 const DIFFICULTY = {
   easy: {
     name: 'Easy',
+    label: '🟢 EASY',
     coin: [6_000, 8_000],
     targets: [
       {
@@ -37,6 +38,7 @@ const DIFFICULTY = {
   },
   medium: {
     name: 'Medium',
+    label: '🟡 MEDIUM',
     coin: [13_000, 17_000],
     targets: [
       {
@@ -67,6 +69,7 @@ const DIFFICULTY = {
   },
   hard: {
     name: 'Hard',
+    label: '🔴 HARD',
     coin: [21_000, 27_000],
     targets: [
       {
