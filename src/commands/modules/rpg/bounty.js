@@ -4,43 +4,26 @@ import { Button } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function difficultyMenu(ctx) {
+// Satu list untuk semua buronan: user langsung pilih target tanpa pesan kedua.
+function bountyMenu(ctx) {
   const builder = new Button(ctx.sock)
     .setTitle('🎯 BOUNTY')
     .setSubtitle('Basmi buronan, kumpulkan Coin')
-    .setBody('Pilih tingkat kesulitan buronan')
+    .setBody('Pilih buronan yang ingin kamu kejar')
     .setFooter('Kalah = tanpa reward, HP tetap berkurang')
-    .addSelection('🎯 Pilih Difficulty')
-    .makeSection('Tingkat Kesulitan');
+    .addSelection('🎯 Pilih Buronan');
 
   for (const [key, config] of Object.entries(bounty.difficulty)) {
-    builder.makeRow(
-      config.label,
-      config.name,
-      `${bounty.rewardRange(config)} • ${config.targets.length} buronan`,
-      `.bounty ${key}`
-    );
-  }
+    builder.makeSection(config.label, bounty.rewardRange(config));
 
-  return builder.send(ctx.jid);
-}
-
-function targetMenu(ctx, difficulty, config) {
-  const builder = new Button(ctx.sock)
-    .setTitle(`🎯 BOUNTY • ${config.name.toUpperCase()}`)
-    .setSubtitle(`Hadiah: ${bounty.rewardRange(config)}`)
-    .setBody('Pilih buronan yang ingin kamu kejar')
-    .setFooter('Statistik buronan tertera di tiap pilihan')
-    .addSelection('🎯 Pilih Buronan')
-    .makeSection(`Target ${config.name}`);
-
-  for (const target of config.targets) {
-    builder.makeRow(
-      target.emoji,
-      target.name,
-      bounty.targetStatLine(target),
-      `.bounty ${difficulty} ${target.id}`
-    );
+    for (const target of config.targets) {
+      builder.makeRow(
+        config.label,
+        `${target.emoji} ${target.name}`,
+        `${bounty.targetStatLine(target)} • ${bounty.rewardRange(config)}`,
+        `.bounty ${key} ${target.id}`
+      );
+    }
   }
 
   return builder.send(ctx.jid);
@@ -60,7 +43,7 @@ export default {
 
     if (!sub) {
       try {
-        return await difficultyMenu(ctx);
+        return await bountyMenu(ctx);
       } catch (error) {
         return ctx.fail(error.message);
       }
@@ -72,13 +55,17 @@ export default {
         'Difficulty tidak valid. Pilih: easy, medium, atau hard.'
       );
 
-    if (!targetId) {
-      try {
-        return await targetMenu(ctx, sub, config);
-      } catch (error) {
-        return ctx.fail(error.message);
-      }
-    }
+    if (!targetId)
+      return ctx.fail(
+        [
+          `${config.label} — pilih buronannya:`,
+          ...config.targets.map(
+            (t) => `- \`.bounty ${sub} ${t.id}\` — ${t.name}`
+          ),
+          '',
+          'Atau ketik `.bounty` untuk daftar lengkap.',
+        ].join('\n')
+      );
 
     const target = bounty.getTarget(sub, targetId);
     if (!target)
