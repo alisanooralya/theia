@@ -8,7 +8,7 @@ import { artifactService } from '#features/rpg/artifact.js';
 
 const GACHA_COST = 1600;
 const ARTIFACT_RATE = 0.08;
-const ZONK_RATE = 0.6;
+const ZONK_RATE = 0.55;
 
 const RARITY_WEIGHTS = {
   common: 50,

@@ -1,4 +1,4 @@
-import { statsModel, walletModel } from '#storage/models/index.js';
+import { statsModel, walletModel, userModel } from '#storage/models/index.js';
 import { domainService } from '#features/rpg/domain.js';
 import { F } from '#helpers/index.js';
 
@@ -9,30 +9,31 @@ const DIFFICULTY = {
     name: 'Easy',
     label: '🟢 EASY',
     coin: [6_000, 8_000],
+    exp: [20, 40],
     targets: [
       {
         id: 'copet',
         name: 'Copet Pasar',
         emoji: '🪙',
-        hp: 420,
-        atk: 40,
-        def: 10,
+        hp: 3_500,
+        atk: 250,
+        def: 120,
       },
       {
         id: 'garong',
         name: 'Garong Kampung',
         emoji: '🗡️',
-        hp: 520,
-        atk: 50,
-        def: 20,
+        hp: 4_200,
+        atk: 300,
+        def: 150,
       },
       {
         id: 'rampok',
         name: 'Rampok Jalanan',
         emoji: '🪓',
-        hp: 620,
-        atk: 55,
-        def: 30,
+        hp: 5_000,
+        atk: 350,
+        def: 180,
       },
     ],
   },
@@ -40,30 +41,31 @@ const DIFFICULTY = {
     name: 'Medium',
     label: '🟡 MEDIUM',
     coin: [13_000, 17_000],
+    exp: [50, 80],
     targets: [
       {
         id: 'bandit',
         name: 'Bandit Elite',
         emoji: '🏹',
-        hp: 1_400,
-        atk: 95,
-        def: 300,
+        hp: 12_000,
+        atk: 550,
+        def: 400,
       },
       {
         id: 'preman',
         name: 'Preman Pelabuhan',
         emoji: '🥊',
-        hp: 1_650,
-        atk: 105,
-        def: 340,
+        hp: 14_000,
+        atk: 650,
+        def: 480,
       },
       {
         id: 'sindikat',
         name: 'Bos Sindikat',
         emoji: '🎭',
-        hp: 1_800,
-        atk: 115,
-        def: 360,
+        hp: 16_000,
+        atk: 750,
+        def: 550,
       },
     ],
   },
@@ -71,30 +73,31 @@ const DIFFICULTY = {
     name: 'Hard',
     label: '🔴 HARD',
     coin: [21_000, 27_000],
+    exp: [100, 120],
     targets: [
       {
         id: 'assassin',
         name: 'Shadow Assassin',
         emoji: '🥷',
-        hp: 2_700,
-        atk: 215,
-        def: 450,
+        hp: 25_000,
+        atk: 1_200,
+        def: 700,
       },
       {
         id: 'warlord',
         name: 'Warlord',
         emoji: '⚔️',
-        hp: 3_100,
-        atk: 190,
-        def: 520,
+        hp: 30_000,
+        atk: 1_400,
+        def: 850,
       },
       {
         id: 'overlord',
         name: 'Cursed Overlord',
         emoji: '👹',
-        hp: 3_400,
-        atk: 200,
-        def: 560,
+        hp: 35_000,
+        atk: 1_600,
+        def: 1_000,
       },
     ],
   },
@@ -141,13 +144,16 @@ class BountyService {
     if (!config) throw new Error('Difficulty tidak valid.');
 
     const coin = randInt(config.coin[0], config.coin[1]);
+    const exp = randInt(config.exp[0], config.exp[1]);
+
     await walletModel.reward(
       jid,
       coin,
       `bounty ${String(difficulty).toLowerCase()}: ${target?.id ?? 'unknown'}`
     );
+    await userModel.addExp(jid, exp);
 
-    return { coin };
+    return { coin, exp };
   }
 
   targetStatLine(target) {
@@ -167,6 +173,7 @@ class BountyService {
       '',
       '🎁 Reward',
       `🪙 +${F.formatNumber(reward.coin)} Coin`,
+      `⭐ +${reward.exp} EXP`,
     ].join('\n');
   }
 
