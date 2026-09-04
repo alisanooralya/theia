@@ -142,8 +142,23 @@ function extractText(message, type, content) {
       return content?.singleSelectReply?.selectedRowId ?? '';
     case 'templateButtonReplyMessage':
       return content?.selectedId ?? '';
+    case 'interactiveResponseMessage':
+      return extractNativeFlowId(content);
     default:
       return '';
+  }
+}
+
+// Balasan native flow (Button/list dari builder.js) membawa id pilihan di
+// paramsJson, bukan di field teks biasa.
+function extractNativeFlowId(content) {
+  const params = content?.nativeFlowResponseMessage?.paramsJson;
+  if (!params) return '';
+  try {
+    const parsed = JSON.parse(params);
+    return typeof parsed?.id === 'string' ? parsed.id : '';
+  } catch {
+    return '';
   }
 }
 

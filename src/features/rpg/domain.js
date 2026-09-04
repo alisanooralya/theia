@@ -59,6 +59,13 @@ class DomainService {
     const config = DIFFICULTY[difficulty];
     if (!config) throw new Error('Difficulty tidak valid.');
 
+    return this.simulateBattleAgainst(jid, config.boss);
+  }
+
+  // Mesin combat dipakai bersama Domain & Bounty; `enemy` = { hp, atk, def }.
+  async simulateBattleAgainst(jid, enemy) {
+    if (!enemy) throw new Error('Musuh tidak valid.');
+
     const base = await statsModel.ensure(jid);
     if (base.hp <= 0)
       throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
@@ -79,11 +86,11 @@ class DomainService {
     };
 
     const boss = {
-      hp: config.boss.hp,
-      max_hp: config.boss.hp,
-      atk: config.boss.atk,
-      def: config.boss.def,
-      critRate: 0.05,
+      hp: enemy.hp,
+      max_hp: enemy.hp,
+      atk: enemy.atk,
+      def: enemy.def,
+      critRate: enemy.critRate ?? 0.05,
     };
 
     const rounds = [];
