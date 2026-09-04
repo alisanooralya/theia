@@ -56,7 +56,6 @@ function marketView(list, wallet) {
   }
 
   lines.push(...eventLines(list));
-  lines.push('');
 
   if (wallet) lines.push(`💰 Coin: *${money(wallet.cash)}*`);
   const countdown = F.formatDuration(marketService.nextUpdateIn());
