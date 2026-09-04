@@ -1,37 +1,81 @@
-import { userModel, walletModel } from '#storage/models/index.js';
-import { F } from '#helpers/index.js';
+import { workService as work } from '#features/economy/work.js';
+import { userModel } from '#storage/models/index.js';
+import { Button } from '#messages/builder.js';
 
-const JOBS = [
-  { name: 'kuli bangunan', reward: [100, 2000], exp: 10 },
-  { name: 'tukang kebun', reward: [800, 1500], exp: 8 },
-  { name: 'programmer freelance', reward: [4000, 5000], exp: 30 },
-  { name: 'ojol', reward: [900, 1800], exp: 12 },
-  { name: 'guru les', reward: [800, 2400], exp: 15 },
-  { name: 'chef', reward: [900, 2800], exp: 18 },
-];
+function workMenu(ctx) {
+  const builder = new Button(ctx.sock)
+    .setTitle('💼 WORK')
+    .setSubtitle('Pilih pekerjaan, tunggu, lalu ambil upah')
+    .setBody('Pilih pekerjaan yang mau kamu kerjakan')
+    .setFooter('Upah final diundi saat pekerjaan selesai')
+    .addSelection('💼 Pilih Pekerjaan')
+    .makeSection('Daftar Pekerjaan');
+
+  for (const job of work.jobs) {
+    builder.makeRow(
+      '',
+      `${job.emoji} ${job.label}`,
+      work.jobLine(job),
+      `.work ${job.id}`
+    );
+  }
+
+  return builder.send(ctx.jid);
+}
+
+function statusMessage(ctx, state) {
+  const text = work.formatStatus(state);
+  if (!state.finished) return ctx.reply(text);
+
+  return new Button(ctx.sock)
+    .setTitle('💼 WORK')
+    .setSubtitle('Pekerjaan selesai')
+    .setBody(text)
+    .setFooter('Tap CLAIM untuk mengambil upah')
+    .addReply('✅ CLAIM', '.work claim')
+    .send(ctx.jid);
+}
 
 export default {
   name: 'work',
   aliases: ['kerja', 'bekerja'],
   category: 'economy',
   description: 'Cari uang dengan bekerja',
-  cooldown: 3 * 60 * 60 * 1000,
 
   async execute(ctx) {
     await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
-    const job = JOBS[Math.floor(Math.random() * JOBS.length)];
-    const reward = Math.floor(
-      job.reward[0] + Math.random() * (job.reward[1] - job.reward[0])
-    );
 
-    const [_, { leveledUp, newLevel }] = await Promise.all([
-      walletModel.reward(ctx.sender, reward, `work: ${job.name}`),
-      userModel.addExp(ctx.sender, job.exp),
-    ]);
+    const sub = ctx.args[0]?.toLowerCase();
+    const state = await work.getState(ctx.sender);
 
-    let text = `💼 *Bekerja*\n\nKamu kerja sebagai *${job.name}*\n🪙 +${F.formatNumber(reward)} coin\n⭐ +${job.exp} EXP`;
-    if (leveledUp)
-      text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
-    await ctx.reply(text);
+    if (sub === 'claim') {
+      if (!state.active)
+        return ctx.fail(
+          'Kamu belum bekerja. Ketik `.work` untuk pilih pekerjaan.'
+        );
+      if (!state.finished) return statusMessage(ctx, state);
+
+      const result = await work.claim(ctx.sender);
+      return ctx.reply(work.formatClaim(result));
+    }
+
+    if (state.active) return statusMessage(ctx, state);
+    if (!sub) return workMenu(ctx);
+
+    const job = work.getJob(sub);
+    if (!job)
+      return ctx.fail(
+        [
+          'Pekerjaan tidak ditemukan.',
+          '',
+          'Pilihan yang tersedia:',
+          ...work.jobs.map((item) => `- \`.work ${item.id}\` — ${item.label}`),
+          '',
+          'Atau ketik `.work` untuk daftar lengkap.',
+        ].join('\n')
+      );
+
+    const row = await work.start(ctx.sender, job.id);
+    return ctx.reply(work.formatStarted(row));
   },
 };

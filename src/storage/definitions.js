@@ -204,6 +204,21 @@ const STATIC_SCHEMA = [
   `,
 
   `
+  CREATE TABLE IF NOT EXISTS work_sessions (
+    jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+    job         TEXT    NOT NULL,
+    status      TEXT    NOT NULL DEFAULT 'active',
+    reward_coin INTEGER NOT NULL DEFAULT 0,
+    reward_exp  INTEGER NOT NULL DEFAULT 0,
+    started_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    ends_at     INTEGER NOT NULL DEFAULT 0,
+    claimed_at  INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
   CREATE TABLE IF NOT EXISTS relics (
     id          BIGSERIAL PRIMARY KEY,
     owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
