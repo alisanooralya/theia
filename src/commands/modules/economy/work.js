@@ -31,7 +31,6 @@ function statusMessage(ctx, state) {
     .setTitle('💼 WORK')
     .setSubtitle('Pekerjaan selesai')
     .setBody(text)
-    .setFooter('Tap CLAIM untuk mengambil upah')
     .addReply('✅ CLAIM', '.work claim')
     .send(ctx.jid);
 }

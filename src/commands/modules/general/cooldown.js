@@ -21,7 +21,7 @@ export default {
       });
 
     return ctx.reply(
-      `⏳ *Cooldown Aktif*\n\n${lines.join('\n')}\n\n_Ketik .cd untuk melihat status cooldown._`
+      `⏳ *Cooldown Aktif*\n\n${lines.join('\n')}`
     );
   },
 };

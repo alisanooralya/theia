@@ -6,7 +6,6 @@ import SETTINGS from '#environment/settings.js';
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 
-// Semua angka balancing Work ada di sini: durasi, range Coin, dan range EXP.
 const JOBS = [
   {
     id: 'ojol',
@@ -14,7 +13,7 @@ const JOBS = [
     label: 'Ojol',
     emoji: '🛵',
     durationMs: 30 * MINUTE,
-    coin: [1200, 1800],
+    coin: [1900, 2400],
     exp: [8, 12],
   },
   {
@@ -23,7 +22,7 @@ const JOBS = [
     label: 'Kuli Bangunan',
     emoji: '🧱',
     durationMs: 45 * MINUTE,
-    coin: [1800, 3000],
+    coin: [2000, 3000],
     exp: [10, 16],
   },
   {
@@ -32,7 +31,7 @@ const JOBS = [
     label: 'Tukang Kebun',
     emoji: '🌱',
     durationMs: 1 * HOUR,
-    coin: [2600, 2900],
+    coin: [2800, 3600],
     exp: [12, 18],
   },
   {
@@ -41,7 +40,7 @@ const JOBS = [
     label: 'Programmer Freelance',
     emoji: '💻',
     durationMs: 1 * HOUR,
-    coin: [2000, 4400],
+    coin: [5000, 6800],
     exp: [25, 35],
   },
   {
@@ -50,7 +49,7 @@ const JOBS = [
     label: 'Guru Les',
     emoji: '📚',
     durationMs: 2 * HOUR,
-    coin: [4000, 5500],
+    coin: [5900, 7200],
     exp: [45, 60],
   },
   {
@@ -59,7 +58,7 @@ const JOBS = [
     label: 'Chef',
     emoji: '👨‍🍳',
     durationMs: 3 * HOUR,
-    coin: [7000, 9000],
+    coin: [7000, 10000],
     exp: [55, 70],
   },
 ];
@@ -117,7 +116,6 @@ class WorkService {
     return clockFormat.format(new Date(ms));
   }
 
-  // Status dihitung dari timestamp database, bukan timer di memori.
   async getState(jid) {
     const row = await workModel.find(jid);
     if (!row || row.status !== 'active') {
@@ -157,10 +155,6 @@ class WorkService {
     return row;
   }
 
-  /**
-   * Reward final diundi di sini (bukan saat mulai) lalu ditulis bersama
-   * pembayaran dalam satu transaksi.
-   */
   async claim(jid) {
     const result = await sql.begin(async (t) => {
       const current = await workModel.findActive(jid, t);
@@ -191,8 +185,8 @@ class WorkService {
 
     return [
       '💼 *MULAI BEKERJA*',
-      '',
       `${job.emoji} ${job.label}`,
+      '',
       `⏱️ Durasi: ${this.durationLabel(job)}`,
       `🏁 Selesai: ${this.formatClock(Number(row.ends_at) * 1000)}`,
       `🪙 Estimasi: ${this.coinRange(job)}`,
@@ -206,9 +200,8 @@ class WorkService {
     const { job } = state;
 
     return [
-      '💼 *WORK*',
-      '',
       `${job.emoji} ${job.label}`,
+      '',
       `📍 Status: ${state.finished ? 'Selesai' : 'Sedang bekerja'}`,
       state.finished
         ? `🏁 Selesai pada: ${this.formatClock(state.endsAtMs)}`
@@ -217,7 +210,7 @@ class WorkService {
       `⭐ Estimasi: ${this.expRange(job)}`,
       '',
       state.finished
-        ? 'Ketik `.work claim` untuk mengambil upah.'
+        ? ''
         : 'Upah cair setelah pekerjaan selesai.',
     ].join('\n');
   }
@@ -227,7 +220,6 @@ class WorkService {
 
     const lines = [
       '💼 *KERJA SELESAI*',
-      '',
       `${job.emoji} ${job.label}`,
       '',
       '🎁 Upah',
