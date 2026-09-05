@@ -3,9 +3,28 @@ import { parseMessage } from '#messages/parser.js';
 import { dispatch } from '#messages/dispatcher.js';
 import { logger } from '#helpers/logger.js';
 import { isStatus } from '#helpers/identifier.js';
+import { isOwnerJid } from '#helpers/owner.js';
 import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
 import { agentService } from '#agent/index.js';
+import { userModel, groupModel } from '#storage/models/index.js';
 import SETTINGS from '#environment/settings.js';
+
+// Guard di luar command pipeline: jalur agent/mention tidak lewat
+// runPipeline(), jadi ban & mute harus dicek manual di sini.
+async function isSenderBanned(parsed) {
+  const isOwner =
+    isOwnerJid(parsed.sender) ||
+    (parsed.senderAlt && isOwnerJid(parsed.senderAlt)) ||
+    (parsed.jidAlt && isOwnerJid(parsed.jidAlt));
+  if (isOwner) return false;
+  return userModel.isBanned(parsed.sender);
+}
+
+async function isChatMuted(parsed) {
+  if (!parsed.isGroup) return false;
+  const group = await groupModel.find(parsed.jid);
+  return Boolean(group?.mute);
+}
 
 export async function onMessagesUpsert({ messages, type }, sock) {
   if (type !== 'notify') return;
@@ -39,12 +58,16 @@ export async function onMessagesUpsert({ messages, type }, sock) {
         !isCommand &&
         (parsed.isGroup ? isTriggered : true)
       ) {
+        if (await isSenderBanned(parsed)) continue;
+        if (await isChatMuted(parsed)) continue;
         await agentService.handleMessage(parsed, msg, sock);
         continue;
       }
 
       // Legacy mention response — only when the agent is disabled.
       if (isMentioned && parsed.text && !isCommand) {
+        if (await isSenderBanned(parsed)) continue;
+        if (await isChatMuted(parsed)) continue;
         await sock.sendMessage(
           parsed.jid,
           {

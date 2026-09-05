@@ -15,7 +15,7 @@ import { toolRegistry } from './tools/index.js';
 import { canUseTool } from './permissions.js';
 import { buildSystemPrompt } from './prompts.js';
 import { allowAgentCall } from './rate-limit.js';
-import { getHistory, pushHistory } from './memory.js';
+import { getHistory, pushHistory, sessionKey } from './memory.js';
 
 const TOOL_RESULT_MAX = 4000; // chars of a tool result sent back to the model
 
@@ -38,9 +38,12 @@ export class Agent {
           .join(' ') || '[media]'
       : String(userContent ?? '');
 
+    const memoryKey =
+      agentCtx.memoryKey ?? sessionKey(agentCtx.userId, agentCtx.jid);
+
     const messages = [
       { role: 'system', content: buildSystemPrompt(agentCtx) },
-      ...getHistory(agentCtx.userId),
+      ...getHistory(memoryKey),
       { role: 'user', content: userContent },
     ];
 
@@ -100,8 +103,8 @@ export class Agent {
       const finalText = (res.content ?? '').trim();
       if (!finalText) throw new Error('Gemini: respons kosong.');
 
-      pushHistory(agentCtx.userId, 'user', userTextForHistory);
-      pushHistory(agentCtx.userId, 'assistant', finalText);
+      pushHistory(memoryKey, 'user', userTextForHistory);
+      pushHistory(memoryKey, 'assistant', finalText);
       return { replied: true, text: finalText };
     } catch (err) {
       logger.warn(

@@ -8,6 +8,7 @@
 import { isOwnerJid } from '#helpers/owner.js';
 import { userModel } from '#storage/models/index.js';
 import { resolveLevel } from './permissions.js';
+import { sessionKey } from './memory.js';
 
 export async function buildAgentContext(parsed, sock) {
   const userId = parsed.sender; // authenticated, from the message itself
@@ -24,6 +25,9 @@ export async function buildAgentContext(parsed, sock) {
     isGroup: parsed.isGroup,
     isOwner,
     level: resolveLevel({ isOwner }),
+
+    // riwayat percakapan di-scope per user + per chat
+    memoryKey: sessionKey(userId, parsed.jid),
 
     // minimal context for the model (safe subset only)
     quoted: parsed.quoted
