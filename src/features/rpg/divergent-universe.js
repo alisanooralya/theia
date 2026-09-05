@@ -1362,7 +1362,7 @@ class DivergentUniverseService {
       cash: rewardCash,
       exp: rewardExp,
     };
-    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP.`;
+    state.lastResult = `✅ Token valid.\n\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP.`;
   }
 }
 
