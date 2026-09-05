@@ -13,6 +13,7 @@ export default {
 
     try {
       const result = await downloaderService.tiktok(url);
+      await ctx.reply('Tunggu sebentar... prosess memakan waktu');
 
       if (result.type === 'video') {
         const buf = await downloaderService.toBuffer(result.url);

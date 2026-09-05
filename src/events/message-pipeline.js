@@ -9,8 +9,6 @@ import { agentService } from '#agent/index.js';
 import { userModel, groupModel } from '#storage/models/index.js';
 import SETTINGS from '#environment/settings.js';
 
-// Guard di luar command pipeline: jalur agent/mention tidak lewat
-// runPipeline(), jadi ban & mute harus dicek manual di sini.
 async function isSenderBanned(parsed) {
   const isOwner =
     isOwnerJid(parsed.sender) ||

@@ -17,6 +17,7 @@ export default {
     try {
       const result = await downloaderService.youtube(url);
       const duration = F.formatDuration(result.duration * 1000);
+      await ctx.reply('Tunggu sebentar... prosess memakan waktu');
 
       if (audioOnly) {
         if (!result.audioUrl)
