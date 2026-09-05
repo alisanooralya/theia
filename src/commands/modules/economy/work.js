@@ -3,7 +3,7 @@ import { userModel } from '#storage/models/index.js';
 import { Button } from '#messages/builder.js';
 import { F } from '#helpers/index.js';
 
-const COOLDOWN_MS = 12 * 60 * 60 * 1000;
+const COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 function workMenu(ctx) {
   const builder = new Button(ctx.sock)
