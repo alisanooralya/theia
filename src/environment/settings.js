@@ -28,24 +28,6 @@ const SETTINGS = Object.freeze({
   authBackend: config.authBackend === 'sqlite' ? 'sqlite' : 'file',
   sessionId: config.sessionId ?? 'default',
 
-  openaiKey: config.openaiKey || '',
-  openaiModel: config.openaiModel || 'gpt-4o-mini',
-  anthropicKey: config.anthropicKey || '',
-  anthropicModel: config.anthropicModel || 'claude-haiku-4-5',
-  groqKey: config.groqKey || '',
-  groqModel: config.groqModel || 'llama-3.1-8b-instant',
-
-  geminiKey: config.geminiKey || '',
-  geminiModel: config.geminiModel || 'gemini-3.6-flash',
-  aiAgentEnabled: !!config.aiAgentEnabled,
-
-  agentMaxToolCalls: parseInt(config.agentMaxToolCalls, 10),
-  agentRateLimitMax: parseInt(config.agentRateLimitMax, 10),
-  agentRateLimitWindow: parseInt(config.agentRateLimitWindow, 10),
-  agentCooldownMs: parseInt(config.agentCooldownMs, 10),
-  agentTimeoutMs: parseInt(config.agentTimeoutMs, 10),
-  agentMaxHistory: parseInt(config.agentMaxHistory, 10),
-
   tiktokApiKey: config.tiktokApiKey || '',
 });
 

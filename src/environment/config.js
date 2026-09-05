@@ -21,18 +21,6 @@ export default {
   authBackend: 'sqlite',
   sessionId: 'default',
 
-  // ─── AI Agent ───
-  // Key Gemini: https://aistudio.google.com/apikey
-  aiAgentEnabled: true,
-  geminiKey: '',
-  geminiModel: 'gemini-3.6-flash',
-  agentMaxToolCalls: 5,
-  agentRateLimitMax: 10,
-  agentRateLimitWindow: 60,
-  agentCooldownMs: 5000,
-  agentTimeoutMs: 30000,
-  agentMaxHistory: 6,
-
   // ─── Logging ───
   // 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
   logLevel: 'warn',

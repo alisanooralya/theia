@@ -4,7 +4,6 @@ import { logger } from '#helpers/logger.js';
 import { isStatus, getBotJids } from '#helpers/identifier.js';
 import { isOwnerJid } from '#helpers/owner.js';
 import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
-import { agentService } from '#agent/index.js';
 import { userModel, groupModel } from '#storage/models/index.js';
 import SETTINGS from '#environment/settings.js';
 
@@ -48,19 +47,10 @@ export async function onMessagesUpsert({ messages, type }, sock) {
 
       const hasMediaTrigger = parsed.isMedia || parsed.quoted?.isMedia;
       if (
-        agentService.isEnabled() &&
-        (parsed.text || hasMediaTrigger) &&
-        !isCommand &&
-        (parsed.isGroup ? isMentioned : true)
+        parsed.text &&
+        isMentioned &&
+        !isCommand
       ) {
-        if (await isSenderBanned(parsed)) continue;
-        if (await isChatMuted(parsed)) continue;
-        await agentService.handleMessage(parsed, msg, sock);
-        continue;
-      }
-
-      // Legacy mention response — only when the agent is disabled.
-      if (isMentioned && parsed.text && !isCommand) {
         if (await isSenderBanned(parsed)) continue;
         if (await isChatMuted(parsed)) continue;
         await sock.sendMessage(
