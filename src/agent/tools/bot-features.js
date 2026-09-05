@@ -2,7 +2,12 @@
  * Bot feature tools — expose common bot commands as agent tools.
  * Reuses existing services/models; no new dependencies.
  */
-import { userModel, walletModel, cooldownModel, workModel } from '#storage/models/index.js';
+import {
+  userModel,
+  walletModel,
+  cooldownModel,
+  workModel,
+} from '#storage/models/index.js';
 import { workService } from '#features/economy/work.js';
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
@@ -23,7 +28,8 @@ const startedAt = Date.now();
 export const botFeatureTools = [
   {
     name: 'claim_daily',
-    description: 'Klaim reward harian (coin + EXP). Reset setiap jam 00:00 WIB.',
+    description:
+      'Klaim reward harian (coin + EXP). Reset setiap jam 00:00 WIB.',
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute(_args, ctx) {
@@ -34,7 +40,8 @@ export const botFeatureTools = [
       if (lastKey === todayKey) {
         return {
           success: false,
-          error: 'Klaim daily sudah dilakukan hari ini. Reset berikutnya jam 00:00 WIB.',
+          error:
+            'Klaim daily sudah dilakukan hari ini. Reset berikutnya jam 00:00 WIB.',
         };
       }
 
@@ -81,7 +88,11 @@ export const botFeatureTools = [
           exp: user.exp,
           expForNext,
           interest: interest.applied
-            ? { days: interest.days, amount: interest.interest, capped: interest.capped }
+            ? {
+                days: interest.days,
+                amount: interest.interest,
+                capped: interest.capped,
+              }
             : null,
         },
       };
@@ -89,14 +100,16 @@ export const botFeatureTools = [
   },
   {
     name: 'start_work',
-    description: 'Mulai pekerjaan. Pekerjaan tersedia: ojol, kuli, kebun, programmer, guru, chef.',
+    description:
+      'Mulai pekerjaan. Pekerjaan tersedia: ojol, kuli, kebun, programmer, guru, chef.',
     permission: 'user',
     parameters: {
       type: 'object',
       properties: {
         job_id: {
           type: 'string',
-          description: 'ID pekerjaan: ojol, kuli, kebun, programmer, guru, chef',
+          description:
+            'ID pekerjaan: ojol, kuli, kebun, programmer, guru, chef',
         },
       },
       required: ['job_id'],
@@ -140,7 +153,10 @@ export const botFeatureTools = [
     async execute(_args, ctx) {
       const state = await workService.getState(ctx.userId);
       if (!state.active) {
-        return { success: false, error: 'Tidak ada pekerjaan aktif. Mulai dengan start_work.' };
+        return {
+          success: false,
+          error: 'Tidak ada pekerjaan aktif. Mulai dengan start_work.',
+        };
       }
       if (!state.finished) {
         return {
@@ -164,7 +180,10 @@ export const botFeatureTools = [
     async execute(_args, ctx) {
       const state = await workService.getState(ctx.userId);
       if (!state.active) {
-        return { success: true, data: { active: false, message: 'Tidak ada pekerjaan aktif.' } };
+        return {
+          success: true,
+          data: { active: false, message: 'Tidak ada pekerjaan aktif.' },
+        };
       }
       return {
         success: true,
@@ -180,7 +199,8 @@ export const botFeatureTools = [
   },
   {
     name: 'list_work_jobs',
-    description: 'Daftar semua pekerjaan yang tersedia beserta estimasi penghasilan.',
+    description:
+      'Daftar semua pekerjaan yang tersedia beserta estimasi penghasilan.',
     permission: 'user',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     async execute() {
@@ -220,7 +240,8 @@ export const botFeatureTools = [
         success: true,
         data: {
           cooldowns: lines,
-          message: lines.length === 0 ? 'Semua fitur siap digunakan.' : undefined,
+          message:
+            lines.length === 0 ? 'Semua fitur siap digunakan.' : undefined,
         },
       };
     },
