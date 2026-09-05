@@ -12,6 +12,7 @@ import { userTools } from './user.js';
 import { economyTools } from './economy.js';
 import { downloaderTools } from './downloader.js';
 import { ownerTools } from './owner.js';
+import { botFeatureTools } from './bot-features.js';
 
 class ToolRegistry {
   _tools = new Map();
@@ -60,6 +61,7 @@ for (const tool of [
   ...economyTools,
   ...downloaderTools,
   ...ownerTools,
+  ...botFeatureTools,
 ]) {
   toolRegistry.register(tool);
 }

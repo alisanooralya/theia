@@ -44,9 +44,6 @@ export async function onMessagesUpsert({ messages, type }, sock) {
 
       const botJids = getBotJids(sock);
       const isMentioned = parsed.mentions?.some((jid) => botJids.includes(jid));
-      const isRepliedToBot =
-        !!parsed.quoted?.sender && botJids.includes(parsed.quoted.sender);
-      const isTriggered = isMentioned || isRepliedToBot;
       const isCommand = parsed.text?.startsWith(SETTINGS.prefix) ?? false;
 
       const hasMediaTrigger = parsed.isMedia || parsed.quoted?.isMedia;
@@ -54,7 +51,7 @@ export async function onMessagesUpsert({ messages, type }, sock) {
         agentService.isEnabled() &&
         (parsed.text || hasMediaTrigger) &&
         !isCommand &&
-        (parsed.isGroup ? isTriggered : true)
+        (parsed.isGroup ? isMentioned : true)
       ) {
         if (await isSenderBanned(parsed)) continue;
         if (await isChatMuted(parsed)) continue;
