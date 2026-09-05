@@ -360,6 +360,43 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  `
+  CREATE TABLE IF NOT EXISTS meteors (
+    id          BIGSERIAL PRIMARY KEY,
+    day_key     TEXT    NOT NULL UNIQUE,
+    hp          BIGINT  NOT NULL,
+    max_hp      BIGINT  NOT NULL,
+    status      TEXT    NOT NULL DEFAULT 'active',
+    rewarded_at BIGINT  NOT NULL DEFAULT 0,
+    cleared_at  BIGINT  NOT NULL DEFAULT 0,
+    created_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS meteor_contributions (
+    meteor_id   BIGINT  NOT NULL REFERENCES meteors(id) ON DELETE CASCADE,
+    jid         TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    damage      BIGINT  NOT NULL DEFAULT 0,
+    hits        INTEGER NOT NULL DEFAULT 0,
+    reward_coin BIGINT  NOT NULL DEFAULT 0,
+    reward_exp  BIGINT  NOT NULL DEFAULT 0,
+    created_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    PRIMARY KEY (meteor_id, jid)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS mining_points (
+    jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+    day_key     TEXT    NOT NULL DEFAULT '',
+    used        INTEGER NOT NULL DEFAULT 0,
+    updated_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
   `CREATE INDEX IF NOT EXISTS idx_market_history_commodity ON market_history(commodity_id, id DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_market_portfolio_jid ON market_portfolio(jid)`,
   `CREATE INDEX IF NOT EXISTS idx_market_trades_jid ON market_trades(jid, id DESC)`,
@@ -378,6 +415,7 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_group_activity_jid  ON group_activity(jid, xp DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_group_activity_user ON group_activity(user_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_divergent_runs_status ON divergent_runs(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_meteor_contrib_meteor ON meteor_contributions(meteor_id, damage DESC)`,
 ];
 
 // Migration statements, applied on every startup (idempotent).
@@ -436,6 +474,13 @@ export async function createSchema() {
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_divergent_runs_active_chat
      ON divergent_runs(chat_jid)
      WHERE status = 'active' AND chat_jid IS NOT NULL`
+  );
+  // Kunci global: maksimal satu Meteor berstatus 'active' di seluruh tabel,
+  // ditegakkan oleh Postgres supaya dua request bersamaan tidak bisa membuat dua Meteor.
+  await sql.unsafe(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_meteors_single_active
+     ON meteors((status))
+     WHERE status = 'active'`
   );
   logger.info('Schema ready');
 }

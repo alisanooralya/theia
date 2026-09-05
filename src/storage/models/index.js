@@ -16,3 +16,4 @@ export { expeditionModel } from './expedition.js';
 export { workModel } from './work.js';
 export { marketModel } from './market.js';
 export { marketNewsModel } from './market-news.js';
+export { meteorModel } from './meteor.js';

@@ -1,69 +1,67 @@
-import { userModel, walletModel } from '#storage/models/index.js';
-import { F } from '#helpers/index.js';
+import { meteorService as meteor } from '#features/rpg/meteor.js';
+import { userModel } from '#storage/models/index.js';
+import { Button } from '#messages/builder.js';
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-const MINERALS = [
-  { name: 'Batu Bara', reward: [130, 380], exp: 5, emoji: '🪨', rate: 40 },
-  { name: 'Bijih Besi', reward: [380, 900], exp: 10, emoji: '⛏️', rate: 28 },
-  { name: 'Tembaga', reward: [650, 1500], exp: 15, emoji: '🟤', rate: 18 },
-  { name: 'Perak', reward: [1300, 3200], exp: 25, emoji: '🥈', rate: 9 },
-  { name: 'Emas', reward: [3800, 7700], exp: 50, emoji: '🥇', rate: 4 },
-  { name: 'Berlian', reward: [6500, 13000], exp: 80, emoji: '💎', rate: 1 },
-];
-
-function pickMineral() {
-  const total = MINERALS.reduce((s, m) => s + m.rate, 0);
-  let roll = Math.random() * total;
-  for (const m of MINERALS) {
-    if ((roll -= m.rate) < 0) return m;
+function meteorCard(ctx, state) {
+  // Tanpa Mining Point tidak ada tombol yang bisa ditawarkan, dan interactive
+  // message tanpa button tidak dirender konsisten — jadi kirim teks biasa.
+  if (state.pointsLeft <= 0) {
+    return ctx.reply(
+      [
+        meteor.formatStatus(state),
+        '',
+        'Mining Point habis. Reset jam 00:00.',
+      ].join('\n')
+    );
   }
-  return MINERALS[MINERALS.length - 1];
-}
 
-const miningUsers = new Set();
+  return new Button(ctx.sock)
+    .setTitle('☄️ METEOR MINE')
+    .setSubtitle('Target bersama — tambang sampai HP habis')
+    .setBody(meteor.formatStatus(state))
+    .setFooter('Tap MINE untuk menambang (1 Mining Point)')
+    .addReply('⛏️ MINE', '.mine hit')
+    .send(ctx.jid);
+}
 
 export default {
   name: 'mine',
-  aliases: ['mining', 'tambang'],
+  aliases: ['mining', 'tambang', 'meteor'],
   category: 'rpg',
-  description: 'Menambang mineral untuk dapat uang',
-  cooldown: 60 * 60 * 1000,
+  description: 'Tambang Meteor bersama user lain',
+  cooldown: 5_000,
 
   async execute(ctx) {
     await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-    if (miningUsers.has(ctx.sender)) {
-      return ctx.fail('⛏️ Kamu masih menambang, tunggu sampai selesai dulu!');
+    const sub = ctx.args[0]?.toLowerCase();
+
+    if (sub === 'hit' || sub === 'mine') {
+      const result = await meteor.mine(ctx.sender);
+
+      if (!result.cleared) {
+        return ctx.reply(meteor.formatMineResult(result));
+      }
+
+      const { text, mentions } = meteor.formatCleared(result, ctx.sender);
+      return ctx.reply({ text, mentions });
     }
 
-    miningUsers.add(ctx.sender);
-    try {
-      const statusMsg = await ctx.reply(
-        '⛏️ Kamu mulai menambang... sabar ya, tunggu sebentar~'
+    const state = await meteor.getState(ctx.sender);
+
+    if (!state.meteor) {
+      return ctx.reply(
+        [
+          '☄️ *METEOR MINE*',
+          '',
+          'Meteor hari ini sudah hancur.',
+          'Meteor berikutnya muncul besok.',
+          '',
+          `🔋 Mining Point: ${state.pointsLeft}/${meteor.config.maxPointsPerDay}`,
+        ].join('\n')
       );
-
-      const delay = 3000 + Math.floor(Math.random() * 2000);
-      await sleep(delay);
-
-      const mineral = pickMineral();
-      const reward = Math.floor(
-        mineral.reward[0] +
-          Math.random() * (mineral.reward[1] - mineral.reward[0])
-      );
-
-      const [, { leveledUp, newLevel }] = await Promise.all([
-        walletModel.reward(ctx.sender, reward, `mine: ${mineral.name}`),
-        userModel.addExp(ctx.sender, mineral.exp),
-      ]);
-
-      let text = `⛏️ *Mining!*\n\n${mineral.emoji} Kamu dapat: *${mineral.name}*\n🪙 +${F.formatNumber(reward)}\n⭐ +${mineral.exp} EXP`;
-      if (leveledUp)
-        text += `\n\n🎉 *LEVEL UP!* Kamu sekarang level *${newLevel}*!`;
-
-      await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
-    } finally {
-      miningUsers.delete(ctx.sender);
     }
+
+    return meteorCard(ctx, state);
   },
 };
