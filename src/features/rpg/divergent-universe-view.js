@@ -43,8 +43,31 @@ function totalEffects(state) {
   return effects;
 }
 
+function hpScaleOf(state) {
+  const scale = Number(state?.hpScale);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
+function scaleHp(state, amount) {
+  if (!amount) return 0;
+  const scaled = Math.round(amount * hpScaleOf(state));
+  if (scaled !== 0) return scaled;
+  return amount > 0 ? 1 : -1;
+}
+
+// Angka HP pada deskripsi disimpan sebagai `{hp:N}` di baseline 100.
+function describeText(state, text) {
+  if (typeof text !== 'string' || text.indexOf('{hp:') === -1) return text;
+  return text.replace(/\{hp:(-?\d+)\}/g, (_, raw) =>
+    String(Math.abs(scaleHp(state, Number(raw))))
+  );
+}
+
 function maxHp(state) {
-  return Math.max(50, state.baseMaxHp + (totalEffects(state).maxHp || 0));
+  return Math.max(
+    scaleHp(state, 50),
+    state.baseMaxHp + scaleHp(state, totalEffects(state).maxHp || 0)
+  );
 }
 
 function statusLabel(status) {
@@ -167,7 +190,7 @@ export function renderDuHtml(run) {
           ? ` <span class="tag">${esc(du.paths[item.path]?.name || '')}</span>`
           : '';
         const errTag = item.error ? ' <span class="err">ERROR</span>' : '';
-        return `<div class="copt" onclick="copy('.du choose ${i + 1}')"><span class="cnum">${i + 1}</span><div class="ccont"><span class="cname">${esc(item.name)}${pathTag}${errTag}</span><span class="ctext">${esc(item.text)}</span></div></div>`;
+        return `<div class="copt" onclick="copy('.du choose ${i + 1}')"><span class="cnum">${i + 1}</span><div class="ccont"><span class="cname">${esc(item.name)}${pathTag}${errTag}</span><span class="ctext">${esc(describeText(state, item.text))}</span></div></div>`;
       })
       .join('');
     return `<div class="sectionTitle">${esc(title)}</div><div class="choices">${items}</div>`;
@@ -402,7 +425,7 @@ const CLIENT_APP = String.raw`
       var tag = it.path ? '<span class="tag">' + esc(pathById(it.path).name) + '</span>' : '';
       var err = it.error ? '<span class="err">ERROR</span>' : '';
       return '<button class="copt" onclick="duChoose(' + i + ')"><span class="cnum">' + (i + 1) + '</span>' +
-        '<span class="ctext">' + esc(it.name) + tag + err + '<br><small>' + esc(it.text) + '</small></span></button>';
+        '<span class="ctext">' + esc(it.name) + tag + err + '<br><small>' + esc(game.describe(it.text)) + '</small></span></button>';
     }).join('');
   }
 
@@ -473,7 +496,7 @@ const CLIENT_APP = String.raw`
       if (!it) return '';
       var tag = it.path ? '<span class="tag">' + esc(pathById(it.path).name) + '</span>' : '';
       var err = it.error ? '<span class="err">ERROR</span>' : '';
-      return '<div class="oitem"><b>' + esc(it.name) + tag + err + '</b><span>' + esc(it.text) + '</span></div>';
+      return '<div class="oitem"><b>' + esc(it.name) + tag + err + '</b><span>' + esc(game.describe(it.text)) + '</span></div>';
     }).join('');
     var title = type === 'blessing' ? '✦ Blessing' : '◆ Curio';
     var body = items || '<div class="oempty">Belum ada ' + (type === 'blessing' ? 'blessing' : 'curio') + ' pada run ini.</div>';

@@ -48,14 +48,14 @@ const BLESSINGS = [
     id: 'destruction_regression',
     path: 'destruction',
     name: 'Regression',
-    text: 'Pulihkan 8 HP setelah menang.',
+    text: 'Pulihkan {hp:8} HP setelah menang.',
     heal: 8,
   },
   {
     id: 'destruction_cataclysm',
     path: 'destruction',
     name: 'Cataclysm',
-    text: '+10% damage dan +5 max HP.',
+    text: '+10% damage dan +{hp:5} max HP.',
     atk: 0.1,
     maxHp: 5,
   },
@@ -112,14 +112,14 @@ const BLESSINGS = [
     id: 'preservation_shield',
     path: 'preservation',
     name: 'Amber Shield',
-    text: 'Dapatkan shield 7 HP sebelum battle.',
+    text: 'Dapatkan shield {hp:7} HP sebelum battle.',
     shield: 7,
   },
   {
     id: 'preservation_resonance',
     path: 'preservation',
     name: 'Resonant Guard',
-    text: '+8 max HP dan -5% damage.',
+    text: '+{hp:8} max HP dan -5% damage.',
     maxHp: 8,
     reduction: 0.05,
   },
@@ -127,14 +127,14 @@ const BLESSINGS = [
     id: 'abundance_dewdrop',
     path: 'abundance',
     name: 'Dewdrop',
-    text: 'Pulihkan 12 HP setelah menang.',
+    text: 'Pulihkan {hp:12} HP setelah menang.',
     heal: 12,
   },
   {
     id: 'abundance_lotus',
     path: 'abundance',
     name: 'Lotus in Bloom',
-    text: '+15 max HP.',
+    text: '+{hp:15} max HP.',
     maxHp: 15,
   },
   {
@@ -177,13 +177,13 @@ const CURIOS = [
   {
     id: 'healing_terminal',
     name: 'Healing Terminal',
-    text: 'Pulihkan 15 HP saat didapat.',
+    text: 'Pulihkan {hp:15} HP saat didapat.',
     instantHeal: 15,
   },
   {
     id: 'shattered_crown',
     name: 'Shattered Crown',
-    text: '+18% damage, tetapi max HP -8.',
+    text: '+18% damage, tetapi max HP -{hp:8}.',
     atk: 0.18,
     maxHp: -8,
   },
@@ -392,7 +392,7 @@ const EVENT_SCENARIOS = {
       name: 'Bantu Penelitian',
       text: 'Dapatkan Blessing acak dan 60 fragment.',
     },
-    { id: 'ruan_rest', name: 'Minta Pemulihan', text: 'Pulihkan 40 HP.' },
+    { id: 'ruan_rest', name: 'Minta Pemulihan', text: 'Pulihkan {hp:40} HP.' },
     { id: 'ruan_leave', name: 'Pergi Diam-diam', text: 'Ambil 120 fragment.' },
   ],
   'Unending Darkness': [
@@ -404,9 +404,9 @@ const EVENT_SCENARIOS = {
     {
       id: 'darkness',
       name: 'Masuki Kegelapan',
-      text: 'Kehilangan 22 HP dan memperoleh 260 fragment.',
+      text: 'Kehilangan {hp:22} HP dan memperoleh 260 fragment.',
     },
-    { id: 'wait', name: 'Menunggu', text: 'Pulihkan 20 HP.' },
+    { id: 'wait', name: 'Menunggu', text: 'Pulihkan {hp:20} HP.' },
   ],
   'Cosmic Merchant': [
     {
@@ -429,40 +429,48 @@ const EVENT_SCENARIOS = {
     {
       id: 'chase',
       name: 'Kejar Trotter',
-      text: '50% mendapat 320 fragment, jika gagal kehilangan 20 HP.',
+      text: '50% mendapat 320 fragment, jika gagal kehilangan {hp:20} HP.',
     },
     {
       id: 'feed',
       name: 'Beri Makan',
-      text: 'Bayar 60 fragment untuk mendapat 10 max HP.',
+      text: 'Bayar 60 fragment untuk mendapat {hp:10} max HP.',
     },
-    { id: 'trotter_leave', name: 'Biarkan Pergi', text: 'Pulihkan 25 HP.' },
+    {
+      id: 'trotter_leave',
+      name: 'Biarkan Pergi',
+      text: 'Pulihkan {hp:25} HP.',
+    },
   ],
   'Mirror of Memories': [
     {
       id: 'mirror_blessing',
       name: 'Tatap Pantulan',
-      text: 'Kehilangan 15 HP untuk Blessing acak.',
+      text: 'Kehilangan {hp:15} HP untuk Blessing acak.',
     },
     {
       id: 'mirror_shatter',
       name: 'Pecahkan Cermin',
       text: 'Dapatkan 180 fragment.',
     },
-    { id: 'mirror_restore', name: 'Pulihkan Ingatan', text: 'Pulihkan 35 HP.' },
+    {
+      id: 'mirror_restore',
+      name: 'Pulihkan Ingatan',
+      text: 'Pulihkan {hp:35} HP.',
+    },
   ],
   'Society of Architects': [
     {
       id: 'donate',
       name: 'Donasi Material',
-      text: 'Bayar 120 fragment untuk mendapat 15 max HP.',
+      text: 'Bayar 120 fragment untuk mendapat {hp:15} max HP.',
     },
     {
       id: 'work',
       name: 'Bantu Pembangunan',
-      text: 'Kehilangan 10 HP dan mendapat 170 fragment.',
+      text: 'Kehilangan {hp:10} HP dan mendapat 170 fragment.',
     },
-    { id: 'shelter', name: 'Gunakan Shelter', text: 'Pulihkan 30 HP.' },
+    { id: 'shelter', name: 'Gunakan Shelter', text: 'Pulihkan {hp:30} HP.' },
   ],
   'Glitched Arcade': [
     {
@@ -473,7 +481,7 @@ const EVENT_SCENARIOS = {
     {
       id: 'repair',
       name: 'Perbaiki Mesin',
-      text: 'Kehilangan 12 HP untuk mendapat Blessing acak.',
+      text: 'Kehilangan {hp:12} HP untuk mendapat Blessing acak.',
     },
     { id: 'arcade_leave', name: 'Cabut Kabel', text: 'Dapatkan 70 fragment.' },
   ],
@@ -573,6 +581,22 @@ function scaleHp(state, amount) {
 
 function statBonusOf(state) {
   return state?.statBonus ?? { atk: 0, def: 0, crit: 0 };
+}
+
+// Deskripsi blessing/curio/event menulis angka HP sebagai `{hp:N}` (nilai pada
+// baseline 100). Placeholder diganti angka nyata sesuai hpScale run agar teks
+// yang dibaca user cocok dengan efek yang benar-benar terjadi.
+function describeText(state, text) {
+  if (typeof text !== 'string' || text.indexOf('{hp:') === -1) return text;
+  return text.replace(/\{hp:(-?\d+)\}/g, (_, raw) =>
+    String(Math.abs(scaleHp(state, Number(raw))))
+  );
+}
+
+function describeItem(state, item) {
+  if (!item) return item;
+  const text = describeText(state, item.text);
+  return text === item.text ? item : { ...item, text };
 }
 
 function logScale(value, reference) {
@@ -957,7 +981,7 @@ class DivergentUniverseService {
         (item) => item.id === pending.options[choice]
       );
       state.blessings.push(blessing.id);
-      state.lastResult = `Blessing diperoleh: ${blessing.name}. ${blessing.text}`;
+      state.lastResult = `Blessing diperoleh: ${blessing.name}. ${describeText(state, blessing.text)}`;
       this._advance(state);
     } else if (pending.type === 'curio') {
       const curio = CURIOS.find((item) => item.id === pending.options[choice]);
@@ -965,7 +989,7 @@ class DivergentUniverseService {
       if (curio.instantHeal) heal(state, curio.instantHeal);
       if (curio.instantFragments) state.fragments += curio.instantFragments;
       state.hp = Math.min(state.hp, maxHp(state));
-      state.lastResult = `Curio diperoleh: ${curio.name}. ${curio.text}`;
+      state.lastResult = `Curio diperoleh: ${curio.name}. ${describeText(state, curio.text)}`;
       this._advance(state);
     } else if (pending.type === 'event') {
       this._resolveEvent(state, pending.options[choice]);
@@ -1125,7 +1149,7 @@ class DivergentUniverseService {
           if (curio) {
             const errorTag = curio.error ? ' [ERROR]' : '';
             lines.push(
-              `Curio diterima: *${curio.name}*${errorTag} - ${curio.text}`
+              `Curio diterima: *${curio.name}*${errorTag} - ${describeText(state, curio.text)}`
             );
           }
         }
@@ -1168,7 +1192,11 @@ class DivergentUniverseService {
   _openEvent(state, node) {
     const options =
       EVENT_SCENARIOS[node.name] || EVENT_SCENARIOS['Ruan Mei Replica'];
-    state.pending = { type: 'event', eventName: node.name, options };
+    state.pending = {
+      type: 'event',
+      eventName: node.name,
+      options: options.map((option) => describeItem(state, option)),
+    };
     state.lastResult = `${node.name} menawarkan tiga kemungkinan.`;
   }
 
@@ -1237,7 +1265,7 @@ class DivergentUniverseService {
         const curio = randomCurio();
         if (!curio) state.fragments += 160;
         state.lastResult = curio
-          ? `Kotak dibuka dan berisi ${curio.name}. ${curio.text}`
+          ? `Kotak dibuka dan berisi ${curio.name}. ${describeText(state, curio.text)}`
           : 'Semua Curio sudah dimiliki. Fragment dikembalikan.';
         break;
       }
@@ -1307,7 +1335,7 @@ class DivergentUniverseService {
       case 'answer_signal': {
         const curio = randomCurio();
         state.lastResult = curio
-          ? `Sinyal mengirim ${curio.name}. ${curio.text}`
+          ? `Sinyal mengirim ${curio.name}. ${describeText(state, curio.text)}`
           : 'Sinyal kosong karena semua Curio sudah dimiliki.';
         break;
       }

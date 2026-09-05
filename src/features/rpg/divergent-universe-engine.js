@@ -15,6 +15,8 @@ export const DU_ENGINE_SOURCE = `
   function hpScaleOf(state){var s=Number(state&&state.hpScale);return(isFinite(s)&&s>0)?s:1}
   function scaleHp(state,amount){if(!amount){return 0}var v=Math.round(amount*hpScaleOf(state));if(v!==0){return v}return amount>0?1:-1}
   function statBonusOf(state){return(state&&state.statBonus)||{atk:0,def:0,crit:0}}
+  function describeText(state,text){if(typeof text!=='string'||text.indexOf('{hp:')===-1){return text}return text.replace(/\\{hp:(-?\\d+)\\}/g,function(_,raw){return String(Math.abs(scaleHp(state,Number(raw))))})}
+  function describeItem(state,item){if(!item){return item}var t=describeText(state,item.text);if(t===item.text){return item}var copy={};for(var k in item){if(Object.prototype.hasOwnProperty.call(item,k)){copy[k]=item[k]}}copy.text=t;return copy}
   function addFragments(state,amount,data){var mult=1+(totalEffects(state,data).fragmentMult||0);var gained=Math.floor(amount*mult);state.fragments+=gained;return gained}
   function heal(state,amount,data){var before=state.hp;state.hp=Math.min(maxHp(state,data),state.hp+scaleHp(state,amount));return state.hp-before}
   function healAbsolute(state,amount,data){var before=state.hp;state.hp=Math.min(maxHp(state,data),state.hp+Math.floor(amount));return state.hp-before}
@@ -96,7 +98,7 @@ export const DU_ENGINE_SOURCE = `
         var lines=[(lastCrit?'Critical! ':'')+node.name+' dikalahkan dalam *'+rounds+' ronde*.','Total damage diterima: -'+totalDamageTaken+' | HP: '+state.hp+'/'+maxHp(state,data),(restored?'Pemulihan: +'+restored+' HP':''),'Fragment +'+gained+'.'];
         if(node.type==='elite'||node.type==='boss'){
           var curio=grantRandomCurio(state,data,rng);
-          if(curio){var errorTag=curio.error?' [ERROR]':'';lines.push('Curio diterima: *'+curio.name+'*'+errorTag+' - '+curio.text)}
+          if(curio){var errorTag=curio.error?' [ERROR]':'';lines.push('Curio diterima: *'+curio.name+'*'+errorTag+' - '+describeText(state,curio.text))}
         }
         lines.push('Pilih satu Blessing.');
         state.lastResult=lines.filter(function(x){return x!==''&&x!==undefined}).join('\\n');
@@ -124,7 +126,9 @@ export const DU_ENGINE_SOURCE = `
   }
   function openEvent(state,node,data){
     var options=data.eventScenarios[node.name]||data.eventScenarios['Ruan Mei Replica'];
-    state.pending={type:'event',eventName:node.name,options:options};
+    var described=[];
+    for(var i=0;i<options.length;i++){described.push(describeItem(state,options[i]))}
+    state.pending={type:'event',eventName:node.name,options:described};
     state.lastResult=node.name+' menawarkan tiga kemungkinan.';
   }
   function resolveEvent(state,option,data,rng){
@@ -144,7 +148,7 @@ export const DU_ENGINE_SOURCE = `
       case 'darkness':{var dl=damageHp(22);state.lastResult='Kegelapan mengambil '+dl+' HP. Kamu memperoleh '+addFragments(state,260,data)+' fragment.';break}
       case 'wait':state.lastResult='Kamu menunggu dan memulihkan '+eventHeal(20)+' HP.';break;
       case 'trade':{spend(100);var t=randomBlessing();if(!t){state.fragments+=100}state.lastResult=t?'100 fragment ditukar dengan Blessing '+t.name+'.':'Semua Blessing sudah dimiliki. Fragment dikembalikan.';break}
-      case 'buy_curio':{spend(160);var c=randomCurio();if(!c){state.fragments+=160}state.lastResult=c?'Kotak dibuka dan berisi '+c.name+'. '+c.text:'Semua Curio sudah dimiliki. Fragment dikembalikan.';break}
+      case 'buy_curio':{spend(160);var c=randomCurio();if(!c){state.fragments+=160}state.lastResult=c?'Kotak dibuka dan berisi '+c.name+'. '+describeText(state,c.text):'Semua Curio sudah dimiliki. Fragment dikembalikan.';break}
       case 'merchant_gift':state.lastResult='Sampel gratis bernilai '+addFragments(state,90,data)+' fragment.';break;
       case 'chase':if(rng()<0.5){state.lastResult='Trotter tertangkap. Kamu memperoleh '+addFragments(state,320,data)+' fragment.';}else{state.lastResult='Trotter lolos dan kamu kehilangan '+damageHp(20)+' HP.';}break;
       case 'feed':spend(60);state.lastResult='Trotter memberimu berkah: max HP +'+addMaxHp(10)+'.';break;
@@ -158,7 +162,7 @@ export const DU_ENGINE_SOURCE = `
       case 'jackpot':if(rng()<0.5){state.lastResult='Jackpot! Kamu memperoleh '+addFragments(state,280,data)+' fragment.';}else{var lost=Math.min(120,state.fragments);state.fragments-=lost;state.lastResult='Mesin rusak. Kamu kehilangan '+lost+' fragment.';}break;
       case 'repair':{var rl=damageHp(12);var rb=randomBlessing();state.lastResult=rb?'Mesin aktif setelah mengambil '+rl+' HP dan memberikan '+rb.name+'.':'Mesin mengambil '+rl+' HP, tetapi tidak ada Blessing tersisa.';break}
       case 'arcade_leave':state.lastResult='Kabel berisi '+addFragments(state,70,data)+' fragment.';break;
-      case 'answer_signal':{var ac=randomCurio();state.lastResult=ac?'Sinyal mengirim '+ac.name+'. '+ac.text:'Sinyal kosong karena semua Curio sudah dimiliki.';break}
+      case 'answer_signal':{var ac=randomCurio();state.lastResult=ac?'Sinyal mengirim '+ac.name+'. '+describeText(state,ac.text):'Sinyal kosong karena semua Curio sudah dimiliki.';break}
       case 'decode_signal':{var db=randomBlessing();state.lastResult=db?'Sinyal terdekode menjadi Blessing '+db.name+'.':'Sinyal tidak menghasilkan Blessing baru.';break}
       case 'sell_signal':state.lastResult='Koordinat terjual seharga '+addFragments(state,150,data)+' fragment.';break;
       default:throw new Error('Pilihan event tidak dikenali.');
@@ -221,14 +225,14 @@ export const DU_ENGINE_SOURCE = `
         if(pending.type==='blessing'){
           var blessing=null;for(var i=0;i<data.blessings.length;i++){if(data.blessings[i].id===pending.options[choice]){blessing=data.blessings[i];break}}
           state.blessings.push(blessing.id);
-          state.lastResult='Blessing diperoleh: '+blessing.name+'. '+blessing.text;
+          state.lastResult='Blessing diperoleh: '+blessing.name+'. '+describeText(state,blessing.text);
         }else if(pending.type==='curio'){
           var curio=null;for(var j=0;j<data.curios.length;j++){if(data.curios[j].id===pending.options[choice]){curio=data.curios[j];break}}
           state.curios.push(curio.id);
           if(curio.instantHeal){heal(state,curio.instantHeal,data)}
           if(curio.instantFragments){state.fragments+=curio.instantFragments}
           state.hp=Math.min(state.hp,maxHp(state,data));
-          state.lastResult='Curio diperoleh: '+curio.name+'. '+curio.text;
+          state.lastResult='Curio diperoleh: '+curio.name+'. '+describeText(state,curio.text);
         }else if(pending.type==='event'){
           resolveEvent(state,pending.options[choice],data,rng);
         }
@@ -244,6 +248,7 @@ export const DU_ENGINE_SOURCE = `
         actExplore:actExplore,
         actChoose:actChoose,
         getMaxHp:function(){return maxHp(state,data)},
+        describe:function(text){return describeText(state,text)},
         computeReward:function(){return computeReward(state,data)},
         save:function(){
           return {state:clone(state),actions:clone(actions),status:status,rngCount:rngCount};
