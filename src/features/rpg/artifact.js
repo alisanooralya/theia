@@ -255,7 +255,7 @@ class ArtifactService {
     return STAT_FORMAT[stat] || ((v) => `+${v}`);
   }
 
-  async generateArtifact(jid, forceSlot = null) {
+  async generateArtifact(jid, forceSlot = null, client = sql) {
     const slot =
       forceSlot || weightedRandom(Object.keys(SLOTS), [1, 1, 1, 1, 1]);
     const config = SLOTS[slot];
@@ -275,15 +275,18 @@ class ArtifactService {
       }
     }
     const name = randomName(slot);
-    return artifactModel.create({
-      owner_jid: jid,
-      name,
-      slot,
-      level,
-      main_stat: mainStat,
-      main_value: mainValue,
-      substats,
-    });
+    return artifactModel.create(
+      {
+        owner_jid: jid,
+        name,
+        slot,
+        level,
+        main_stat: mainStat,
+        main_value: mainValue,
+        substats,
+      },
+      client
+    );
   }
 
   getArtifacts(jid) {

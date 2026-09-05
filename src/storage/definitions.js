@@ -219,31 +219,6 @@ const STATIC_SCHEMA = [
   `,
 
   `
-  CREATE TABLE IF NOT EXISTS relics (
-    id          BIGSERIAL PRIMARY KEY,
-    owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
-    slot        TEXT    NOT NULL CHECK(slot IN ('head', 'hands', 'body', 'feet')),
-    main_stat   TEXT    NOT NULL,
-    main_value  INTEGER NOT NULL DEFAULT 0,
-    substats    TEXT    NOT NULL DEFAULT '[]',
-    level       INTEGER NOT NULL DEFAULT 1,
-    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
-    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
-  )
-  `,
-
-  `
-  CREATE TABLE IF NOT EXISTS relic_inventory (
-    jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
-    head_id     INTEGER REFERENCES relics(id) ON DELETE SET NULL,
-    hands_id    INTEGER REFERENCES relics(id) ON DELETE SET NULL,
-    body_id     INTEGER REFERENCES relics(id) ON DELETE SET NULL,
-    feet_id     INTEGER REFERENCES relics(id) ON DELETE SET NULL,
-    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
-  )
-  `,
-
-  `
   CREATE TABLE IF NOT EXISTS artifacts (
     id          BIGSERIAL PRIMARY KEY,
     owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
@@ -393,8 +368,6 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_market_news_type_tick ON market_news(type, start_tick DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_owner      ON artifacts(owner_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_slot       ON artifacts(owner_jid, slot)`,
-  `CREATE INDEX IF NOT EXISTS idx_relics_owner      ON relics(owner_jid)`,
-  `CREATE INDEX IF NOT EXISTS idx_relics_slot       ON relics(owner_jid, slot)`,
   `CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)`,
@@ -439,7 +412,6 @@ const MIGRATIONS = [
   `SELECT setval(pg_get_serial_sequence('warns', 'id'), COALESCE(MAX(id), 1)) FROM warns`,
   `SELECT setval(pg_get_serial_sequence('inventories', 'id'), COALESCE(MAX(id), 1)) FROM inventories`,
   `SELECT setval(pg_get_serial_sequence('transactions', 'id'), COALESCE(MAX(id), 1)) FROM transactions`,
-  `SELECT setval(pg_get_serial_sequence('relics', 'id'), COALESCE(MAX(id), 1)) FROM relics`,
   `SELECT setval(pg_get_serial_sequence('artifacts', 'id'), COALESCE(MAX(id), 1)) FROM artifacts`,
   `SELECT setval(pg_get_serial_sequence('raids', 'id'), COALESCE(MAX(id), 1)) FROM raids`,
   `SELECT setval(pg_get_serial_sequence('raid_participants', 'id'), COALESCE(MAX(id), 1)) FROM raid_participants`,

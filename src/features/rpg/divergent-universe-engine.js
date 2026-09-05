@@ -44,23 +44,23 @@ export const DU_ENGINE_SOURCE = `
   function countCleared(state){var n=0;for(var i=0;i<state.nodes.length;i++){if(state.nodes[i].cleared){n++}}return n}
   function battle(state,node,data,rng){
     var effects=totalEffects(state,data);
-    var relic=state.relicEffects||{};
+    var artifact=state.artifactEffects||state.relicEffects||{};
     var diffConfig=data.difficulty[state.difficulty]||data.difficulty.medium;
     var tier=node.type==='boss'?1.6:(node.type==='elite'?1.3:1);
     var progress=1+node.position*0.045;
-    var relicDefBonus=Math.floor((state.baseMaxHp||100)*(relic.def_percent||0));
-    var shield=(effects.shield||0)+(state.path==='preservation'?5:0)+relicDefBonus;
+    var artifactDefBonus=Math.floor((state.baseMaxHp||100)*(artifact.def_percent||0));
+    var shield=(effects.shield||0)+(state.path==='preservation'?5:0)+artifactDefBonus;
     var reduction=Math.min(0.6,(effects.reduction||0)+(state.path==='preservation'?0.08:0));
     var damageMultiplier=diffConfig.damageMultiplier||1;
     var enemyMultiplier=diffConfig.enemyMultiplier||1;
     var enemyPower=tier*progress*(1-(effects.weaken||0))*(1+(effects.enemyPower||0))*enemyMultiplier;
     var baseWinChance=diffConfig.baseWinChance||0.7;
-    var relicCritRate=relic.crit_rate||0;
-    var critChance=Math.min(0.55,0.12+(effects.crit||0)+relicCritRate);
+    var artifactCritRate=artifact.crit_rate||0;
+    var critChance=Math.min(0.55,0.12+(effects.crit||0)+artifactCritRate);
     var rounds=0,totalDamageTaken=0,lastCrit=false,battleLog=[];
     while(state.hp>0){
       rounds++;
-      var playerPower=1+(effects.atk||0)+(relic.atk_flat||0)*0.01;
+      var playerPower=1+(effects.atk||0)+(artifact.atk_flat||0)*0.01;
       if(state.hp/maxHp(state,data)<0.6&&state.path==='destruction'){playerPower+=0.18}
       if(node.type!=='battle'){playerPower+=effects.bossAtk||0}
       playerPower+=Math.floor(state.blessings.length/3)*(effects.perBlessing||0);

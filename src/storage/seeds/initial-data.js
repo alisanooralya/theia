@@ -64,7 +64,7 @@ const ITEMS = [
   {
     id: 'cerelia',
     name: 'Cerelia',
-    description: 'Divergent Universe Core - material untuk level up relic',
+    description: 'Divergent Universe Core - material langka dari DU',
     category: 'material',
     price: 0,
     rarity: 'rare',

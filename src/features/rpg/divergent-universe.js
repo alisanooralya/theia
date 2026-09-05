@@ -7,8 +7,8 @@ import {
   userModel,
   walletModel,
   inventoryModel,
-  relicModel,
 } from '#storage/models/index.js';
+import { artifactService } from '#features/rpg/artifact.js';
 
 const PATHS = {
   destruction: {
@@ -537,36 +537,44 @@ function maxHp(state) {
   return Math.max(50, state.baseMaxHp + (totalEffects(state).maxHp || 0));
 }
 
-async function getRelicEffects(jid) {
-  const inventory = await relicModel.getInventory(jid);
-  if (!inventory) return {};
-  const stats = {
-    hp_flat: 0,
-    atk_flat: 0,
-    crit_rate: 0,
-    hp_percent: 0,
-    def_percent: 0,
-    spd_flat: 0,
-  };
-  const slots = ['head', 'hands', 'body', 'feet'];
-  for (const slot of slots) {
-    const relicId = inventory[`${slot}_id`];
-    if (!relicId) continue;
-    const relic = await relicModel.find(relicId);
-    if (!relic) continue;
-    stats[relic.main_stat] += relic.main_value;
-    for (const sub of relic.substats) {
-      stats[sub.stat] += sub.value;
-    }
-  }
+// Artifact dipakai pada skala aslinya (HP ribuan), sedangkan DU dibalance di
+// sekitar baseMaxHp 100. Bonus artifact karena itu dinormalisasi dulu lewat
+// divisor + cap di bawah, supaya ceiling-nya setara sistem lama.
+const ARTIFACT_SCALE = {
+  hpDivisor: 160,
+  hpCap: 40,
+  atkDivisor: 20,
+  atkCap: 15,
+  defDivisor: 240,
+  defCap: 0.25,
+  critDivisor: 260,
+  critCap: 0.1,
+};
+
+async function getArtifactEffects(jid) {
+  const [total, base] = await Promise.all([
+    artifactService.getPlayerStats(jid),
+    artifactService.getRawBaseStats(jid),
+  ]);
+
+  const hpBonus = Math.max(0, total.hp - base.hp);
+  const atkBonus = Math.max(0, total.atk - base.atk);
+  const defBonus = Math.max(0, total.def - base.def);
+  const critBonus = Math.max(0, total.critRate - base.critRate);
+  const s = ARTIFACT_SCALE;
+
   return {
-    hp_flat: stats.hp_flat,
-    atk_flat: stats.atk_flat,
-    crit_rate: stats.crit_rate / 100,
-    hp_percent: stats.hp_percent / 100,
-    def_percent: stats.def_percent / 100,
-    spd_flat: stats.spd_flat,
+    hp_flat: Math.min(s.hpCap, Math.floor(hpBonus / s.hpDivisor)),
+    atk_flat: Math.min(s.atkCap, Math.floor(atkBonus / s.atkDivisor)),
+    def_percent: Math.min(s.defCap, defBonus / s.defDivisor),
+    crit_rate: Math.min(s.critCap, critBonus / s.critDivisor),
   };
+}
+
+// Run lama menyimpan `relicEffects`; dibaca sebagai fallback supaya run yang
+// masih aktif saat migrasi tidak rusak.
+function effectsOf(state) {
+  return state.artifactEffects || state.relicEffects || {};
 }
 
 function addFragments(state, amount) {
@@ -814,21 +822,21 @@ class DivergentUniverseService {
         `Batas mingguan DU tercapai (${usage.weeklyCount}/${RUN_LIMIT.weekly}). Coba lagi setelah reset Senin pukul 00.00 ${SETTINGS.timezone}.`
       );
     }
-    const relicEffects = await getRelicEffects(jid);
+    const artifactEffects = await getArtifactEffects(jid);
     const state = {
       path: null,
       nodeIndex: 0,
       nodes: buildNodes(difficulty),
       difficulty,
-      baseMaxHp: 100 + (relicEffects.hp_flat || 0),
-      hp: 100 + (relicEffects.hp_flat || 0),
+      baseMaxHp: 100 + (artifactEffects.hp_flat || 0),
+      hp: 100 + (artifactEffects.hp_flat || 0),
       fragments: 0,
       blessings: [],
       curios: [],
       pending: { type: 'path', options: Object.keys(PATHS) },
       revived: false,
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
-      relicEffects,
+      artifactEffects,
     };
     const run = await divergentRunModel.create(
       jid,
@@ -973,17 +981,17 @@ class DivergentUniverseService {
 
   _battle(state, node) {
     const effects = totalEffects(state);
-    const relic = state.relicEffects || {};
+    const artifact = effectsOf(state);
     const diffConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
     const tier = node.type === 'boss' ? 1.6 : node.type === 'elite' ? 1.3 : 1;
     const progress = 1 + node.position * 0.045;
-    const relicDefBonus = Math.floor(
-      (state.baseMaxHp || 100) * (relic.def_percent || 0)
+    const artifactDefBonus = Math.floor(
+      (state.baseMaxHp || 100) * (artifact.def_percent || 0)
     );
     const shield =
       (effects.shield || 0) +
       (state.path === 'preservation' ? 5 : 0) +
-      relicDefBonus;
+      artifactDefBonus;
     const reduction = Math.min(
       0.6,
       (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0)
@@ -997,10 +1005,10 @@ class DivergentUniverseService {
       (1 + (effects.enemyPower || 0)) *
       enemyMultiplier;
     const baseWinChance = diffConfig.baseWinChance || 0.7;
-    const relicCritRate = relic.crit_rate || 0;
+    const artifactCritRate = artifact.crit_rate || 0;
     const critChance = Math.min(
       0.55,
-      0.12 + (effects.crit || 0) + relicCritRate
+      0.12 + (effects.crit || 0) + artifactCritRate
     );
 
     let rounds = 0;
@@ -1009,7 +1017,7 @@ class DivergentUniverseService {
 
     while (state.hp > 0) {
       rounds++;
-      let playerPower = 1 + (effects.atk || 0) + (relic.atk_flat || 0) * 0.01;
+      let playerPower = 1 + (effects.atk || 0) + (artifact.atk_flat || 0) * 0.01;
       if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction')
         playerPower += 0.18;
       if (node.type !== 'battle') playerPower += effects.bossAtk || 0;
@@ -1301,8 +1309,8 @@ class DivergentUniverseService {
           ? 4
           : 6) * multiplier
     );
-    const relicDrops = this._rollRelicDrops(state.difficulty);
-    const relicIds = [];
+    const artifactDrops = this._rollArtifactDrops(state.difficulty);
+    const artifactIds = [];
     await sql.begin(async (inner) => {
       await walletModel.reward(
         run.jid,
@@ -1314,9 +1322,13 @@ class DivergentUniverseService {
       if (cereliaAmount > 0) {
         await inventoryModel.add(run.jid, 'cerelia', cereliaAmount, inner);
       }
-      for (let i = 0; i < relicDrops; i++) {
-        const relic = await this._generateRelic(run.jid, inner);
-        relicIds.push(relic.id);
+      for (let i = 0; i < artifactDrops; i++) {
+        const artifact = await artifactService.generateArtifact(
+          run.jid,
+          null,
+          inner
+        );
+        artifactIds.push(artifact.id);
       }
     });
     run.status = 'completed';
@@ -1324,85 +1336,14 @@ class DivergentUniverseService {
       cash: rewardCash,
       exp: rewardExp,
       cerelia: cereliaAmount,
-      relics: relicIds,
+      artifacts: artifactIds,
     };
-    const relicText = relicDrops > 0 ? ` + ${relicDrops} relic` : '';
-    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP, ${cereliaAmount} Cerelia${relicText}.`;
+    const artifactText =
+      artifactDrops > 0 ? ` + ${artifactDrops} artifact` : '';
+    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP, ${cereliaAmount} Cerelia${artifactText}.`;
   }
 
-  async _generateRelic(jid, t) {
-    const slot = ['head', 'hands', 'body', 'feet'][
-      Math.floor(Math.random() * 4)
-    ];
-    const mainStats = {
-      head: ['hp_flat'],
-      hands: ['atk_flat'],
-      body: ['crit_rate', 'hp_percent', 'def_percent'],
-      feet: ['spd_flat', 'def_percent', 'hp_percent'],
-    };
-    const weights = {
-      head: [1],
-      hands: [1],
-      body: [1, 1, 1],
-      feet: [1, 2, 2],
-    };
-    const stats = mainStats[slot];
-    const w = weights[slot];
-    const totalWeight = w.reduce((a, b) => a + b, 0);
-    let random = Math.random() * totalWeight;
-    let mainStat = stats[0];
-    for (let i = 0; i < stats.length; i++) {
-      if (random < w[i]) {
-        mainStat = stats[i];
-        break;
-      }
-      random -= w[i];
-    }
-    const mainValues = {
-      hp_flat: 5,
-      atk_flat: 2,
-      crit_rate: 2,
-      hp_percent: 3,
-      def_percent: 3,
-      spd_flat: 2,
-    };
-    const allSubstats = [
-      'hp_flat',
-      'atk_flat',
-      'crit_rate',
-      'hp_percent',
-      'def_percent',
-      'spd_flat',
-    ];
-    const substats = [];
-    const available = [...allSubstats];
-    for (let i = 0; i < 3 && available.length > 0; i++) {
-      const idx = Math.floor(Math.random() * available.length);
-      const stat = available.splice(idx, 1)[0];
-      const subValues = {
-        hp_flat: 3,
-        atk_flat: 1,
-        crit_rate: 1,
-        hp_percent: 2,
-        def_percent: 2,
-        spd_flat: 1,
-      };
-      substats.push({ stat, value: subValues[stat], rolls: 0 });
-    }
-    return relicModel.create(
-      {
-        owner_jid: jid,
-        slot,
-        main_stat: mainStat,
-        main_value: mainValues[mainStat],
-        substats,
-        level: 1,
-      },
-      t
-    );
-  }
-
-  _rollRelicDrops(difficulty) {
+  _rollArtifactDrops(difficulty) {
     const dropTable = {
       easy: 0.3,
       medium: 1,
