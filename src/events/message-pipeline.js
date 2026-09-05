@@ -1,8 +1,7 @@
-import { jidNormalizedUser } from 'baileys';
 import { parseMessage } from '#messages/parser.js';
 import { dispatch } from '#messages/dispatcher.js';
 import { logger } from '#helpers/logger.js';
-import { isStatus } from '#helpers/identifier.js';
+import { isStatus, getBotJids } from '#helpers/identifier.js';
 import { isOwnerJid } from '#helpers/owner.js';
 import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
 import { agentService } from '#agent/index.js';
@@ -43,9 +42,10 @@ export async function onMessagesUpsert({ messages, type }, sock) {
       const proceed = await orchestrator.runProcessors(parsed, sock);
       if (!proceed) continue;
 
-      const botId = jidNormalizedUser(sock.user?.id);
-      const isMentioned = botId && parsed.mentions?.includes(botId);
-      const isRepliedToBot = botId && parsed.quoted?.sender === botId;
+      const botJids = getBotJids(sock);
+      const isMentioned = parsed.mentions?.some((jid) => botJids.includes(jid));
+      const isRepliedToBot =
+        !!parsed.quoted?.sender && botJids.includes(parsed.quoted.sender);
       const isTriggered = isMentioned || isRepliedToBot;
       const isCommand = parsed.text?.startsWith(SETTINGS.prefix) ?? false;
 
