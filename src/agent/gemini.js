@@ -1,7 +1,8 @@
 /**
  * Gemini client — Google's official OpenAI-compatible endpoint.
  * Endpoint: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
- * The API key is read from SETTINGS (env) and is NEVER logged or embedded in prompts.
+ * API key dibaca dari SETTINGS (src/environment/config.js) dan TIDAK PERNAH
+ * di-log atau disisipkan ke dalam prompt.
  */
 import axios from 'axios';
 import { logger } from '#helpers/logger.js';
@@ -22,6 +23,12 @@ export class GeminiClient {
    * @returns {Promise<{ content: string, toolCalls: Array, raw: object }>}
    */
   async chat({ messages, tools = [] }) {
+    if (!this.isConfigured()) {
+      throw new Error(
+        'AI agent belum dikonfigurasi: `geminiKey` masih kosong di src/environment/config.js.'
+      );
+    }
+
     const body = {
       model: SETTINGS.geminiModel,
       messages,
@@ -78,10 +85,12 @@ export class GeminiClient {
     switch (status) {
       case 400:
         return new Error(
-          'Permintaan AI ditolak (400). Cek konfigurasi model/tools di .env.'
+          'Permintaan AI ditolak (400). Cek geminiModel/tools di src/environment/config.js.'
         );
       case 401:
-        return new Error('API key Gemini tidak valid.');
+        return new Error(
+          'API key Gemini tidak valid. Owner perlu memperbarui `geminiKey` di src/environment/config.js dengan key dari https://aistudio.google.com/apikey.'
+        );
       case 403:
         return new Error(
           'Akses ke API Gemini ditolak (403). Cek izin API key.'

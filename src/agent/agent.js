@@ -173,8 +173,8 @@ export class Agent {
 
   _friendlyError(err) {
     const msg = err?.message ?? '';
-    if (/AI tidak tersedia|API key|konfigurasi/i.test(msg)) {
-      return 'AI agent belum dikonfigurasi. Minta owner mengisi GEMINI_API_KEY di .env.';
+    if (!geminiClient.isConfigured()) {
+      return 'AI agent belum dikonfigurasi. Minta owner mengisi `geminiKey` di src/environment/config.js.';
     }
     if (msg.includes('tool calls'))
       return 'Permintaan terlalu kompleks. Coba pecah menjadi langkah yang lebih sederhana.';

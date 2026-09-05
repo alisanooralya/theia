@@ -1,9 +1,9 @@
 /**
  * Public entry point for the AI Agent feature.
  *
- * Enabled only when BOTH AI_AGENT_ENABLED=true and GEMINI_API_KEY are set.
- * When disabled, the bot behaves exactly as before (legacy mention-AI path,
- * commands only) — the agent is purely additive.
+ * Aktif hanya bila `aiAgentEnabled` true DAN `geminiKey` terisi di
+ * src/environment/config.js. Saat tidak aktif, bot berperilaku seperti
+ * sebelumnya (jalur mention legacy, command saja) — agent bersifat aditif.
  */
 import SETTINGS from '#environment/settings.js';
 import { agent } from './agent.js';
