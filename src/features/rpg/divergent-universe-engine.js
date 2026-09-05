@@ -11,9 +11,13 @@ export const DU_ENGINE_SOURCE = `
     for(var k=0;k<owned.length;k++){var item=owned[k];for(var key in item){if(typeof item[key]==='number'){effects[key]=(effects[key]||0)+item[key]}if(item[key]===true){effects[key]=true}}}
     return effects;
   }
-  function maxHp(state,data){return Math.max(50,state.baseMaxHp+(totalEffects(state,data).maxHp||0))}
+  function maxHp(state,data){return Math.max(scaleHp(state,50),state.baseMaxHp+scaleHp(state,totalEffects(state,data).maxHp||0))}
+  function hpScaleOf(state){var s=Number(state&&state.hpScale);return(isFinite(s)&&s>0)?s:1}
+  function scaleHp(state,amount){if(!amount){return 0}var v=Math.round(amount*hpScaleOf(state));if(v!==0){return v}return amount>0?1:-1}
+  function statBonusOf(state){return(state&&state.statBonus)||{atk:0,def:0,crit:0}}
   function addFragments(state,amount,data){var mult=1+(totalEffects(state,data).fragmentMult||0);var gained=Math.floor(amount*mult);state.fragments+=gained;return gained}
-  function heal(state,amount,data){var before=state.hp;state.hp=Math.min(maxHp(state,data),state.hp+Math.floor(amount));return state.hp-before}
+  function heal(state,amount,data){var before=state.hp;state.hp=Math.min(maxHp(state,data),state.hp+scaleHp(state,amount));return state.hp-before}
+  function healAbsolute(state,amount,data){var before=state.hp;state.hp=Math.min(maxHp(state,data),state.hp+Math.floor(amount));return state.hp-before}
   function availableBlessings(state,count,data,rng){
     count=count||3;var remaining=[];
     for(var i=0;i<data.blessings.length;i++){if(state.blessings.indexOf(data.blessings[i].id)===-1){remaining.push(data.blessings[i])}}
@@ -44,23 +48,21 @@ export const DU_ENGINE_SOURCE = `
   function countCleared(state){var n=0;for(var i=0;i<state.nodes.length;i++){if(state.nodes[i].cleared){n++}}return n}
   function battle(state,node,data,rng){
     var effects=totalEffects(state,data);
-    var artifact=state.artifactEffects||state.relicEffects||{};
+    var bonus=statBonusOf(state);
     var diffConfig=data.difficulty[state.difficulty]||data.difficulty.medium;
     var tier=node.type==='boss'?1.6:(node.type==='elite'?1.3:1);
     var progress=1+node.position*0.045;
-    var artifactDefBonus=Math.floor((state.baseMaxHp||100)*(artifact.def_percent||0));
-    var shield=(effects.shield||0)+(state.path==='preservation'?5:0)+artifactDefBonus;
-    var reduction=Math.min(0.6,(effects.reduction||0)+(state.path==='preservation'?0.08:0));
+    var shield=scaleHp(state,(effects.shield||0)+(state.path==='preservation'?5:0));
+    var reduction=Math.min(0.6,(effects.reduction||0)+(state.path==='preservation'?0.08:0)+(bonus.def||0));
     var damageMultiplier=diffConfig.damageMultiplier||1;
     var enemyMultiplier=diffConfig.enemyMultiplier||1;
     var enemyPower=tier*progress*(1-(effects.weaken||0))*(1+(effects.enemyPower||0))*enemyMultiplier;
     var baseWinChance=diffConfig.baseWinChance||0.7;
-    var artifactCritRate=artifact.crit_rate||0;
-    var critChance=Math.min(0.55,0.12+(effects.crit||0)+artifactCritRate);
+    var critChance=Math.min(0.55,0.12+(effects.crit||0)+(bonus.crit||0));
     var rounds=0,totalDamageTaken=0,lastCrit=false,battleLog=[];
     while(state.hp>0){
       rounds++;
-      var playerPower=1+(effects.atk||0)+(artifact.atk_flat||0)*0.01;
+      var playerPower=1+(effects.atk||0)+(bonus.atk||0);
       if(state.hp/maxHp(state,data)<0.6&&state.path==='destruction'){playerPower+=0.18}
       if(node.type!=='battle'){playerPower+=effects.bossAtk||0}
       playerPower+=Math.floor(state.blessings.length/3)*(effects.perBlessing||0);
@@ -69,7 +71,7 @@ export const DU_ENGINE_SOURCE = `
       if(crit){playerPower*=1.5+(effects.critDamage||0)}
       var winChance=Math.max(0.48,Math.min(0.94,baseWinChance+(playerPower-enemyPower)*0.18));
       var won=rng()<winChance;
-      var damage=Math.floor((won?13:27)*tier*progress*(1-reduction)*(1+(effects.incomingDamage||0))*damageMultiplier);
+      var damage=Math.floor(scaleHp(state,won?13:27)*tier*progress*(1-reduction)*(1+(effects.incomingDamage||0))*damageMultiplier);
       if(rng()<Math.min(0.4,effects.dodge||0)){damage=0}
       damage=Math.max(0,damage-shield);
       state.hp=Math.max(0,state.hp-damage);
@@ -77,8 +79,8 @@ export const DU_ENGINE_SOURCE = `
       battleLog.push({round:rounds,crit:crit,hit:damage>0,damage:damage,hp:state.hp});
       if(won){
         if(effects.revive&&!state.revived&&state.hp<=0){
-          state.revived=true;state.hp=35;
-          state.lastResult='Revival Chip aktif. Kamu kalah dari '+node.name+', tetapi bangkit dengan 35 HP.';
+          state.revived=true;state.hp=scaleHp(state,35);
+          state.lastResult='Revival Chip aktif. Kamu kalah dari '+node.name+', tetapi bangkit dengan '+state.hp+' HP.';
           return {battle:battleLog,result:'revive'};
         }
         if(state.hp<=0){
@@ -102,8 +104,8 @@ export const DU_ENGINE_SOURCE = `
       }
       if(state.hp<=0){
         if(effects.revive&&!state.revived){
-          state.revived=true;state.hp=35;
-          state.lastResult='Revival Chip aktif. Kamu kalah dari '+node.name+' dalam '+rounds+' ronde, tetapi bangkit dengan 35 HP.';
+          state.revived=true;state.hp=scaleHp(state,35);
+          state.lastResult='Revival Chip aktif. Kamu kalah dari '+node.name+' dalam '+rounds+' ronde, tetapi bangkit dengan '+state.hp+' HP.';
           return {battle:battleLog,result:'revive'};
         }
         state.lastResult='RUN GAGAL: Kamu dikalahkan '+node.name+' di node '+node.position+'/'+state.nodes.length+' dalam *'+rounds+' ronde*.\\nNode clear: '+countCleared(state)+'/'+state.nodes.length+' | Fragment hangus.';
@@ -126,32 +128,35 @@ export const DU_ENGINE_SOURCE = `
     state.lastResult=node.name+' menawarkan tiga kemungkinan.';
   }
   function resolveEvent(state,option,data,rng){
-    function eventHeal(amount){return heal(state,amount*(1+(totalEffects(state,data).eventHeal||0)),data)}
+    var healMult=1+(totalEffects(state,data).eventHeal||0);
+    function eventHeal(amount){return heal(state,amount*healMult,data)}
+    function eventHealAbsolute(amount){return healAbsolute(state,amount*healMult,data)}
     function spend(amount){if(state.fragments<amount){throw new Error('Butuh '+amount+' fragment untuk pilihan ini.')}state.fragments-=amount}
-    function addMaxHp(amount){state.baseMaxHp+=amount;state.hp+=amount}
+    function damageHp(amount){var dealt=scaleHp(state,amount);state.hp=Math.max(1,state.hp-dealt);return dealt}
+    function addMaxHp(amount){var bonus=scaleHp(state,amount);state.baseMaxHp+=bonus;state.hp+=bonus;return bonus}
     function randomBlessing(){return grantBlessing(state,data,rng)}
     function randomCurio(){return grantCurio(state,data,rng)}
     switch(option.id){
       case 'research':{var b=randomBlessing();var g=addFragments(state,60,data);state.lastResult=b?'Penelitian berhasil: '+b.name+' dan '+g+' fragment diperoleh.':'Penelitian menghasilkan '+g+' fragment.';break}
       case 'ruan_rest':state.lastResult='Replika memulihkan '+eventHeal(40)+' HP.';break;
       case 'ruan_leave':state.lastResult='Kamu pergi membawa '+addFragments(state,120,data)+' fragment.';break;
-      case 'light':spend(80);state.lastResult='Cahaya kembali. '+eventHeal(maxHp(state,data))+' HP dipulihkan.';break;
-      case 'darkness':state.hp=Math.max(1,state.hp-22);state.lastResult='Kegelapan mengambil 22 HP. Kamu memperoleh '+addFragments(state,260,data)+' fragment.';break;
+      case 'light':spend(80);state.lastResult='Cahaya kembali. '+eventHealAbsolute(maxHp(state,data))+' HP dipulihkan.';break;
+      case 'darkness':{var dl=damageHp(22);state.lastResult='Kegelapan mengambil '+dl+' HP. Kamu memperoleh '+addFragments(state,260,data)+' fragment.';break}
       case 'wait':state.lastResult='Kamu menunggu dan memulihkan '+eventHeal(20)+' HP.';break;
       case 'trade':{spend(100);var t=randomBlessing();if(!t){state.fragments+=100}state.lastResult=t?'100 fragment ditukar dengan Blessing '+t.name+'.':'Semua Blessing sudah dimiliki. Fragment dikembalikan.';break}
       case 'buy_curio':{spend(160);var c=randomCurio();if(!c){state.fragments+=160}state.lastResult=c?'Kotak dibuka dan berisi '+c.name+'. '+c.text:'Semua Curio sudah dimiliki. Fragment dikembalikan.';break}
       case 'merchant_gift':state.lastResult='Sampel gratis bernilai '+addFragments(state,90,data)+' fragment.';break;
-      case 'chase':if(rng()<0.5){state.lastResult='Trotter tertangkap. Kamu memperoleh '+addFragments(state,320,data)+' fragment.';}else{state.hp=Math.max(1,state.hp-20);state.lastResult='Trotter lolos dan kamu kehilangan 20 HP.';}break;
-      case 'feed':spend(60);addMaxHp(10);state.lastResult='Trotter memberimu berkah: max HP +10.';break;
+      case 'chase':if(rng()<0.5){state.lastResult='Trotter tertangkap. Kamu memperoleh '+addFragments(state,320,data)+' fragment.';}else{state.lastResult='Trotter lolos dan kamu kehilangan '+damageHp(20)+' HP.';}break;
+      case 'feed':spend(60);state.lastResult='Trotter memberimu berkah: max HP +'+addMaxHp(10)+'.';break;
       case 'trotter_leave':state.lastResult='Trotter meninggalkan energi yang memulihkan '+eventHeal(25)+' HP.';break;
-      case 'mirror_blessing':{state.hp=Math.max(1,state.hp-15);var mb=randomBlessing();state.lastResult=mb?'Pantulan mengambil 15 HP dan memberikan '+mb.name+'.':'Pantulan mengambil 15 HP, tetapi tidak ada Blessing tersisa.';break}
+      case 'mirror_blessing':{var ml=damageHp(15);var mb=randomBlessing();state.lastResult=mb?'Pantulan mengambil '+ml+' HP dan memberikan '+mb.name+'.':'Pantulan mengambil '+ml+' HP, tetapi tidak ada Blessing tersisa.';break}
       case 'mirror_shatter':state.lastResult='Pecahan cermin berubah menjadi '+addFragments(state,180,data)+' fragment.';break;
       case 'mirror_restore':state.lastResult='Ingatan pulih bersama '+eventHeal(35)+' HP.';break;
-      case 'donate':spend(120);addMaxHp(15);state.lastResult='Para arsitek memperkuat tubuhmu: max HP +15.';break;
-      case 'work':state.hp=Math.max(1,state.hp-10);state.lastResult='Pekerjaan menghabiskan 10 HP dan menghasilkan '+addFragments(state,170,data)+' fragment.';break;
+      case 'donate':spend(120);state.lastResult='Para arsitek memperkuat tubuhmu: max HP +'+addMaxHp(15)+'.';break;
+      case 'work':{var wl=damageHp(10);state.lastResult='Pekerjaan menghabiskan '+wl+' HP dan menghasilkan '+addFragments(state,170,data)+' fragment.';break}
       case 'shelter':state.lastResult='Shelter memulihkan '+eventHeal(30)+' HP.';break;
       case 'jackpot':if(rng()<0.5){state.lastResult='Jackpot! Kamu memperoleh '+addFragments(state,280,data)+' fragment.';}else{var lost=Math.min(120,state.fragments);state.fragments-=lost;state.lastResult='Mesin rusak. Kamu kehilangan '+lost+' fragment.';}break;
-      case 'repair':{state.hp=Math.max(1,state.hp-12);var rb=randomBlessing();state.lastResult=rb?'Mesin aktif setelah mengambil 12 HP dan memberikan '+rb.name+'.':'Mesin mengambil 12 HP, tetapi tidak ada Blessing tersisa.';break}
+      case 'repair':{var rl=damageHp(12);var rb=randomBlessing();state.lastResult=rb?'Mesin aktif setelah mengambil '+rl+' HP dan memberikan '+rb.name+'.':'Mesin mengambil '+rl+' HP, tetapi tidak ada Blessing tersisa.';break}
       case 'arcade_leave':state.lastResult='Kabel berisi '+addFragments(state,70,data)+' fragment.';break;
       case 'answer_signal':{var ac=randomCurio();state.lastResult=ac?'Sinyal mengirim '+ac.name+'. '+ac.text:'Sinyal kosong karena semua Curio sudah dimiliki.';break}
       case 'decode_signal':{var db=randomBlessing();state.lastResult=db?'Sinyal terdekode menjadi Blessing '+db.name+'.':'Sinyal tidak menghasilkan Blessing baru.';break}
@@ -171,8 +176,7 @@ export const DU_ENGINE_SOURCE = `
     var multiplier=diffConfig.rewardMultiplier;
     var cash=Math.floor((data.finalReward.baseCash+state.fragments*data.finalReward.cashPerFragment)*(1+(effects.cashMult||0))*multiplier);
     var exp=Math.floor((data.finalReward.baseExp+state.blessings.length*data.finalReward.expPerBlessing)*multiplier);
-    var cerelia=Math.floor((state.difficulty==='easy'?2:state.difficulty==='medium'?4:6)*multiplier);
-    return {cash:cash,exp:exp,cerelia:cerelia};
+    return {cash:cash,exp:exp};
   }
   function makeDU(data){
     function create(seed,initState,saved){
@@ -192,7 +196,7 @@ export const DU_ENGINE_SOURCE = `
         if(state.path){throw new Error('Path run ini sudah dipilih.')}
         if(!data.paths[id]){throw new Error('Path tidak tersedia.')}
         state.path=id;state.pending=null;
-        if(id==='abundance'){state.baseMaxHp+=10;state.hp+=10}
+        if(id==='abundance'){var ab=scaleHp(state,10);state.baseMaxHp+=ab;state.hp+=ab}
         state.lastResult='Sinkronisasi Path '+data.paths[id].name+' berhasil.';
         actions.push({t:'path',v:id});
       }

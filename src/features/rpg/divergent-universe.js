@@ -6,7 +6,6 @@ import {
   statsModel,
   userModel,
   walletModel,
-  inventoryModel,
 } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
 
@@ -290,6 +289,24 @@ const FINAL_REWARD = {
   expPerBlessing: 25,
 };
 
+// DU memakai stat user apa adanya (artifact tidak dinormalisasi). Semua angka
+// HP internal DU dulunya dipatok ke baseMaxHp 100, jadi sekarang diskalakan
+// lewat `state.hpScale` supaya rasio damage/HP tetap sama walau HP user ribuan.
+// Bonus atk/def/crit dihitung log2 terhadap stat referensi (default statsModel)
+// agar artifact tetap terasa tanpa membuat run jadi trivial.
+const DU_BALANCE = {
+  refHp: 1200,
+  refAtk: 30,
+  refDef: 20,
+  refCrit: 5,
+  hpBaseline: 100,
+  atkWeight: 0.35,
+  atkMax: 1.2,
+  defWeight: 0.1,
+  defMax: 0.3,
+  critMax: 0.45,
+};
+
 const RUN_LIMIT = {
   daily: 2,
   weekly: 5,
@@ -534,47 +551,62 @@ function totalEffects(state) {
 }
 
 function maxHp(state) {
-  return Math.max(50, state.baseMaxHp + (totalEffects(state).maxHp || 0));
+  return Math.max(
+    scaleHp(state, 50),
+    state.baseMaxHp + scaleHp(state, totalEffects(state).maxHp || 0)
+  );
 }
 
-// Artifact dipakai pada skala aslinya (HP ribuan), sedangkan DU dibalance di
-// sekitar baseMaxHp 100. Bonus artifact karena itu dinormalisasi dulu lewat
-// divisor + cap di bawah, supaya ceiling-nya setara sistem lama.
-const ARTIFACT_SCALE = {
-  hpDivisor: 160,
-  hpCap: 40,
-  atkDivisor: 20,
-  atkCap: 15,
-  defDivisor: 240,
-  defCap: 0.25,
-  critDivisor: 260,
-  critCap: 0.1,
-};
+// Semua konstanta HP internal DU (damage, heal, shield, revive) ditulis untuk
+// baseMaxHp 100. hpScale mengalikannya ke HP asli user supaya rasionya tetap.
+function hpScaleOf(state) {
+  const scale = Number(state?.hpScale);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
 
-async function getArtifactEffects(jid) {
-  const [total, base] = await Promise.all([
-    artifactService.getPlayerStats(jid),
-    artifactService.getRawBaseStats(jid),
-  ]);
+function scaleHp(state, amount) {
+  if (!amount) return 0;
+  const scaled = Math.round(amount * hpScaleOf(state));
+  if (scaled !== 0) return scaled;
+  return amount > 0 ? 1 : -1;
+}
 
-  const hpBonus = Math.max(0, total.hp - base.hp);
-  const atkBonus = Math.max(0, total.atk - base.atk);
-  const defBonus = Math.max(0, total.def - base.def);
-  const critBonus = Math.max(0, total.critRate - base.critRate);
-  const s = ARTIFACT_SCALE;
+function statBonusOf(state) {
+  return state?.statBonus ?? { atk: 0, def: 0, crit: 0 };
+}
+
+function logScale(value, reference) {
+  const ratio = (Number(value) || 0) / reference;
+  if (!(ratio > 1)) return 0;
+  return Math.log2(ratio);
+}
+
+// DU diskalakan ke stat user: HP menentukan hpScale, sedangkan atk/def/crit
+// dikonversi jadi bonus kecil lewat log2 agar artifact tetap berpengaruh tanpa
+// membuat run menjadi trivial.
+async function buildDuStats(jid) {
+  const stats = await artifactService.getPlayerStats(jid);
+  const b = DU_BALANCE;
+  const hp = Math.max(b.hpBaseline, Math.floor(stats.hp) || b.refHp);
 
   return {
-    hp_flat: Math.min(s.hpCap, Math.floor(hpBonus / s.hpDivisor)),
-    atk_flat: Math.min(s.atkCap, Math.floor(atkBonus / s.atkDivisor)),
-    def_percent: Math.min(s.defCap, defBonus / s.defDivisor),
-    crit_rate: Math.min(s.critCap, critBonus / s.critDivisor),
+    hp,
+    hpScale: hp / b.hpBaseline,
+    statBonus: {
+      atk: Math.min(
+        b.atkMax,
+        Number((logScale(stats.atk, b.refAtk) * b.atkWeight).toFixed(4))
+      ),
+      def: Math.min(
+        b.defMax,
+        Number((logScale(stats.def, b.refDef) * b.defWeight).toFixed(4))
+      ),
+      crit: Math.min(
+        b.critMax,
+        Number((Math.max(0, stats.critRate || 0) / 100).toFixed(4))
+      ),
+    },
   };
-}
-
-// Run lama menyimpan `relicEffects`; dibaca sebagai fallback supaya run yang
-// masih aktif saat migrasi tidak rusak.
-function effectsOf(state) {
-  return state.artifactEffects || state.relicEffects || {};
 }
 
 function addFragments(state, amount) {
@@ -585,6 +617,13 @@ function addFragments(state, amount) {
 }
 
 function heal(state, amount) {
+  const before = state.hp;
+  state.hp = Math.min(maxHp(state), state.hp + scaleHp(state, amount));
+  return state.hp - before;
+}
+
+// Untuk nilai HP yang sudah berada di skala nyata (misal full heal ke maxHp).
+function healAbsolute(state, amount) {
   const before = state.hp;
   state.hp = Math.min(maxHp(state), state.hp + Math.floor(amount));
   return state.hp - before;
@@ -822,21 +861,22 @@ class DivergentUniverseService {
         `Batas mingguan DU tercapai (${usage.weeklyCount}/${RUN_LIMIT.weekly}). Coba lagi setelah reset Senin pukul 00.00 ${SETTINGS.timezone}.`
       );
     }
-    const artifactEffects = await getArtifactEffects(jid);
+    const duStats = await buildDuStats(jid);
     const state = {
       path: null,
       nodeIndex: 0,
       nodes: buildNodes(difficulty),
       difficulty,
-      baseMaxHp: 100 + (artifactEffects.hp_flat || 0),
-      hp: 100 + (artifactEffects.hp_flat || 0),
+      baseMaxHp: duStats.hp,
+      hp: duStats.hp,
+      hpScale: duStats.hpScale,
+      statBonus: duStats.statBonus,
       fragments: 0,
       blessings: [],
       curios: [],
       pending: { type: 'path', options: Object.keys(PATHS) },
       revived: false,
       lastResult: 'Pilih Path untuk memulai sinkronisasi.',
-      artifactEffects,
     };
     const run = await divergentRunModel.create(
       jid,
@@ -867,8 +907,9 @@ class DivergentUniverseService {
     run.state.path = path;
     run.state.pending = null;
     if (path === 'abundance') {
-      run.state.baseMaxHp += 10;
-      run.state.hp += 10;
+      const bonus = scaleHp(run.state, 10);
+      run.state.baseMaxHp += bonus;
+      run.state.hp += bonus;
     }
     run.state.lastResult = `Sinkronisasi Path ${PATHS[path].name} berhasil.`;
     return divergentRunModel.save(run);
@@ -981,20 +1022,19 @@ class DivergentUniverseService {
 
   _battle(state, node) {
     const effects = totalEffects(state);
-    const artifact = effectsOf(state);
+    const bonus = statBonusOf(state);
     const diffConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
     const tier = node.type === 'boss' ? 1.6 : node.type === 'elite' ? 1.3 : 1;
     const progress = 1 + node.position * 0.045;
-    const artifactDefBonus = Math.floor(
-      (state.baseMaxHp || 100) * (artifact.def_percent || 0)
+    const shield = scaleHp(
+      state,
+      (effects.shield || 0) + (state.path === 'preservation' ? 5 : 0)
     );
-    const shield =
-      (effects.shield || 0) +
-      (state.path === 'preservation' ? 5 : 0) +
-      artifactDefBonus;
     const reduction = Math.min(
       0.6,
-      (effects.reduction || 0) + (state.path === 'preservation' ? 0.08 : 0)
+      (effects.reduction || 0) +
+        (state.path === 'preservation' ? 0.08 : 0) +
+        (bonus.def || 0)
     );
     const damageMultiplier = diffConfig.damageMultiplier || 1;
     const enemyMultiplier = diffConfig.enemyMultiplier || 1;
@@ -1005,10 +1045,9 @@ class DivergentUniverseService {
       (1 + (effects.enemyPower || 0)) *
       enemyMultiplier;
     const baseWinChance = diffConfig.baseWinChance || 0.7;
-    const artifactCritRate = artifact.crit_rate || 0;
     const critChance = Math.min(
       0.55,
-      0.12 + (effects.crit || 0) + artifactCritRate
+      0.12 + (effects.crit || 0) + (bonus.crit || 0)
     );
 
     let rounds = 0;
@@ -1017,7 +1056,7 @@ class DivergentUniverseService {
 
     while (state.hp > 0) {
       rounds++;
-      let playerPower = 1 + (effects.atk || 0) + (artifact.atk_flat || 0) * 0.01;
+      let playerPower = 1 + (effects.atk || 0) + (bonus.atk || 0);
       if (state.hp / maxHp(state) < 0.6 && state.path === 'destruction')
         playerPower += 0.18;
       if (node.type !== 'battle') playerPower += effects.bossAtk || 0;
@@ -1032,7 +1071,7 @@ class DivergentUniverseService {
       );
       const won = Math.random() < winChance;
       let damage = Math.floor(
-        (won ? 13 : 27) *
+        scaleHp(state, won ? 13 : 27) *
           tier *
           progress *
           (1 - reduction) *
@@ -1047,8 +1086,8 @@ class DivergentUniverseService {
       if (won) {
         if (effects.revive && !state.revived && state.hp <= 0) {
           state.revived = true;
-          state.hp = 35;
-          state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name}, tetapi bangkit dengan 35 HP.`;
+          state.hp = scaleHp(state, 35);
+          state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name}, tetapi bangkit dengan ${state.hp} HP.`;
           return;
         }
         if (state.hp <= 0) {
@@ -1098,8 +1137,8 @@ class DivergentUniverseService {
       if (state.hp <= 0) {
         if (effects.revive && !state.revived) {
           state.revived = true;
-          state.hp = 35;
-          state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name} dalam ${rounds} ronde, tetapi bangkit dengan 35 HP.`;
+          state.hp = scaleHp(state, 35);
+          state.lastResult = `Revival Chip aktif. Kamu kalah dari ${node.name} dalam ${rounds} ronde, tetapi bangkit dengan ${state.hp} HP.`;
           return;
         }
         const cleared = state.nodes.filter((item) => item.cleared).length;
@@ -1134,17 +1173,25 @@ class DivergentUniverseService {
   }
 
   _resolveEvent(state, option) {
-    const eventHeal = (amount) =>
-      heal(state, amount * (1 + (totalEffects(state).eventHeal || 0)));
+    const mult = 1 + (totalEffects(state).eventHeal || 0);
+    const eventHeal = (amount) => heal(state, amount * mult);
+    const eventHealAbsolute = (amount) => healAbsolute(state, amount * mult);
     const spend = (amount) => {
       if (state.fragments < amount) {
         throw new Error(`Butuh ${amount} fragment untuk pilihan ini.`);
       }
       state.fragments -= amount;
     };
+    const damage = (amount) => {
+      const dealt = scaleHp(state, amount);
+      state.hp = Math.max(1, state.hp - dealt);
+      return dealt;
+    };
     const addMaxHp = (amount) => {
-      state.baseMaxHp += amount;
-      state.hp += amount;
+      const bonus = scaleHp(state, amount);
+      state.baseMaxHp += bonus;
+      state.hp += bonus;
+      return bonus;
     };
     const randomBlessing = () => grantBlessing(state);
     const randomCurio = () => grantCurio(state);
@@ -1166,12 +1213,13 @@ class DivergentUniverseService {
         break;
       case 'light':
         spend(80);
-        state.lastResult = `Cahaya kembali. ${eventHeal(maxHp(state))} HP dipulihkan.`;
+        state.lastResult = `Cahaya kembali. ${eventHealAbsolute(maxHp(state))} HP dipulihkan.`;
         break;
-      case 'darkness':
-        state.hp = Math.max(1, state.hp - 22);
-        state.lastResult = `Kegelapan mengambil 22 HP. Kamu memperoleh ${addFragments(state, 260)} fragment.`;
+      case 'darkness': {
+        const lost = damage(22);
+        state.lastResult = `Kegelapan mengambil ${lost} HP. Kamu memperoleh ${addFragments(state, 260)} fragment.`;
         break;
+      }
       case 'wait':
         state.lastResult = `Kamu menunggu dan memulihkan ${eventHeal(20)} HP.`;
         break;
@@ -1200,24 +1248,22 @@ class DivergentUniverseService {
         if (Math.random() < 0.5) {
           state.lastResult = `Trotter tertangkap. Kamu memperoleh ${addFragments(state, 320)} fragment.`;
         } else {
-          state.hp = Math.max(1, state.hp - 20);
-          state.lastResult = 'Trotter lolos dan kamu kehilangan 20 HP.';
+          state.lastResult = `Trotter lolos dan kamu kehilangan ${damage(20)} HP.`;
         }
         break;
       case 'feed':
         spend(60);
-        addMaxHp(10);
-        state.lastResult = 'Trotter memberimu berkah: max HP +10.';
+        state.lastResult = `Trotter memberimu berkah: max HP +${addMaxHp(10)}.`;
         break;
       case 'trotter_leave':
         state.lastResult = `Trotter meninggalkan energi yang memulihkan ${eventHeal(25)} HP.`;
         break;
       case 'mirror_blessing': {
-        state.hp = Math.max(1, state.hp - 15);
+        const lost = damage(15);
         const blessing = randomBlessing();
         state.lastResult = blessing
-          ? `Pantulan mengambil 15 HP dan memberikan ${blessing.name}.`
-          : 'Pantulan mengambil 15 HP, tetapi tidak ada Blessing tersisa.';
+          ? `Pantulan mengambil ${lost} HP dan memberikan ${blessing.name}.`
+          : `Pantulan mengambil ${lost} HP, tetapi tidak ada Blessing tersisa.`;
         break;
       }
       case 'mirror_shatter':
@@ -1228,13 +1274,13 @@ class DivergentUniverseService {
         break;
       case 'donate':
         spend(120);
-        addMaxHp(15);
-        state.lastResult = 'Para arsitek memperkuat tubuhmu: max HP +15.';
+        state.lastResult = `Para arsitek memperkuat tubuhmu: max HP +${addMaxHp(15)}.`;
         break;
-      case 'work':
-        state.hp = Math.max(1, state.hp - 10);
-        state.lastResult = `Pekerjaan menghabiskan 10 HP dan menghasilkan ${addFragments(state, 170)} fragment.`;
+      case 'work': {
+        const lost = damage(10);
+        state.lastResult = `Pekerjaan menghabiskan ${lost} HP dan menghasilkan ${addFragments(state, 170)} fragment.`;
         break;
+      }
       case 'shelter':
         state.lastResult = `Shelter memulihkan ${eventHeal(30)} HP.`;
         break;
@@ -1248,11 +1294,11 @@ class DivergentUniverseService {
         }
         break;
       case 'repair': {
-        state.hp = Math.max(1, state.hp - 12);
+        const lost = damage(12);
         const blessing = randomBlessing();
         state.lastResult = blessing
-          ? `Mesin aktif setelah mengambil 12 HP dan memberikan ${blessing.name}.`
-          : 'Mesin mengambil 12 HP, tetapi tidak ada Blessing tersisa.';
+          ? `Mesin aktif setelah mengambil ${lost} HP dan memberikan ${blessing.name}.`
+          : `Mesin mengambil ${lost} HP, tetapi tidak ada Blessing tersisa.`;
         break;
       }
       case 'arcade_leave':
@@ -1302,15 +1348,6 @@ class DivergentUniverseService {
         state.blessings.length * FINAL_REWARD.expPerBlessing) *
         multiplier
     );
-    const cereliaAmount = Math.floor(
-      (state.difficulty === 'easy'
-        ? 2
-        : state.difficulty === 'medium'
-          ? 4
-          : 6) * multiplier
-    );
-    const artifactDrops = this._rollArtifactDrops(state.difficulty);
-    const artifactIds = [];
     await sql.begin(async (inner) => {
       await walletModel.reward(
         run.jid,
@@ -1319,45 +1356,13 @@ class DivergentUniverseService {
         inner
       );
       await userModel.addExp(run.jid, rewardExp, inner);
-      if (cereliaAmount > 0) {
-        await inventoryModel.add(run.jid, 'cerelia', cereliaAmount, inner);
-      }
-      for (let i = 0; i < artifactDrops; i++) {
-        const artifact = await artifactService.generateArtifact(
-          run.jid,
-          null,
-          inner
-        );
-        artifactIds.push(artifact.id);
-      }
     });
     run.status = 'completed';
     state.finalReward = {
       cash: rewardCash,
       exp: rewardExp,
-      cerelia: cereliaAmount,
-      artifacts: artifactIds,
     };
-    const artifactText =
-      artifactDrops > 0 ? ` + ${artifactDrops} artifact` : '';
-    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP, ${cereliaAmount} Cerelia${artifactText}.`;
-  }
-
-  _rollArtifactDrops(difficulty) {
-    const dropTable = {
-      easy: 0.3,
-      medium: 1,
-      hard: 1,
-    };
-    const chance = dropTable[difficulty] || 0;
-    if (Math.random() > chance) return 0;
-    if (difficulty === 'medium') {
-      return Math.random() < 0.1 ? 2 : 1;
-    }
-    if (difficulty === 'hard') {
-      return Math.random() < 0.5 ? 2 : 0;
-    }
-    return 1;
+    state.lastResult = `Token valid.\nDivergent Universe ditaklukkan.\nReward akhir: ${rewardCash} coin, ${rewardExp} EXP.`;
   }
 }
 

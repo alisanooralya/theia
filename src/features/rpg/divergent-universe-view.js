@@ -446,7 +446,7 @@ const CLIENT_APP = String.raw`
     var reward = '';
     if (isWin) {
       var r = game.computeReward();
-      reward = '<div class="reward">Reward: ' + fmt(r.cash) + ' coin • ' + fmt(r.exp) + ' EXP • ' + r.cerelia + ' Cerelia</div>';
+      reward = '<div class="reward">Reward: ' + fmt(r.cash) + ' coin • ' + fmt(r.exp) + ' EXP</div>';
     }
     var token = makeToken();
     var cmd = '.du finish ' + token;
