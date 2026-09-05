@@ -223,7 +223,7 @@ class ExpeditionService {
         : `⏱️ Sisa waktu: ${F.formatDuration(state.remainingMs)}`,
       `🎁 Reward: ${this.rewardLine(row)}`,
       '',
-      state.finished ?? 'Reward cair setelah expedition selesai.',
+      state.finished && 'Reward cair setelah expedition selesai.',
     ].join('\n');
   }
 
