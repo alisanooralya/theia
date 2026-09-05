@@ -46,11 +46,7 @@ export async function onMessagesUpsert({ messages, type }, sock) {
       const isCommand = parsed.text?.startsWith(SETTINGS.prefix) ?? false;
 
       const hasMediaTrigger = parsed.isMedia || parsed.quoted?.isMedia;
-      if (
-        parsed.text &&
-        isMentioned &&
-        !isCommand
-      ) {
+      if (parsed.text && isMentioned && !isCommand) {
         if (await isSenderBanned(parsed)) continue;
         if (await isChatMuted(parsed)) continue;
         await sock.sendMessage(

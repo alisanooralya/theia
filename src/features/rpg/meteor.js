@@ -5,14 +5,14 @@ import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 
 const CONFIG = Object.freeze({
-  maxHp: 20_000,
+  maxHp: 12_000,
   maxPointsPerDay: 3,
   cooldownMs: 5 * 60 * 1000,
-  damageMin: 80,
-  damageMax: 150,
-  critChance: 0.2,
+  damageMin: 120,
+  damageMax: 200,
+  critChance: 0.25,
   critMultiplier: 2,
-  coinPerHp: 12,
+  coinPerHp: 10,
   expPerHp: 0.15,
   minCoinReward: 500,
   minExpReward: 5,
