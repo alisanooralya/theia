@@ -1,4 +1,8 @@
-import { cooldownModel, workModel, expeditionModel } from '#storage/models/index.js';
+import {
+  cooldownModel,
+  workModel,
+  expeditionModel,
+} from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
 export default {
@@ -35,7 +39,9 @@ export default {
     }
 
     if (lines.length === 0)
-      return ctx.reply('✅ Tidak ada cooldown aktif. Semua fitur siap digunakan!');
+      return ctx.reply(
+        '✅ Tidak ada cooldown aktif. Semua fitur siap digunakan!'
+      );
 
     return ctx.reply(`⏳ *Cooldown Aktif*\n\n${lines.join('\n')}`);
   },

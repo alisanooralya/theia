@@ -21,7 +21,10 @@ export default {
 
   async execute(ctx) {
     const isMedia = ctx.quoted?.isMedia || ctx.msg?.isMedia;
-    if (!isMedia) return ctx.fail('Reply gambar/video dengan `.sticker`\nTambah teks: .sticker teks atau .sticker teks atas * teks bawah');
+    if (!isMedia)
+      return ctx.fail(
+        'Reply gambar/video dengan `.sticker`\nTambah teks: .sticker teks atau .sticker teks atas * teks bawah'
+      );
 
     try {
       let buffer;
