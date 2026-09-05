@@ -55,7 +55,6 @@ function scaleHp(state, amount) {
   return amount > 0 ? 1 : -1;
 }
 
-// Angka HP pada deskripsi disimpan sebagai `{hp:N}` di baseline 100.
 function describeText(state, text) {
   if (typeof text !== 'string' || text.indexOf('{hp:') === -1) return text;
   return text.replace(/\{hp:(-?\d+)\}/g, (_, raw) =>

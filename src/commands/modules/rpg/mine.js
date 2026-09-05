@@ -3,8 +3,6 @@ import { userModel } from '#storage/models/index.js';
 import { Button } from '#messages/builder.js';
 
 function meteorCard(ctx, state) {
-  // Tanpa Mining Point tidak ada tombol yang bisa ditawarkan, dan interactive
-  // message tanpa button tidak dirender konsisten — jadi kirim teks biasa.
   if (state.pointsLeft <= 0) {
     return ctx.reply(
       [

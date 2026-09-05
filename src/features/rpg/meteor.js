@@ -4,24 +4,13 @@ import { F } from '#helpers/index.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 
-/**
- * Meteor Mine — target bersama yang ditambang semua user.
- *
- * Aturan hari: maksimal 1 Meteor dibuat per hari kalender, dan Meteor yang
- * belum selesai tetap aktif melewati pergantian hari. Kedua aturan itu
- * ditegakkan di database (UNIQUE day_key + partial unique index status aktif),
- * bukan oleh timer proses, supaya restart bot tidak mengubah apa pun.
- */
-
 const CONFIG = Object.freeze({
   maxHp: 20_000,
   maxPointsPerDay: 3,
   damageMin: 80,
   damageMax: 150,
-  critChance: 0.1,
+  critChance: 0.2,
   critMultiplier: 2,
-  // Reward pool diskalakan dari HP Meteor. Nilai ini dipilih supaya rata-rata
-  // per pukulan (~1.5k coin, ~19 EXP) di atas Mine lama (~1k coin, ~12.5 EXP).
   coinPerHp: 12,
   expPerHp: 0.15,
   minCoinReward: 500,
@@ -44,7 +33,6 @@ class MeteorService {
     return CONFIG;
   }
 
-  /** Kunci hari kalender di timezone bot, contoh `2026-09-05`. */
   dayKey(date = new Date()) {
     return dayKeyFormat.format(date);
   }
@@ -59,11 +47,6 @@ class MeteorService {
     };
   }
 
-  /**
-   * Meteor yang sedang berlaku, plus Mining Point user.
-   * Membuat Meteor baru hanya kalau tidak ada yang aktif DAN hari ini belum
-   * pernah membuat Meteor.
-   */
   async getState(jid) {
     const dayKey = this.dayKey();
     let meteor = await meteorModel.getActive();
@@ -78,7 +61,6 @@ class MeteorService {
             '[Meteor] new meteor created'
           );
         } else {
-          // Kalah race dengan request lain — pakai Meteor yang sudah ada.
           meteor = await meteorModel.getActive();
         }
       }
@@ -115,12 +97,6 @@ class MeteorService {
     };
   }
 
-  /**
-   * Satu kali mining. Seluruh langkah (konsumsi point, damage, contribution,
-   * pengurangan HP, penutupan Meteor) berjalan dalam satu transaksi dengan row
-   * lock pada Meteor, sehingga mining bersamaan tidak bisa menghasilkan HP
-   * negatif, contribution ganda, atau reward dobel.
-   */
   async mine(jid) {
     const dayKey = this.dayKey();
 
@@ -192,22 +168,12 @@ class MeteorService {
       return {
         ...result,
         cleared: true,
-        // Meteor yang dibuat hari sebelumnya belum memakai kuota hari ini,
-        // jadi Meteor berikutnya bisa langsung muncul hari ini juga.
         nextToday: closed.day_key !== dayKey,
         ...distribution,
       };
     });
   }
 
-  /**
-   * Bagi reward proporsional terhadap contribution. Dipanggil hanya dari dalam
-   * transaksi yang berhasil memenangkan `markCleared`, jadi tidak akan berjalan
-   * dua kali untuk Meteor yang sama.
-   *
-   * Pool diskalakan dari `max_hp` Meteor yang bersangkutan (bukan konstanta),
-   * supaya perubahan `maxHp` di config tidak salah membayar Meteor lama.
-   */
   async _distributeRewards(meteor, client) {
     const meteorId = meteor.id;
     const contributions = await meteorModel.getContributions(meteorId, client);

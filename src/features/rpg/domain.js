@@ -62,7 +62,6 @@ class DomainService {
     return this.simulateBattleAgainst(jid, config.boss);
   }
 
-  // Mesin combat dipakai bersama Domain & Bounty; `enemy` = { hp, atk, def }.
   async simulateBattleAgainst(jid, enemy) {
     if (!enemy) throw new Error('Musuh tidak valid.');
 

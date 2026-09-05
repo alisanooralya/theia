@@ -289,11 +289,6 @@ const FINAL_REWARD = {
   expPerBlessing: 25,
 };
 
-// DU memakai stat user apa adanya (artifact tidak dinormalisasi). Semua angka
-// HP internal DU dulunya dipatok ke baseMaxHp 100, jadi sekarang diskalakan
-// lewat `state.hpScale` supaya rasio damage/HP tetap sama walau HP user ribuan.
-// Bonus atk/def/crit dihitung log2 terhadap stat referensi (default statsModel)
-// agar artifact tetap terasa tanpa membuat run jadi trivial.
 const DU_BALANCE = {
   refHp: 1200,
   refAtk: 30,
@@ -565,8 +560,6 @@ function maxHp(state) {
   );
 }
 
-// Semua konstanta HP internal DU (damage, heal, shield, revive) ditulis untuk
-// baseMaxHp 100. hpScale mengalikannya ke HP asli user supaya rasionya tetap.
 function hpScaleOf(state) {
   const scale = Number(state?.hpScale);
   return Number.isFinite(scale) && scale > 0 ? scale : 1;
@@ -583,9 +576,6 @@ function statBonusOf(state) {
   return state?.statBonus ?? { atk: 0, def: 0, crit: 0 };
 }
 
-// Deskripsi blessing/curio/event menulis angka HP sebagai `{hp:N}` (nilai pada
-// baseline 100). Placeholder diganti angka nyata sesuai hpScale run agar teks
-// yang dibaca user cocok dengan efek yang benar-benar terjadi.
 function describeText(state, text) {
   if (typeof text !== 'string' || text.indexOf('{hp:') === -1) return text;
   return text.replace(/\{hp:(-?\d+)\}/g, (_, raw) =>
@@ -605,9 +595,6 @@ function logScale(value, reference) {
   return Math.log2(ratio);
 }
 
-// DU diskalakan ke stat user: HP menentukan hpScale, sedangkan atk/def/crit
-// dikonversi jadi bonus kecil lewat log2 agar artifact tetap berpengaruh tanpa
-// membuat run menjadi trivial.
 async function buildDuStats(jid) {
   const stats = await artifactService.getPlayerStats(jid);
   const b = DU_BALANCE;
@@ -646,7 +633,6 @@ function heal(state, amount) {
   return state.hp - before;
 }
 
-// Untuk nilai HP yang sudah berada di skala nyata (misal full heal ke maxHp).
 function healAbsolute(state, amount) {
   const before = state.hp;
   state.hp = Math.min(maxHp(state), state.hp + Math.floor(amount));
