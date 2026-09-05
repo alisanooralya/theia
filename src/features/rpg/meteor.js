@@ -218,7 +218,6 @@ class MeteorService {
     const { meteor, miners, contribution, pointsLeft } = state;
 
     const lines = [
-      '☄️ *METEOR MINE*',
       '',
       `HP: ${F.formatNumber(meteor.hp)} / ${F.formatNumber(meteor.max_hp)}`,
       `${this.hpBar(meteor.hp, meteor.max_hp)}`,
@@ -277,9 +276,7 @@ class MeteorService {
 
     lines.push(
       '',
-      result.nextToday
-        ? `Meteor #${meteor.id} selesai. Ketik \`.mine\` untuk Meteor hari ini.`
-        : `Meteor #${meteor.id} selesai. Meteor berikutnya besok.`
+      result.nextToday && `Meteor #${meteor.id} selesai. Meteor berikutnya besok.`
     );
 
     return { text: lines.join('\n'), mentions: rewards.map((r) => r.jid) };

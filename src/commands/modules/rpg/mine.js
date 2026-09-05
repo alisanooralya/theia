@@ -17,7 +17,6 @@ function meteorCard(ctx, state) {
     .setTitle('☄️ METEOR MINE')
     .setSubtitle('Target bersama — tambang sampai HP habis')
     .setBody(meteor.formatStatus(state))
-    .setFooter('Tap MINE untuk menambang (1 Mining Point)')
     .addReply('⛏️ MINE', '.mine hit')
     .send(ctx.jid);
 }
@@ -27,14 +26,14 @@ export default {
   aliases: ['mining', 'tambang', 'meteor'],
   category: 'rpg',
   description: 'Tambang Meteor bersama user lain',
-  cooldown: 5_000,
+  cooldown: 300_000,
 
   async execute(ctx) {
     await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
     const sub = ctx.args[0]?.toLowerCase();
 
-    if (sub === 'hit' || sub === 'mine') {
+    if (sub === 'hit') {
       const result = await meteor.mine(ctx.sender);
 
       if (!result.cleared) {
