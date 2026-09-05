@@ -21,18 +21,10 @@ export default {
   authBackend: 'sqlite',
   sessionId: 'default',
 
-  // ─── AI Provider (isi salah satu) ───
-  openaiKey: '',
-  openaiModel: 'gpt-4o-mini',
-  anthropicKey: '',
-  anthropicModel: 'claude-haiku-4-5',
-  groqKey: '',
-  groqModel: 'llama-3.1-8b-instant',
-
   // ─── AI Agent ───
   // Key Gemini: https://aistudio.google.com/apikey
   aiAgentEnabled: false,
-  geminiKey: '',
+  geminiKey: 'AQ.Ab8RN6LKShiP4MJO1jNBOOlemkKLKGVU_Y2kSVQXV_21Ff5aLw',
   geminiModel: 'gemini-3.6-flash',
   agentMaxToolCalls: 5,
   agentRateLimitMax: 10,
@@ -43,13 +35,13 @@ export default {
 
   // ─── Logging ───
   // 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
-  logLevel: 'info',
+  logLevel: 'warn',
 
   // ─── Misc ───
   timezone: 'Asia/Jakarta',
   respondToSelf: false,
   ignoreBots: false,
-  autoread: false,
+  autoread: true,
 
   // ─── API Keys ───
   tiktokApiKey: 'Btz-ZEaRQ',

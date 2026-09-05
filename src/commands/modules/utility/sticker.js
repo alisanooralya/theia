@@ -14,14 +14,14 @@ async function addTextToImage(buffer, text) {
 
 export default {
   name: 'sticker',
-  aliases: ['s', 'stiker', 'sgif'],
+  aliases: ['s', 'stiker'],
   category: 'utility',
-  description: 'Buat sticker dari gambar/video. Tambah teks: !sticker teks atau !sticker atas * bawah',
+  description: 'Buat sticker dari gambar/video.',
   cooldown: 60_000,
 
   async execute(ctx) {
     const isMedia = ctx.quoted?.isMedia || ctx.msg?.isMedia;
-    if (!isMedia) return ctx.fail('Reply gambar/video dengan `!sticker`');
+    if (!isMedia) return ctx.fail('Reply gambar/video dengan `.sticker`\nTambah teks: .sticker teks atau .sticker teks atas * teks bawah');
 
     try {
       let buffer;
