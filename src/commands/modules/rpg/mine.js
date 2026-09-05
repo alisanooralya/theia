@@ -26,7 +26,11 @@ export default {
   aliases: ['mining', 'tambang', 'meteor'],
   category: 'rpg',
   description: 'Tambang Meteor bersama user lain',
-  cooldown: 300_000,
+  cooldown: meteor.config.cooldownMs,
+  // Cooldown hanya dipasang setelah mining benar-benar terjadi. Tanpa ini
+  // dispatcher memasangnya di setiap eksekusi, termasuk saat `.mine` cuma
+  // menampilkan kartu status — user langsung kena cooldown tanpa menambang.
+  manualCooldown: true,
 
   async execute(ctx) {
     await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -35,6 +39,7 @@ export default {
 
     if (sub === 'hit') {
       const result = await meteor.mine(ctx.sender);
+      await ctx.applyCooldown();
 
       if (!result.cleared) {
         return ctx.reply(meteor.formatMineResult(result));
