@@ -4,6 +4,63 @@ import { F } from '#helpers/index.js';
 
 const SLOT_EMOJI = artifact.slotEmoji;
 const SLOTS = ['flower', 'feather', 'sands', 'goblet', 'circlet'];
+const MAX_SMELT = 20;
+
+/**
+ * Ambil daftar ID artifact dari argumen. Pemisahnya spasi dan/atau koma,
+ * jadi `1 2 4 17` dan `1, 2, 4, 15` sama-sama valid. Duplikat dibuang supaya
+ * satu artifact tidak diproses dua kali.
+ */
+function parseArtifactIds(rawArgs) {
+  const ids = [];
+  const invalid = [];
+
+  for (const token of rawArgs.split(/[\s,]+/).filter(Boolean)) {
+    if (!/^\d+$/.test(token)) {
+      invalid.push(token);
+      continue;
+    }
+    const id = Number.parseInt(token, 10);
+    if (id < 1) {
+      invalid.push(token);
+      continue;
+    }
+    if (!ids.includes(id)) ids.push(id);
+  }
+
+  return { ids, invalid };
+}
+
+function smeltReport(smelted, failed) {
+  if (smelted.length === 1 && failed.length === 0) {
+    const { artifact: a, coinsEarned } = smelted[0];
+    return [
+      `🔥 Artifact *${a.name}* (${a.slot}) Lv.${a.level} berhasil dilebur!`,
+      `+${F.formatNumber(coinsEarned)} koin`,
+    ].join('\n');
+  }
+
+  const total = smelted.reduce((sum, item) => sum + item.coinsEarned, 0);
+  const lines = [
+    `🔥 *SMELT SELESAI* (${smelted.length}/${smelted.length + failed.length})`,
+    '',
+  ];
+
+  for (const { artifact: a, coinsEarned } of smelted) {
+    lines.push(
+      `• ${SLOT_EMOJI[a.slot] ?? ''} *${a.name}* (${a.slot}) Lv.${a.level} — +${F.formatNumber(coinsEarned)} koin`
+    );
+  }
+
+  lines.push('', `🪙 Total: +${F.formatNumber(total)} koin`);
+
+  if (failed.length > 0) {
+    lines.push('', '⚠️ Gagal dilebur:');
+    for (const item of failed) lines.push(`• #${item.id} — ${item.message}`);
+  }
+
+  return lines.join('\n');
+}
 
 async function equippedText(jid) {
   const inventory = await artifact.getInventory(jid);
@@ -50,7 +107,12 @@ function helpText() {
     '`.artifact equip <id>` - Pasang artifact berdasarkan ID',
     '`.artifact unequip <slot>` - Lepas artifact dari slot',
     '`.artifact levelup <id>` - Naikkan level artifact',
-    '`.artifact smelt <id>` - Lebur artifact untuk dapat koin',
+    '`.artifact smelt <id...>` - Lebur artifact untuk dapat koin',
+    '',
+    '*Smelt bisa banyak sekaligus:*',
+    '`.artifact smelt 1 2 4 17`',
+    '`.artifact smelt 1, 2, 4, 15`',
+    `Maksimal ${MAX_SMELT} artifact per sekali smelt.`,
     '',
     '*Slot:* 🌸 Flower | 🪶 Feather | ⏳ Sands | 🏆 Goblet | 👑 Circlet',
     '*Level Max:* 20',
@@ -124,16 +186,53 @@ export default {
       }
 
       if (sub === 'smelt') {
-        const userId = Number.parseInt(ctx.args[1], 10);
-        if (!Number.isInteger(userId) || userId < 1) {
+        const { ids, invalid } = parseArtifactIds(ctx.args.slice(1).join(' '));
+
+        if (ids.length === 0) {
           return ctx.fail(
-            'Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.'
+            [
+              'Masukkan ID artifact yang valid. Gunakan `.artifact list` untuk melihat ID.',
+              '',
+              'Contoh:',
+              '`.artifact smelt 3`',
+              '`.artifact smelt 1 2 4 17`',
+              '`.artifact smelt 1, 2, 4, 15`',
+            ].join('\n')
           );
         }
-        const result = await artifact.smelt(ctx.sender, userId);
-        return ctx.reply(
-          `🔥 Artifact *${result.artifact.name}* (${result.artifact.slot}) Lv.${result.artifact.level} berhasil dilebur!\n+${result.coinsEarned} koin`
-        );
+        if (ids.length > MAX_SMELT) {
+          return ctx.fail(
+            `Maksimal ${MAX_SMELT} artifact per sekali smelt (kamu memasukkan ${ids.length}).`
+          );
+        }
+
+        const smelted = [];
+        const failed = invalid.map((token) => ({
+          id: token,
+          message: 'ID tidak valid',
+        }));
+
+        // Diproses satu per satu supaya satu ID yang gagal tidak membatalkan
+        // sisanya — tiap smelt sudah punya transaksinya sendiri.
+        for (const id of ids) {
+          try {
+            smelted.push(await artifact.smelt(ctx.sender, id));
+          } catch (error) {
+            failed.push({ id, message: error.message });
+          }
+        }
+
+        if (smelted.length === 0) {
+          return ctx.fail(
+            [
+              'Tidak ada artifact yang berhasil dilebur.',
+              '',
+              ...failed.map((item) => `• #${item.id} — ${item.message}`),
+            ].join('\n')
+          );
+        }
+
+        return ctx.reply(smeltReport(smelted, failed));
       }
 
       const equippedLines = await equippedText(ctx.sender);
