@@ -276,7 +276,8 @@ class MeteorService {
 
     lines.push(
       '',
-      result.nextToday && `Meteor #${meteor.id} selesai. Meteor berikutnya besok.`
+      result.nextToday &&
+        `Meteor #${meteor.id} selesai. Meteor berikutnya besok.`
     );
 
     return { text: lines.join('\n'), mentions: rewards.map((r) => r.jid) };
