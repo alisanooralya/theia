@@ -1,6 +1,9 @@
 import { workService as work } from '#features/economy/work.js';
 import { userModel } from '#storage/models/index.js';
 import { Button } from '#messages/builder.js';
+import { F } from '#helpers/index.js';
+
+const COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 function workMenu(ctx) {
   const builder = new Button(ctx.sock)
@@ -40,6 +43,8 @@ export default {
   aliases: ['kerja', 'bekerja'],
   category: 'economy',
   description: 'Cari uang dengan bekerja',
+  cooldown: COOLDOWN_MS,
+  manualCooldown: true,
 
   async execute(ctx) {
     await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -55,7 +60,15 @@ export default {
       if (!state.finished) return statusMessage(ctx, state);
 
       const result = await work.claim(ctx.sender);
-      return ctx.reply(work.formatClaim(result));
+      await ctx.applyCooldown();
+
+      return ctx.reply(
+        [
+          work.formatClaim(result),
+          '',
+          `⏱️ Kerja berikutnya: ${F.formatDuration(COOLDOWN_MS)} lagi.`,
+        ].join('\n')
+      );
     }
 
     if (state.active) return statusMessage(ctx, state);
