@@ -6,7 +6,21 @@ import {
 } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
 import { cardService } from '#features/rpg/card.js';
+import { Button } from '#messages/builder.js';
 import { F } from '#helpers/index.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const CARD_DIR = join(__dirname, '..', '..', '..', '..', 'temp', 'card');
+
+const CARD_IMAGE_MAP = {
+  girgas: 'girgas.webp',
+  lena: 'lena.webp',
+  ameris: 'ameris.webp',
+  daisy: 'daisy.webp',
+};
 
 const SLOT_EMOJI = {
   flower: '🌸',
@@ -68,6 +82,17 @@ export default {
       '╰─────── ୨୧ ───────┘',
     ].join('\n');
 
-    await ctx.reply(text);
+    const cardFileName =
+      CARD_IMAGE_MAP[cardsByType.main?.card_id] ?? 'girgas.webp';
+    const cardPath = join(CARD_DIR, cardFileName);
+
+    try {
+      const builder = new Button(ctx.sock)
+        .setBody(text)
+        .setImage(cardPath);
+      return builder.send(ctx.jid);
+    } catch {
+      return ctx.reply(text);
+    }
   },
 };
