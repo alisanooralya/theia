@@ -93,6 +93,43 @@ export function getCardUpgradeCost(level) {
   };
 }
 
+/**
+ * Total biaya upgrade N level dari fromLevel (di-cap di Lv.100).
+ * Murni — dipakai bulk levelup dan test.
+ */
+export function getBulkUpgradeCost(fromLevel, count) {
+  const levels = Math.max(
+    0,
+    Math.min(Math.floor(count) || 0, CARD_MAX_LEVEL - fromLevel)
+  );
+  let coin = 0;
+  let material = 0;
+  for (let lv = fromLevel; lv < fromLevel + levels; lv++) {
+    const step = getCardUpgradeCost(lv);
+    coin += step.coin;
+    material += step.material;
+  }
+  return { levels, coin, material, toLevel: fromLevel + levels };
+}
+
+/**
+ * Berapa level maksimal yang terbeli dengan cash + core yang ada.
+ * Murni — dipakai mode `max`.
+ */
+export function affordableUpgradeLevels(fromLevel, cash, cores) {
+  let levels = 0;
+  let coin = 0;
+  let material = 0;
+  for (let lv = fromLevel; lv < CARD_MAX_LEVEL; lv++) {
+    const step = getCardUpgradeCost(lv);
+    if (coin + step.coin > cash || material + step.material > cores) break;
+    coin += step.coin;
+    material += step.material;
+    levels++;
+  }
+  return { levels, coin, material, toLevel: fromLevel + levels };
+}
+
 export function passiveDescription(card) {
   return PASSIVE_DESCRIPTIONS[card.card_id] ?? card.passive;
 }
@@ -412,6 +449,58 @@ class CardService {
       const upgraded = await cardModel.updateLevel(jid, id, card.level + 1, t);
       if (!upgraded) throw new Error('Level Card berubah. Coba lagi.');
       return { card: upgraded, cost };
+    });
+  }
+
+  /**
+   * Upgrade sekaligus N level (atau 'max' = sejauh resource cukup),
+   * dibayar sekali dalam satu transaksi.
+   */
+  async upgradeBulk(jid, id, count = 1) {
+    return sql.begin(async (t) => {
+      const card = await cardModel.findOwned(jid, id, t, true);
+      if (!card) throw new Error('Card tidak ditemukan.');
+      if (card.type !== 'main')
+        throw new Error('Support Card tidak dapat di-upgrade.');
+
+      let cost;
+      if (count === 'max') {
+        const [wallet, coreRow] = await Promise.all([
+          walletModel.find(jid, t),
+          inventoryModel.getItem(jid, CARD_CORE_ID, t),
+        ]);
+        cost = affordableUpgradeLevels(
+          card.level,
+          wallet?.cash ?? 0,
+          coreRow?.quantity ?? 0
+        );
+        if (cost.levels < 1) {
+          throw new Error('Resource tidak cukup untuk upgrade.');
+        }
+      } else {
+        cost = getBulkUpgradeCost(card.level, count);
+        if (cost.levels < 1) throw new Error('Card sudah mencapai Lv.100.');
+      }
+
+      await walletModel.spendCash(jid, cost.coin, t);
+      try {
+        await inventoryModel.remove(jid, CARD_CORE_ID, cost.material, t);
+      } catch (error) {
+        if (error.message === `Item tidak cukup: ${CARD_CORE_ID}`) {
+          throw new Error(`Card Core tidak cukup. Butuh ${cost.material}.`, {
+            cause: error,
+          });
+        }
+        throw error;
+      }
+      const upgraded = await cardModel.updateLevel(
+        jid,
+        id,
+        card.level + cost.levels,
+        t
+      );
+      if (!upgraded) throw new Error('Level Card berubah. Coba lagi.');
+      return { card: upgraded, cost, levels: cost.levels };
     });
   }
 

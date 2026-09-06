@@ -170,22 +170,29 @@ export default {
         const query = ctx.args[1];
         if (!query) {
           return ctx.reply(
-            'Upgrade Main Card memakai Coin + Card Core.\nGunakan `.card levelup <nama>`.\nCard Core hanya tersedia di `.raidshop`.'
+            'Upgrade Main Card memakai Coin + Card Core.\nGunakan `.card levelup <nama> [jumlah|max]`.\nCard Core hanya tersedia di `.raidshop`.'
           );
         }
         const target = await resolveCard(ctx.sender, query);
         if (!target) return ctx.fail('Card tidak ditemukan.');
 
-        const result = await cards.upgrade(ctx.sender, target.id);
+        const rawCount = ctx.args[2]?.toLowerCase();
+        const count =
+          rawCount === 'max' || rawCount === 'all'
+            ? 'max'
+            : Math.max(1, Number.parseInt(rawCount, 10) || 1);
+        const result = await cards.upgradeBulk(ctx.sender, target.id, count);
         const next = cards.getUpgradeCost(result.card.level);
         return ctx.reply(
           [
-            `✅ *${result.card.name}* naik ke *Lv.${result.card.level}*!`,
+            `✅ *${result.card.name}* naik ${result.levels} level ke *Lv.${result.card.level}*!`,
             `Terpakai: 🪙${F.formatNumber(result.cost.coin)} + ${result.cost.material} Card Core`,
             next
               ? `Berikutnya: 🪙${F.formatNumber(next.coin)} + ${next.material} Card Core`
               : 'Level maksimum tercapai.',
-            result.card.level === 50 ? 'Passive berhasil dibuka!' : '',
+            result.card.level >= 50 && result.card.level - result.levels < 50
+              ? 'Passive berhasil dibuka!'
+              : '',
           ]
             .filter(Boolean)
             .join('\n')
@@ -204,7 +211,7 @@ export default {
           '• `.card` detail <nama|id> - Lihat detail (main: nama, support: id)',
           '• `.card` equip <nama|id> - Pasang (main: nama, support: id)',
           '• `.card` unequip <main|support> - Lepas Card',
-          '• `.card` levelup <nama> - Upgrade Main Card',
+          '• `.card` levelup <nama> [jumlah|max] - Upgrade Main Card',
         ].join('\n')
       );
     } catch (error) {
