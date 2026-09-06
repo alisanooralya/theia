@@ -141,39 +141,39 @@ function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
   ctx.textBaseline = 'alphabetic';
 
   const cy = y + h / 2;
-  const textX = x + 50;
-  iconFn(ctx, x + 26, cy, 24, accent);
+  const textX = x + 58;
+  iconFn(ctx, x + 30, cy, 32, accent);
 
-  ctx.font = '15px sans-serif';
+  ctx.font = 'bold 18px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(label, textX, cy - 7);
+  ctx.fillText(label, textX, cy - 14, w - 58 - 8);
 
-  ctx.font = 'bold 22px sans-serif';
+  ctx.font = 'bold 30px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(String(value), textX, cy + 19);
+  ctx.fillText(String(value), textX, cy + 22, w - 58 - 8);
 }
 
 function cardSlot(ctx, x, y, w, h, label, card, accent) {
-  roundRect(ctx, x, y, w, h, 16);
+  roundRect(ctx, x, y, w, h, 18);
   ctx.fillStyle = 'rgba(20,16,32,0.55)';
   ctx.fill();
   ctx.strokeStyle = accent + '55';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  ctx.font = '13px sans-serif';
+  ctx.font = 'bold 16px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.textBaseline = 'top';
-  ctx.fillText(label.toUpperCase(), x + 16, y + 12);
+  ctx.fillText(label.toUpperCase(), x + 18, y + 14, w - 36);
 
-  ctx.font = 'bold 20px sans-serif';
+  ctx.font = 'bold 26px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(card?.name ?? '-', x + 16, y + 34);
+  ctx.fillText(card?.name ?? '-', x + 18, y + 42, w - 36);
 
   if (card?.level) {
-    ctx.font = '14px sans-serif';
+    ctx.font = 'bold 17px sans-serif';
     ctx.fillStyle = accent;
-    ctx.fillText(`Lv. ${card.level}`, x + 16, y + h - 26);
+    ctx.fillText(`Lv. ${card.level}`, x + 18, y + h - 32);
   }
 }
 
@@ -262,41 +262,41 @@ export async function renderProfileCard(data) {
   const rightW = W - px - 30;
 
   // Name + level
-  ctx.font = 'bold 34px sans-serif';
+  ctx.font = 'bold 42px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
-  ctx.fillText(name, px, 34);
+  ctx.fillText(name, px, 30, rightW);
 
-  ctx.font = 'bold 18px sans-serif';
+  ctx.font = 'bold 22px sans-serif';
   ctx.fillStyle = '#ffd97a';
-  ctx.fillText(`Lv. ${level}`, px, 78);
+  ctx.fillText(`Lv. ${level}`, px, 80, rightW);
 
   // EXP bar
   const expPct = expNeeded > 0 ? exp / expNeeded : 0;
-  statBar(ctx, px, 106, rightW, 12, expPct, ['#ffd97a', '#ff9d4d']);
-  ctx.font = '13px sans-serif';
+  statBar(ctx, px, 110, rightW, 14, expPct, ['#ffd97a', '#ff9d4d']);
+  ctx.font = '16px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`${exp}/${expNeeded} EXP`, px, 122);
+  ctx.fillText(`${exp}/${expNeeded} EXP`, px, 128, rightW);
 
   // HP bar (big, its own row)
-  const hpY = 156;
-  ICONS.heart(ctx, px + 8, hpY + 6, 18, '#ff5f6d');
-  ctx.font = '15px sans-serif';
+  const hpY = 160;
+  ICONS.heart(ctx, px + 10, hpY + 8, 22, '#ff5f6d');
+  ctx.font = '19px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('HP', px + 22, hpY);
-  ctx.font = 'bold 15px sans-serif';
+  ctx.fillText('HP', px + 28, hpY);
+  ctx.font = 'bold 19px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'right';
   ctx.fillText(`${hp}/${maxHp}`, px + rightW, hpY);
   ctx.textAlign = 'left';
-  statBar(ctx, px, hpY + 22, rightW, 16, maxHp > 0 ? hp / maxHp : 0, [
+  statBar(ctx, px, hpY + 28, rightW, 18, maxHp > 0 ? hp / maxHp : 0, [
     '#ff5f6d',
     '#ff9966',
   ]);
 
   // Stat chips: ATK, DEF, CR
-  const chipY = hpY + 60;
-  const chipH = 68;
+  const chipY = hpY + 66;
+  const chipH = 92;
   const gap = 14;
   const chipW = (rightW - gap * 2) / 3;
   statChip(ctx, px, chipY, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
@@ -324,8 +324,8 @@ export async function renderProfileCard(data) {
   );
 
   // Card slots: main + support
-  const cardY = chipY + chipH + 26;
-  const cardH = 96;
+  const cardY = chipY + chipH + 24;
+  const cardH = 136;
   const cardGap = 14;
   const cardW = (rightW - cardGap) / 2;
   cardSlot(ctx, px, cardY, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
@@ -343,8 +343,8 @@ export async function renderProfileCard(data) {
   // Footer divider
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.beginPath();
-  ctx.moveTo(px, cardY + cardH + 24);
-  ctx.lineTo(px + rightW, cardY + cardH + 24);
+  ctx.moveTo(px, cardY + cardH + 22);
+  ctx.lineTo(px + rightW, cardY + cardH + 22);
   ctx.stroke();
 
   return canvas.encode('png');
