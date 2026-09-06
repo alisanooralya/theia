@@ -64,13 +64,12 @@ const ICONS = {
     ctx.fill();
   },
   sword(ctx, cx, cy, s, color) {
-    // Proper sword silhouette: blade + guard + grip + pommel, tilted diagonal.
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(-Math.PI / 4);
     ctx.fillStyle = color;
+
     const u = s / 2;
-    // Blade (tapered to a tip at the top)
     ctx.beginPath();
     ctx.moveTo(0, -u);
     ctx.lineTo(u * 0.16, -u * 0.5);
@@ -79,12 +78,11 @@ const ICONS = {
     ctx.lineTo(-u * 0.16, -u * 0.5);
     ctx.closePath();
     ctx.fill();
-    // Crossguard
+
     roundRect(ctx, -u * 0.36, u * 0.1, u * 0.72, u * 0.16, u * 0.08);
     ctx.fill();
-    // Grip
+
     ctx.fillRect(-u * 0.07, u * 0.26, u * 0.14, u * 0.34);
-    // Pommel
     ctx.beginPath();
     ctx.arc(0, u * 0.6 + u * 0.12, u * 0.11, 0, Math.PI * 2);
     ctx.fill();
@@ -129,8 +127,6 @@ function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Explicit text state: callers leave textBaseline on 'top',
-  // which would push the value text against the chip bottom edge.
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
@@ -160,7 +156,6 @@ function cardSlot(ctx, x, y, w, h, label, card, accent) {
   ctx.textBaseline = 'top';
   ctx.fillText(label.toUpperCase(), x + 18, y + 12, w - 36);
 
-  // Name (left) + level (flush right) on one row
   ctx.textAlign = 'left';
   ctx.font = 'bold 28px sans-serif';
   ctx.fillStyle = '#ffffff';
@@ -180,22 +175,6 @@ function cardSlot(ctx, x, y, w, h, label, card, accent) {
   }
 }
 
-/**
- * Render an RPG profile card as a PNG buffer.
- * @param {object} data
- * @param {string} data.name
- * @param {number} data.level
- * @param {number} data.exp
- * @param {number} data.expNeeded
- * @param {number} data.hp
- * @param {number} data.maxHp
- * @param {number} data.atk
- * @param {number} data.def
- * @param {number} data.critRate
- * @param {{name:string, level?:number}} [data.mainCard]
- * @param {{name:string, level?:number}} [data.supportCard]
- * @param {string} [data.artPath] - path or URL to character artwork
- */
 export async function renderProfileCard(data) {
   const {
     name = 'Unknown',
@@ -212,7 +191,6 @@ export async function renderProfileCard(data) {
     artPath = null,
   } = data;
 
-  // Load artwork first: the layout adapts when there is no character art.
   let artImg = null;
   if (artPath) {
     try {
@@ -224,7 +202,6 @@ export async function renderProfileCard(data) {
   const showArt = Boolean(artImg);
 
   // ---- Canvas + panel geometry ----
-  // Without equipped art, render the stats panel only (no empty art space).
   const panelH = 410; // height of the stats panel
   const Hc = showArt ? H : panelH + 48;
   const panelY = showArt ? Hc - panelH : 24;

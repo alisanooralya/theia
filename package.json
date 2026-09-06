@@ -5,11 +5,9 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
+    "start": "node --watch src/index.js",
     "db:migrate": "node src/storage/migration.js",
     "db:seed": "node src/storage/seeds/initial-data.js",
-    "test": "node --test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
