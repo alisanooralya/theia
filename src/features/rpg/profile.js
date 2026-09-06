@@ -209,55 +209,63 @@ export async function renderProfileCard(data) {
     artPath = null,
   } = data;
 
-  const canvas = createCanvas(W, H);
+  // Load artwork first: the layout adapts when there is no character art.
+  let artImg = null;
+  if (artPath) {
+    try {
+      artImg = await loadImage(artPath);
+    } catch {
+      artImg = null;
+    }
+  }
+  const showArt = Boolean(artImg);
+
+  // ---- Canvas + panel geometry ----
+  // Without equipped art, render the stats panel only (no empty art space).
+  const panelH = 432; // height of the stats panel
+  const Hc = showArt ? H : panelH + 48;
+  const panelY = showArt ? Hc - panelH : 24;
+
+  const canvas = createCanvas(W, Hc);
   const ctx = canvas.getContext('2d');
   const R = 28; // outer corner radius
   const pad = 24; // side padding for panel content
 
-  // Base fill (shows if art fails to load)
+  // Base fill
   ctx.fillStyle = '#1a1233';
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, W, Hc);
 
-  roundRect(ctx, 0, 0, W, H, R);
+  roundRect(ctx, 0, 0, W, Hc, R);
   ctx.save();
   ctx.clip();
 
-  // ---- Full-bleed character artwork on top ----
-  if (artPath) {
-    try {
-      const img = await loadImage(artPath);
-      const scale = Math.max(W / img.width, H / img.height);
-      const iw = img.width * scale;
-      const ih = img.height * scale;
-      ctx.drawImage(img, (W - iw) / 2, 0, iw, ih);
-    } catch {
-      ctx.fillStyle = '#3a2550';
-      ctx.fillRect(0, 0, W, H);
-    }
+  if (showArt) {
+    // ---- Full-bleed character artwork on top ----
+    const scale = Math.max(W / artImg.width, Hc / artImg.height);
+    const iw = artImg.width * scale;
+    const ih = artImg.height * scale;
+    ctx.drawImage(artImg, (W - iw) / 2, 0, iw, ih);
+
+    // Soft fade where art meets the panel
+    const fade = ctx.createLinearGradient(0, panelY - 150, 0, panelY + 10);
+    fade.addColorStop(0, 'rgba(24,17,41,0)');
+    fade.addColorStop(1, 'rgba(24,17,41,0.97)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, panelY - 150, W, 160);
+
+    // Solid panel body
+    ctx.fillStyle = 'rgba(24,17,41,0.94)';
+    ctx.fillRect(0, panelY + 10, W, panelH - 10);
   } else {
-    ctx.fillStyle = '#3a2550';
-    ctx.fillRect(0, 0, W, H);
+    // ---- Panel only: the whole card is the stats panel ----
+    ctx.fillStyle = '#181129';
+    ctx.fillRect(0, 0, W, Hc);
   }
-
-  // ---- Bottom panel geometry ----
-  const panelH = 432; // height of the stats panel
-  const panelY = H - panelH;
-
-  // Soft fade where art meets the panel
-  const fade = ctx.createLinearGradient(0, panelY - 150, 0, panelY + 10);
-  fade.addColorStop(0, 'rgba(24,17,41,0)');
-  fade.addColorStop(1, 'rgba(24,17,41,0.97)');
-  ctx.fillStyle = fade;
-  ctx.fillRect(0, panelY - 150, W, 160);
-
-  // Solid panel body
-  ctx.fillStyle = 'rgba(24,17,41,0.94)';
-  ctx.fillRect(0, panelY + 10, W, panelH - 10);
 
   ctx.restore();
 
   // Outer border
-  roundRect(ctx, 0, 0, W, H, R);
+  roundRect(ctx, 0, 0, W, Hc, R);
   ctx.strokeStyle = 'rgba(255,215,120,0.35)';
   ctx.lineWidth = 2;
   ctx.stroke();
