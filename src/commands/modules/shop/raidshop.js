@@ -1,6 +1,5 @@
 import { raidService as raid } from '#features/rpg/raid.js';
 import { userModel } from '#storage/models/index.js';
-import { ButtonV2 } from '#messages/builder.js';
 import { cardService, RAID_SHOP } from '#features/rpg/card.js';
 
 export default {
@@ -34,17 +33,15 @@ export default {
         '│',
         `│ 🧩 ${RAID_SHOP.card_core.name} ×1 — 💠${RAID_SHOP.card_core.price}`,
         '│ Material upgrade Main Card',
+        '│ Beli: `.raidshop buy card_core [jumlah]`',
         '│',
         `│ 🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
         '│ Support Card Lv.1',
+        '│ Beli: `.raidshop buy raid_emblem`',
         '│',
         '╰──────────────────────╯',
       ].join('\n');
-      const builder = new ButtonV2(ctx.sock)
-        .setBody(text)
-        .addButton('BUY CARD CORE', '.raidshop buy card_core 1')
-        .addButton('BUY RAID EMBLEM', '.raidshop buy raid_emblem');
-      return builder.send(ctx.jid);
+      return ctx.reply(text);
     } catch (error) {
       return ctx.fail(error.message);
     }
