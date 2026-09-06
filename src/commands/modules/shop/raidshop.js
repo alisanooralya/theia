@@ -28,18 +28,18 @@ export default {
       }
       const raidCoin = await raid.getRaidCoin(ctx.sender);
       const text = [
-          '╭──── 🏪 *RAID SHOP* ────╮',
-          '│',
-          `│ 💠 Raid Coin: *${raidCoin}*`,
-          '│',
-          `│ 🧩 ${RAID_SHOP.card_core.name} ×1 — 💠${RAID_SHOP.card_core.price}`,
-          '│ Material upgrade Main Card',
-          '│',
-          `│ 🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
-          '│ Support Card Lv.1',
-          '│',
-          '╰──────────────────────╯',
-        ].join('\n');
+        '╭──── 🏪 *RAID SHOP* ────╮',
+        '│',
+        `│ 💠 Raid Coin: *${raidCoin}*`,
+        '│',
+        `│ 🧩 ${RAID_SHOP.card_core.name} ×1 — 💠${RAID_SHOP.card_core.price}`,
+        '│ Material upgrade Main Card',
+        '│',
+        `│ 🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
+        '│ Support Card Lv.1',
+        '│',
+        '╰──────────────────────╯',
+      ].join('\n');
       const builder = new ButtonV2(ctx.sock)
         .setBody(text)
         .addButton('BUY CARD CORE', '.raidshop buy card_core 1')

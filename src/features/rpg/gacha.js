@@ -106,7 +106,11 @@ class GachaService {
 
         if (result.type === 'artifact') {
           try {
-            const artifact = await artifactService.generateArtifact(jid, null, t);
+            const artifact = await artifactService.generateArtifact(
+              jid,
+              null,
+              t
+            );
             results.push({ type: 'artifact', artifact });
           } catch (error) {
             throw new Error(`Gagal memberikan Artifact: ${error.message}`, {

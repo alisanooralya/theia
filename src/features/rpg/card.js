@@ -88,8 +88,8 @@ export class CardBattleState {
     this.supportCard = supportCard ?? null;
     this.isActive = Boolean(
       mainCard &&
-        mainCard.type === 'main' &&
-        Number(mainCard.level) >= CARD_PASSIVE_LEVEL
+      mainCard.type === 'main' &&
+      Number(mainCard.level) >= CARD_PASSIVE_LEVEL
     );
     this.cardId = this.isActive ? mainCard.card_id : null;
 
@@ -204,8 +204,7 @@ export class CardBattleState {
     }
 
     if (this.cardId === 'girgas') {
-      const stacks =
-        now < this.lollipopExpiresAt ? this.lollipopStacks : 0;
+      const stacks = now < this.lollipopExpiresAt ? this.lollipopStacks : 0;
       damageMultiplier *= 1 + stacks * 0.1;
     } else if (this.cardId === 'daisy') {
       const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
@@ -259,7 +258,11 @@ export function applyOutgoingCardDamage(damage, fighter, now = Date.now()) {
 export function applyIncomingCardDamage(damage, fighter, now = Date.now()) {
   if (fighter?.cardBattleState) {
     const { incomingDamageMultiplier } =
-      fighter.cardBattleState.getDamageModifiers(fighter.hp, fighter.max_hp, now);
+      fighter.cardBattleState.getDamageModifiers(
+        fighter.hp,
+        fighter.max_hp,
+        now
+      );
     return Math.max(1, Math.floor(damage * incomingDamageMultiplier));
   }
   return Math.max(
@@ -340,7 +343,8 @@ class CardService {
     return sql.begin(async (t) => {
       const card = await cardModel.findOwned(jid, id, t, true);
       if (!card) throw new Error('Card tidak ditemukan.');
-      if (card.type !== 'main') throw new Error('Support Card tidak dapat di-upgrade.');
+      if (card.type !== 'main')
+        throw new Error('Support Card tidak dapat di-upgrade.');
       const cost = getCardUpgradeCost(card.level);
       if (!cost) throw new Error('Card sudah mencapai Lv.100.');
 
@@ -375,7 +379,8 @@ class CardService {
   }
 
   async unequip(jid, slot) {
-    if (!['main', 'support'].includes(slot)) throw new Error('Slot Card tidak valid.');
+    if (!['main', 'support'].includes(slot))
+      throw new Error('Slot Card tidak valid.');
     const current = await cardModel.equipped(jid, slot);
     if (!current) throw new Error(`Tidak ada ${slot} Card yang terpasang.`);
     await sql.begin(async (t) => {

@@ -118,16 +118,22 @@ export default {
         const id = parseId(ctx.args[1]);
         if (!id) return ctx.fail('Gunakan `.card equip <id>`.');
         const card = await cards.equip(ctx.sender, id);
-        return ctx.reply(`✅ ${typeName(card.type)} *${card.name}* berhasil dipasang.`);
+        return ctx.reply(
+          `✅ ${typeName(card.type)} *${card.name}* berhasil dipasang.`
+        );
       }
 
       if (sub === 'unequip') {
         const slot = ctx.args[1]?.toLowerCase();
         if (!['main', 'support'].includes(slot)) {
-          return ctx.fail('Gunakan `.card unequip main` atau `.card unequip support`.');
+          return ctx.fail(
+            'Gunakan `.card unequip main` atau `.card unequip support`.'
+          );
         }
         const card = await cards.unequip(ctx.sender, slot);
-        return ctx.reply(`✅ ${typeName(card.type)} *${card.name}* berhasil dilepas.`);
+        return ctx.reply(
+          `✅ ${typeName(card.type)} *${card.name}* berhasil dilepas.`
+        );
       }
 
       if (sub === 'upgrade') {
