@@ -10,8 +10,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // GlobalFonts.registerFromPath(join(__dirname, 'fonts', 'Poppins-Bold.ttf'), 'Poppins Bold');
 // GlobalFonts.registerFromPath(join(__dirname, 'fonts', 'Poppins-Regular.ttf'), 'Poppins');
 
-const W = 1000;
-const H = 560;
+const W = 720;
+const H = 1080;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -42,30 +42,9 @@ const ICONS = {
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(cx, cy + s * 0.3);
-    ctx.bezierCurveTo(
-      cx,
-      cy,
-      cx - s * 0.5,
-      cy - s * 0.1,
-      cx - s * 0.5,
-      cy - s * 0.35
-    );
-    ctx.bezierCurveTo(
-      cx - s * 0.5,
-      cy - s * 0.6,
-      cx,
-      cy - s * 0.6,
-      cx,
-      cy - s * 0.35
-    );
-    ctx.bezierCurveTo(
-      cx,
-      cy - s * 0.6,
-      cx + s * 0.5,
-      cy - s * 0.6,
-      cx + s * 0.5,
-      cy - s * 0.35
-    );
+    ctx.bezierCurveTo(cx, cy, cx - s * 0.5, cy - s * 0.1, cx - s * 0.5, cy - s * 0.35);
+    ctx.bezierCurveTo(cx - s * 0.5, cy - s * 0.6, cx, cy - s * 0.6, cx, cy - s * 0.35);
+    ctx.bezierCurveTo(cx, cy - s * 0.6, cx + s * 0.5, cy - s * 0.6, cx + s * 0.5, cy - s * 0.35);
     ctx.bezierCurveTo(cx + s * 0.5, cy - s * 0.1, cx, cy, cx, cy + s * 0.3);
     ctx.fill();
   },
@@ -103,12 +82,7 @@ const ICONS = {
     ctx.lineTo(cx + s * 0.4, cy - s * 0.3);
     ctx.lineTo(cx + s * 0.4, cy + s * 0.1);
     ctx.quadraticCurveTo(cx + s * 0.4, cy + s * 0.45, cx, cy + s * 0.55);
-    ctx.quadraticCurveTo(
-      cx - s * 0.4,
-      cy + s * 0.45,
-      cx - s * 0.4,
-      cy + s * 0.1
-    );
+    ctx.quadraticCurveTo(cx - s * 0.4, cy + s * 0.45, cx - s * 0.4, cy + s * 0.1);
     ctx.lineTo(cx - s * 0.4, cy - s * 0.3);
     ctx.closePath();
     ctx.fill();
@@ -128,29 +102,29 @@ const ICONS = {
 };
 
 function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
-  roundRect(ctx, x, y, w, h, 14);
+  roundRect(ctx, x, y, w, h, 18);
   ctx.fillStyle = 'rgba(20,16,32,0.55)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Explicit text state: renderProfileCard leaves textBaseline on 'top',
+  // Explicit text state: callers leave textBaseline on 'top',
   // which would push the value text against the chip bottom edge.
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
   const cy = y + h / 2;
-  const textX = x + 58;
-  iconFn(ctx, x + 30, cy, 32, accent);
+  const textX = x + 64;
+  iconFn(ctx, x + 32, cy, 34, accent);
 
-  ctx.font = 'bold 18px sans-serif';
+  ctx.font = 'bold 19px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(label, textX, cy - 14, w - 58 - 8);
+  ctx.fillText(label, textX, cy - 14, w - 64 - 12);
 
-  ctx.font = 'bold 30px sans-serif';
+  ctx.font = 'bold 32px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(String(value), textX, cy + 22, w - 58 - 8);
+  ctx.fillText(String(value), textX, cy + 24, w - 64 - 12);
 }
 
 function cardSlot(ctx, x, y, w, h, label, card, accent) {
@@ -166,14 +140,14 @@ function cardSlot(ctx, x, y, w, h, label, card, accent) {
   ctx.textBaseline = 'top';
   ctx.fillText(label.toUpperCase(), x + 18, y + 14, w - 36);
 
-  ctx.font = 'bold 26px sans-serif';
+  ctx.font = 'bold 24px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(card?.name ?? '-', x + 18, y + 42, w - 36);
+  ctx.fillText(card?.name ?? '-', x + 18, y + 38, w - 36);
 
   if (card?.level) {
-    ctx.font = 'bold 17px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.fillStyle = accent;
-    ctx.fillText(`Lv. ${card.level}`, x + 18, y + h - 32);
+    ctx.fillText(`Lv. ${card.level}`, x + 18, y + h - 26);
   }
 }
 
@@ -211,141 +185,113 @@ export async function renderProfileCard(data) {
 
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
+  const R = 28; // outer corner radius
+  const pad = 24; // side padding for panel content
 
-  // Background
-  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-  bgGrad.addColorStop(0, '#1a1233');
-  bgGrad.addColorStop(1, '#2b1738');
-  ctx.fillStyle = bgGrad;
+  // Base fill (shows if art fails to load)
+  ctx.fillStyle = '#1a1233';
   ctx.fillRect(0, 0, W, H);
 
-  // Outer panel
-  roundRect(ctx, 0, 0, W, H, 28);
+  roundRect(ctx, 0, 0, W, H, R);
   ctx.save();
   ctx.clip();
 
-  // Character art panel (left ~38%)
-  const artW = 380;
+  // ---- Full-bleed character artwork on top ----
   if (artPath) {
     try {
       const img = await loadImage(artPath);
-      // cover-fit into the art panel
-      const scale = Math.max(artW / img.width, H / img.height);
+      const scale = Math.max(W / img.width, H / img.height);
       const iw = img.width * scale;
       const ih = img.height * scale;
-      ctx.drawImage(img, (artW - iw) / 2, (H - ih) / 2, iw, ih);
+      ctx.drawImage(img, (W - iw) / 2, 0, iw, ih);
     } catch {
       ctx.fillStyle = '#3a2550';
-      ctx.fillRect(0, 0, artW, H);
+      ctx.fillRect(0, 0, W, H);
     }
   } else {
     ctx.fillStyle = '#3a2550';
-    ctx.fillRect(0, 0, artW, H);
+    ctx.fillRect(0, 0, W, H);
   }
 
-  // Fade art into panel
-  const fade = ctx.createLinearGradient(artW - 140, 0, artW + 20, 0);
-  fade.addColorStop(0, 'rgba(26,18,51,0)');
-  fade.addColorStop(1, 'rgba(26,18,51,1)');
+  // ---- Bottom panel geometry ----
+  const panelH = 470; // height of the stats panel
+  const panelY = H - panelH;
+
+  // Soft fade where art meets the panel
+  const fade = ctx.createLinearGradient(0, panelY - 150, 0, panelY + 10);
+  fade.addColorStop(0, 'rgba(24,17,41,0)');
+  fade.addColorStop(1, 'rgba(24,17,41,0.97)');
   ctx.fillStyle = fade;
-  ctx.fillRect(artW - 140, 0, 160, H);
+  ctx.fillRect(0, panelY - 150, W, 160);
+
+  // Solid panel body
+  ctx.fillStyle = 'rgba(24,17,41,0.94)';
+  ctx.fillRect(0, panelY + 10, W, panelH - 10);
 
   ctx.restore();
 
-  roundRect(ctx, 0, 0, W, H, 28);
+  // Outer border
+  roundRect(ctx, 0, 0, W, H, R);
   ctx.strokeStyle = 'rgba(255,215,120,0.35)';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Right content area
-  const px = artW + 30;
-  const rightW = W - px - 30;
+  // ---- Panel content ----
+  const px = pad;
+  const contentW = W - pad * 2;
+  let y = panelY + 30;
 
-  // Name + level
-  ctx.font = 'bold 42px sans-serif';
+  // Name
+  ctx.font = 'bold 40px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
-  ctx.fillText(name, px, 30, rightW);
+  ctx.fillText(name, px, y, contentW);
+  y += 50;
 
-  ctx.font = 'bold 22px sans-serif';
+  // Level
+  ctx.font = 'bold 21px sans-serif';
   ctx.fillStyle = '#ffd97a';
-  ctx.fillText(`Lv. ${level}`, px, 80, rightW);
+  ctx.fillText(`Lv. ${level}`, px, y, contentW);
+  y += 36;
 
   // EXP bar
   const expPct = expNeeded > 0 ? exp / expNeeded : 0;
-  statBar(ctx, px, 110, rightW, 14, expPct, ['#ffd97a', '#ff9d4d']);
+  statBar(ctx, px, y, contentW, 13, expPct, ['#ffd97a', '#ff9d4d']);
+  y += 21;
   ctx.font = '16px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`${exp}/${expNeeded} EXP`, px, 128, rightW);
+  ctx.fillText(`${exp}/${expNeeded} EXP`, px, y, contentW);
+  y += 34;
 
-  // HP bar (big, its own row)
-  const hpY = 160;
-  ICONS.heart(ctx, px + 10, hpY + 8, 22, '#ff5f6d');
+  // HP row
+  ICONS.heart(ctx, px + 10, y + 10, 22, '#ff5f6d');
   ctx.font = '19px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('HP', px + 28, hpY);
+  ctx.fillText('HP', px + 28, y + 2);
   ctx.font = 'bold 19px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'right';
-  ctx.fillText(`${hp}/${maxHp}`, px + rightW, hpY);
+  ctx.fillText(`${hp}/${maxHp}`, px + contentW, y + 2);
   ctx.textAlign = 'left';
-  statBar(ctx, px, hpY + 28, rightW, 18, maxHp > 0 ? hp / maxHp : 0, [
-    '#ff5f6d',
-    '#ff9966',
-  ]);
+  y += 28;
+  statBar(ctx, px, y, contentW, 18, maxHp > 0 ? hp / maxHp : 0, ['#ff5f6d', '#ff9966']);
+  y += 42;
 
   // Stat chips: ATK, DEF, CR
-  const chipY = hpY + 66;
   const chipH = 92;
   const gap = 14;
-  const chipW = (rightW - gap * 2) / 3;
-  statChip(ctx, px, chipY, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
-  statChip(
-    ctx,
-    px + chipW + gap,
-    chipY,
-    chipW,
-    chipH,
-    ICONS.shield,
-    'DEF',
-    def,
-    '#6cc4ff'
-  );
-  statChip(
-    ctx,
-    px + (chipW + gap) * 2,
-    chipY,
-    chipW,
-    chipH,
-    ICONS.bolt,
-    'CRIT RATE',
-    `${critRate.toFixed(0)}%`,
-    '#ffd15c'
-  );
+  const chipW = (contentW - gap * 2) / 3;
+  statChip(ctx, px, y, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
+  statChip(ctx, px + chipW + gap, y, chipW, chipH, ICONS.shield, 'DEF', def, '#6cc4ff');
+  statChip(ctx, px + (chipW + gap) * 2, y, chipW, chipH, ICONS.bolt, 'CRIT RATE', `${critRate.toFixed(0)}%`, '#ffd15c');
+  y += chipH + 18;
 
   // Card slots: main + support
-  const cardY = chipY + chipH + 24;
-  const cardH = 136;
+  const cardH = 92;
   const cardGap = 14;
-  const cardW = (rightW - cardGap) / 2;
-  cardSlot(ctx, px, cardY, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
-  cardSlot(
-    ctx,
-    px + cardW + cardGap,
-    cardY,
-    cardW,
-    cardH,
-    'Support Card',
-    supportCard,
-    '#6cc4ff'
-  );
-
-  // Footer divider
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.beginPath();
-  ctx.moveTo(px, cardY + cardH + 22);
-  ctx.lineTo(px + rightW, cardY + cardH + 22);
-  ctx.stroke();
+  const cardW = (contentW - cardGap) / 2;
+  cardSlot(ctx, px, y, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
+  cardSlot(ctx, px + cardW + cardGap, y, cardW, cardH, 'Support Card', supportCard, '#6cc4ff');
 
   return canvas.encode('png');
 }
