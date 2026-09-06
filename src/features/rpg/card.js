@@ -89,7 +89,7 @@ export function getCardUpgradeCost(level) {
   if (level >= CARD_MAX_LEVEL) return null;
   return {
     coin: 500 + level * 50,
-    material: Math.ceil(level / 10),
+    material: Math.ceil((level / 10) * 0.45),
   };
 }
 

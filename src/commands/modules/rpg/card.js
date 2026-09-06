@@ -170,18 +170,13 @@ export default {
         const query = ctx.args[1];
         if (!query) {
           return ctx.reply(
-            'Upgrade Main Card memakai Coin + Card Core.\nGunakan `.card levelup <nama> [jumlah|max]`.\nCard Core hanya tersedia di `.raidshop`.'
+            'Upgrade Main Card memakai Coin + Card Core.\nGunakan `.card levelup <nama>`.\nLevel naik otomatis sejauh resource cukup.\nCard Core hanya tersedia di `.raidshop`.'
           );
         }
         const target = await resolveCard(ctx.sender, query);
         if (!target) return ctx.fail('Card tidak ditemukan.');
 
-        const rawCount = ctx.args[2]?.toLowerCase();
-        const count =
-          rawCount === 'max' || rawCount === 'all'
-            ? 'max'
-            : Math.max(1, Number.parseInt(rawCount, 10) || 1);
-        const result = await cards.upgradeBulk(ctx.sender, target.id, count);
+        const result = await cards.upgradeBulk(ctx.sender, target.id, 'max');
         const next = cards.getUpgradeCost(result.card.level);
         return ctx.reply(
           [
@@ -211,7 +206,7 @@ export default {
           '• `.card` detail <nama|id> - Lihat detail (main: nama, support: id)',
           '• `.card` equip <nama|id> - Pasang (main: nama, support: id)',
           '• `.card` unequip <main|support> - Lepas Card',
-          '• `.card` levelup <nama> [jumlah|max] - Upgrade Main Card',
+          '• `.card` levelup <nama> - Upgrade semaksimal resource',
         ].join('\n')
       );
     } catch (error) {
