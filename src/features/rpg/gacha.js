@@ -10,8 +10,8 @@ import { cardService } from '#features/rpg/card.js';
 
 const GACHA_COST = 1600;
 const ARTIFACT_RATE = 0.08;
-const CARD_RATE = 0.04;
-const ZONK_RATE = 0.55;
+const CARD_RATE = 0.01;
+const ZONK_RATE = 0.57;
 
 const RARITY_WEIGHTS = {
   common: 50,
