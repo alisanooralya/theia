@@ -7,14 +7,16 @@ function typeName(type) {
   return type === 'main' ? 'Main Card' : 'Support Card';
 }
 
-function cardLine(card) {
+function cardLine(card, index) {
   const stats = cards.calculateStats(card);
   const equipped = card.equipped ? ' *[Equipped]*' : '';
-  const statText =
-    card.type === 'main'
-      ? ` | ❤️${stats.hp} ⚔️${stats.atk} 🛡️${stats.def}`
-      : '';
-  return `#${card.id}. *${card.name}* (${card.role}) Lv.${card.level}${statText}${equipped}`;
+
+  // Main Card diidentifikasi by nama (tanpa id).
+  // Support Card dinomori 1..N sesuai urutan koleksi.
+  if (card.type === 'support') {
+    return `#${index + 1}. *${card.name}* (${card.role}) Lv.${card.level}${equipped}`;
+  }
+  return `*${card.name}* (${card.role}) Lv.${card.level}${equipped}`;
 }
 
 async function collectionText(jid, type) {
@@ -23,7 +25,7 @@ async function collectionText(jid, type) {
   return [
     `*${typeName(type).toUpperCase()}* (${collection.length})`,
     '',
-    ...collection.map(cardLine),
+    ...collection.map((card, i) => cardLine(card, i)),
     '',
     type === 'main'
       ? 'Gunakan `.card detail <nama>` untuk melihat detail.'
@@ -32,11 +34,17 @@ async function collectionText(jid, type) {
 }
 
 async function equippedText(jid) {
-  const equipped = await cards.getEquipped(jid);
+  const [equipped, supports] = await Promise.all([
+    cards.getEquipped(jid),
+    cards.getCards(jid, 'support'),
+  ]);
   const byType = Object.fromEntries(equipped.map((card) => [card.type, card]));
+  const supportPos = byType.support
+    ? supports.findIndex((c) => c.id === byType.support.id) + 1
+    : 0;
   return [
-    `🃏 Main: ${byType.main ? `${byType.main.name} #${byType.main.id} Lv.${byType.main.level}` : '-'}`,
-    `🎴 Support: ${byType.support ? `${byType.support.name} #${byType.support.id} Lv.1` : '-'}`,
+    `🃏 Main: ${byType.main ? `${byType.main.name} Lv.${byType.main.level}` : '-'}`,
+    `🎴 Support: ${byType.support ? `${byType.support.name} #${supportPos} Lv.1` : '-'}`,
   ].join('\n');
 }
 
@@ -49,8 +57,11 @@ async function detailText(jid, query) {
   const stats = cards.calculateStats(card);
   const passiveUnlocked = card.type === 'support' || card.level >= 50;
   const cost = card.type === 'main' ? cards.getUpgradeCost(card.level) : null;
+  const pos = owned.findIndex((item) => item.id === card.id) + 1;
+  const title =
+    card.type === 'support' ? `*${card.name}* #${pos}` : `*${card.name}*`;
   const lines = [
-    `*${card.name}* #${card.id}`,
+    title,
     '',
     `Type: ${typeName(card.type)}`,
     `Role: ${card.role}`,
@@ -79,13 +90,15 @@ function parseId(value) {
 
 /**
  * Resolve input user menjadi owned card.
- * - Id nomor -> cari langsung (berlaku untuk main & support).
+ * - Id nomor -> posisi 1..N di koleksi Support Card saja.
  * - Nama -> cocok case-insensitive ke card_id/nama Main Card saja.
- *   Support Card tetap harus pakai id nomor.
  */
 async function resolveCard(jid, query) {
-  const id = parseId(query);
-  if (id) return cards.getCard(jid, id);
+  const pos = parseId(query);
+  if (pos) {
+    const supports = await cards.getCards(jid, 'support');
+    return supports[pos - 1] ?? null;
+  }
   const q = String(query ?? '').trim().toLowerCase();
   if (!q) return null;
   const mains = await cards.getCards(jid, 'main');
@@ -114,23 +127,22 @@ export default {
 
       if (sub === 'detail') {
         const query = ctx.args[1];
-        if (!query) return ctx.fail('Gunakan `.card detail <nama>`.');
+        if (!query) return ctx.fail('Gunakan `.card detail <nama|id>`');
 
         const { text, card } = await detailText(ctx.sender, query);
         const artPath = cardArtPath(card.card_id);
 
-        if (artPath) {
-          return ctx.reply({ image: { url: artPath }, caption: text });
-        }
-        return ctx.reply(text);
+        if (!artPath) return ctx.reply(text);
+        return ctx.reply({ image: { url: artPath }, caption: text });
       }
 
       if (sub === 'equip') {
         const query = ctx.args[1];
-        if (!query) return ctx.fail('Gunakan `.card equip <nama>`.');
+        if (!query) return ctx.fail('Gunakan `.card equip <nama|id>`');
 
         const target = await resolveCard(ctx.sender, query);
         if (!target) return ctx.fail('Card tidak ditemukan.');
+
         const card = await cards.equip(ctx.sender, target.id);
         return ctx.reply(
           `✅ ${typeName(card.type)} *${card.name}* berhasil dipasang.`
@@ -159,6 +171,7 @@ export default {
         }
         const target = await resolveCard(ctx.sender, query);
         if (!target) return ctx.fail('Card tidak ditemukan.');
+
         const result = await cards.upgrade(ctx.sender, target.id);
         const next = cards.getUpgradeCost(result.card.level);
         return ctx.reply(
@@ -178,15 +191,15 @@ export default {
       const equipped = await equippedText(ctx.sender);
       return ctx.reply(
         [
-          '╭──── 🃏 *CARD SYSTEM* ────╮',
+          '╭──── 🃏 *CARD* ────╮',
           '',
           equipped,
           '',
           '*Perintah:*',
           '• `.card` main - Lihat koleksi Main Card',
           '• `.card` support - Lihat koleksi Support Card',
-          '• `.card` detail <nama> - Lihat detail Card (support pakai id)',
-          '• `.card` equip <nama> - Pasang Card (support pakai id)',
+          '• `.card` detail <nama|id> - Lihat detail (main: nama, support: id)',
+          '• `.card` equip <nama|id> - Pasang (main: nama, support: id)',
           '• `.card` unequip <main|support> - Lepas Card',
           '• `.card` levelup <nama> - Upgrade Main Card',
         ].join('\n')
