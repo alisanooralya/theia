@@ -56,8 +56,6 @@ export default {
     );
 
     const text = [
-      `╭──┄  *${user.push_name || 'Unknown'}*  ┄──`,
-      '',
       ...slotLines,
       '',
       `🪙 ${F.formatNumber(wallet?.cash ?? 0)}  🏦 ${F.formatNumber(wallet?.bank ?? 0)}`,

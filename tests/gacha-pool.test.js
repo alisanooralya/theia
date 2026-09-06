@@ -1,9 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  singlePull,
-  unownedCardPool,
-} from '../src/features/rpg/gacha.js';
+import { singlePull, unownedCardPool } from '../src/features/rpg/gacha.js';
 import { cardModel } from '../src/storage/models/card.js';
 
 const defs = (ids) => ids.map((id) => ({ id }));
@@ -74,28 +71,40 @@ describe('cardModel.grant tanpa DB (mock client)', () => {
     max_atk: 1,
     max_def: 1,
   };
-  const mockClient = (mode) => async (strings, ..._values) => {
-    const text = strings.join(' ');
-    if (text.includes('INSERT INTO user_cards')) {
-      return mode === 'inserted' ? [{ id: 7 }] : [];
-    }
-    if (text.includes('SELECT id FROM user_cards')) {
-      return mode === 'inserted' ? [] : [{ id: 7 }];
-    }
-    if (text.includes('FROM user_cards')) {
-      return [{ ...findRow }];
-    }
-    return [];
-  };
+  const mockClient =
+    (mode) =>
+    async (strings, ..._values) => {
+      const text = strings.join(' ');
+      if (text.includes('INSERT INTO user_cards')) {
+        return mode === 'inserted' ? [{ id: 7 }] : [];
+      }
+      if (text.includes('SELECT id FROM user_cards')) {
+        return mode === 'inserted' ? [] : [{ id: 7 }];
+      }
+      if (text.includes('FROM user_cards')) {
+        return [{ ...findRow }];
+      }
+      return [];
+    };
 
   it('insert baru mengembalikan card hasil insert', async () => {
-    const card = await cardModel.grant('u1', 'lena', 'req:0', mockClient('inserted'));
+    const card = await cardModel.grant(
+      'u1',
+      'lena',
+      'req:0',
+      mockClient('inserted')
+    );
     assert.equal(card.id, 7);
     assert.equal(card.level, 5);
   });
 
   it('konflik (retry/concurrent) mengembalikan card existing, bukan throw', async () => {
-    const card = await cardModel.grant('u1', 'lena', 'req:0', mockClient('conflict'));
+    const card = await cardModel.grant(
+      'u1',
+      'lena',
+      'req:0',
+      mockClient('conflict')
+    );
     assert.equal(card.id, 7);
     assert.equal(card.card_id, 'lena');
   });

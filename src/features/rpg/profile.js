@@ -225,7 +225,7 @@ export async function renderProfileCard(data) {
 
   // ---- Canvas + panel geometry ----
   // Without equipped art, render the stats panel only (no empty art space).
-  const panelH = 425; // height of the stats panel
+  const panelH = 410; // height of the stats panel
   const Hc = showArt ? H : panelH + 48;
   const panelY = showArt ? Hc - panelH : 24;
 

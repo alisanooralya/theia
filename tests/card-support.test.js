@@ -21,7 +21,11 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
-const main = (cardId, level = 100) => ({ card_id: cardId, type: 'main', level });
+const main = (cardId, level = 100) => ({
+  card_id: cardId,
+  type: 'main',
+  level,
+});
 const support = (cardId) => ({ card_id: cardId, type: 'support', level: 1 });
 
 describe('support card registry', () => {
@@ -131,11 +135,14 @@ describe('combatModifiersForCards (legacy path)', () => {
   });
 
   it('treasure hunter tidak mengubah combat', () => {
-    assert.deepEqual(combatModifiersForCards(null, support('treasure_hunter')), {
-      damageMultiplier: 1,
-      incomingDamageMultiplier: 1,
-      critRateBonus: 0,
-    });
+    assert.deepEqual(
+      combatModifiersForCards(null, support('treasure_hunter')),
+      {
+        damageMultiplier: 1,
+        incomingDamageMultiplier: 1,
+        critRateBonus: 0,
+      }
+    );
   });
 
   it('ameris + critical eye = 10 + 5 (tidak saling menimpa)', () => {
@@ -152,7 +159,10 @@ describe('combatModifiersForCards (legacy path)', () => {
   });
 
   it('main di bawah Lv.50: passive main mati, passive support tetap jalan', () => {
-    const m = combatModifiersForCards(main('ameris', 5), support('raid_emblem'));
+    const m = combatModifiersForCards(
+      main('ameris', 5),
+      support('raid_emblem')
+    );
     assert.equal(m.damageMultiplier, 1.05);
     assert.equal(m.critRateBonus, 0);
   });
@@ -212,10 +222,7 @@ describe('apply damage + crit rate', () => {
 
   it('applyIncomingCardDamage legacy path tidak berubah', () => {
     assert.equal(applyIncomingCardDamage(100, null), 100);
-    assert.equal(
-      applyIncomingCardDamage(100, { cardModifiers: {} }),
-      100
-    );
+    assert.equal(applyIncomingCardDamage(100, { cardModifiers: {} }), 100);
   });
 
   it('applyOutgoingCardDamage raid focus tidak berubah', () => {

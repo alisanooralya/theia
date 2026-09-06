@@ -176,9 +176,7 @@ class ExpeditionService {
       const baseCoin = Number(row.reward_coin) || 0;
       const exp = Number(row.reward_exp) || 0;
       const coin =
-        baseCoin > 0
-          ? await cardService.coinRewardTotal(jid, baseCoin, t)
-          : 0;
+        baseCoin > 0 ? await cardService.coinRewardTotal(jid, baseCoin, t) : 0;
 
       if (coin > 0)
         await walletModel.reward(
