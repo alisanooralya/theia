@@ -25,7 +25,9 @@ async function collectionText(jid, type) {
     '',
     ...collection.map(cardLine),
     '',
-    'Gunakan `.card detail <id>` untuk melihat detail.',
+    type === 'main'
+      ? 'Gunakan `.card detail <nama>` untuk melihat detail.'
+      : 'Gunakan `.card detail <id>` untuk melihat detail.',
   ].join('\n');
 }
 
@@ -38,9 +40,10 @@ async function equippedText(jid) {
   ].join('\n');
 }
 
-async function detailText(jid, id) {
-  const card = await cards.getCard(jid, id);
+async function detailText(jid, query) {
+  const card = await resolveCard(jid, query);
   if (!card) throw new Error('Card tidak ditemukan.');
+
   const owned = await cards.getCards(jid, card.type);
   const current = owned.find((item) => item.id === card.id);
   const stats = cards.calculateStats(card);
@@ -48,33 +51,49 @@ async function detailText(jid, id) {
   const cost = card.type === 'main' ? cards.getUpgradeCost(card.level) : null;
   const lines = [
     `*${card.name}* #${card.id}`,
+    '',
     `Type: ${typeName(card.type)}`,
     `Role: ${card.role}`,
     `Level: ${card.level}/${card.max_level}`,
+    '',
   ];
+
   if (card.type === 'main') {
-    lines.push(`HP: ${stats.hp}`, `ATK: ${stats.atk}`, `DEF: ${stats.def}`);
+    lines.push(`HP: ${stats.hp}  ATK: ${stats.atk}  DEF: ${stats.def}`);
   }
+
   lines.push(
-    `Passive: ${passiveUnlocked ? '*Unlocked*' : '*Locked sampai Lv.50*'}`,
     cards.passiveDescription(card),
+    '',
+    `Passive: ${passiveUnlocked ? '*Unlocked*' : '*Locked sampai Lv.50*'}`,
     `Status: ${current?.equipped ? '*Equipped*' : 'Tidak dipasang'}`
   );
-  if (cost) {
-    lines.push(
-      `Upgrade: 🪙${F.formatNumber(cost.coin)} + ${cost.material} Card Core`
-    );
-  } else if (card.type === 'main') {
-    lines.push('Upgrade: MAX');
-  } else {
-    lines.push('Support Card tidak dapat di-upgrade.');
-  }
+
   return { text: lines.join('\n'), card };
 }
 
 function parseId(value) {
   const id = Number.parseInt(value, 10);
   return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/**
+ * Resolve input user menjadi owned card.
+ * - Id nomor -> cari langsung (berlaku untuk main & support).
+ * - Nama -> cocok case-insensitive ke card_id/nama Main Card saja.
+ *   Support Card tetap harus pakai id nomor.
+ */
+async function resolveCard(jid, query) {
+  const id = parseId(query);
+  if (id) return cards.getCard(jid, id);
+  const q = String(query ?? '').trim().toLowerCase();
+  if (!q) return null;
+  const mains = await cards.getCards(jid, 'main');
+  return (
+    mains.find(
+      (c) => c.card_id?.toLowerCase() === q || c.name?.toLowerCase() === q
+    ) ?? null
+  );
 }
 
 export default {
@@ -94,10 +113,12 @@ export default {
       }
 
       if (sub === 'detail') {
-        const id = parseId(ctx.args[1]);
-        if (!id) return ctx.fail('Gunakan `.card detail <id>`.');
-        const { text, card } = await detailText(ctx.sender, id);
+        const query = ctx.args[1];
+        if (!query) return ctx.fail('Gunakan `.card detail <nama>`.');
+
+        const { text, card } = await detailText(ctx.sender, query);
         const artPath = cardArtPath(card.card_id);
+
         if (artPath) {
           return ctx.reply({ image: { url: artPath }, caption: text });
         }
@@ -105,9 +126,12 @@ export default {
       }
 
       if (sub === 'equip') {
-        const id = parseId(ctx.args[1]);
-        if (!id) return ctx.fail('Gunakan `.card equip <id>`.');
-        const card = await cards.equip(ctx.sender, id);
+        const query = ctx.args[1];
+        if (!query) return ctx.fail('Gunakan `.card equip <nama>`.');
+
+        const target = await resolveCard(ctx.sender, query);
+        if (!target) return ctx.fail('Card tidak ditemukan.');
+        const card = await cards.equip(ctx.sender, target.id);
         return ctx.reply(
           `✅ ${typeName(card.type)} *${card.name}* berhasil dipasang.`
         );
@@ -127,13 +151,15 @@ export default {
       }
 
       if (sub === 'levelup') {
-        const id = parseId(ctx.args[1]);
-        if (!id) {
+        const query = ctx.args[1];
+        if (!query) {
           return ctx.reply(
-            'Upgrade Main Card memakai Coin + Card Core.\nGunakan `.card upgrade <id>`.\nCard Core hanya tersedia di `.raidshop`.'
+            'Upgrade Main Card memakai Coin + Card Core.\nGunakan `.card levelup <nama>`.\nCard Core hanya tersedia di `.raidshop`.'
           );
         }
-        const result = await cards.upgrade(ctx.sender, id);
+        const target = await resolveCard(ctx.sender, query);
+        if (!target) return ctx.fail('Card tidak ditemukan.');
+        const result = await cards.upgrade(ctx.sender, target.id);
         const next = cards.getUpgradeCost(result.card.level);
         return ctx.reply(
           [
@@ -159,10 +185,10 @@ export default {
           '*Perintah:*',
           '• `.card` main - Lihat koleksi Main Card',
           '• `.card` support - Lihat koleksi Support Card',
-          '• `.card` detail <id> - Lihat detail Card',
-          '• `.card` equip <id> - Pasang Card',
+          '• `.card` detail <nama> - Lihat detail Card (support pakai id)',
+          '• `.card` equip <nama> - Pasang Card (support pakai id)',
           '• `.card` unequip <main|support> - Lepas Card',
-          '• `.card` levelup <id> - Upgrade Main Card',
+          '• `.card` levelup <nama> - Upgrade Main Card',
         ].join('\n')
       );
     } catch (error) {
