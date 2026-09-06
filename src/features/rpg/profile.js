@@ -160,14 +160,23 @@ function cardSlot(ctx, x, y, w, h, label, card, accent) {
   ctx.textBaseline = 'top';
   ctx.fillText(label.toUpperCase(), x + 18, y + 12, w - 36);
 
-  ctx.font = 'bold 24px sans-serif';
+  // Name (left) + level (flush right) on one row
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 28px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(card?.name ?? '-', x + 18, y + 34, w - 36);
+  ctx.fillText(
+    card?.name ?? '-',
+    x + 18,
+    y + 36,
+    card?.level ? w - 36 - 90 : w - 36
+  );
 
   if (card?.level) {
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.fillStyle = accent;
-    ctx.fillText(`Lv. ${card.level}`, x + 18, y + h - 24);
+    ctx.textAlign = 'right';
+    ctx.fillText(`Lv. ${card.level}`, x + w - 18, y + 42);
+    ctx.textAlign = 'left';
   }
 }
 
@@ -276,32 +285,34 @@ export async function renderProfileCard(data) {
   ctx.fillText(name, px, y, contentW);
   y += 48;
 
-  // Level
+  // Level + EXP on one row (EXP flush right)
   ctx.font = 'bold 21px sans-serif';
   ctx.fillStyle = '#ffd97a';
+  ctx.textAlign = 'left';
   ctx.fillText(`Lv. ${level}`, px, y, contentW);
+  ctx.font = '16px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${exp}/${expNeeded} EXP`, px + contentW, y + 3, contentW);
+  ctx.textAlign = 'left';
   y += 32;
 
   // EXP bar
   const expPct = expNeeded > 0 ? exp / expNeeded : 0;
   statBar(ctx, px, y, contentW, 13, expPct, ['#ffd97a', '#ff9d4d']);
-  y += 19;
-  ctx.font = '16px sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.fillText(`${exp}/${expNeeded} EXP`, px, y, contentW);
-  y += 30;
+  y += 27;
 
   // HP row
-  ICONS.heart(ctx, px + 10, y + 10, 22, '#ff5f6d');
-  ctx.font = '19px sans-serif';
+  ICONS.heart(ctx, px + 12, y + 12, 26, '#ff5f6d');
+  ctx.font = '23px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
-  ctx.fillText('HP', px + 28, y + 2);
-  ctx.font = 'bold 19px sans-serif';
+  ctx.fillText('HP', px + 32, y + 2);
+  ctx.font = 'bold 23px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'right';
   ctx.fillText(`${hp}/${maxHp}`, px + contentW, y + 2);
   ctx.textAlign = 'left';
-  y += 26;
+  y += 30;
   statBar(ctx, px, y, contentW, 18, maxHp > 0 ? hp / maxHp : 0, [
     '#ff5f6d',
     '#ff9966',
@@ -338,7 +349,7 @@ export async function renderProfileCard(data) {
   y += chipH + 14;
 
   // Card slots: main + support
-  const cardH = 88;
+  const cardH = 96;
   const cardGap = 12;
   const cardW = (contentW - cardGap) / 2;
   cardSlot(ctx, px, y, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
