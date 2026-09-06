@@ -1,4 +1,5 @@
 import { cardService as cards } from '#features/rpg/card.js';
+import { cardArtPath } from '#features/rpg/card-config.js';
 import { userModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 
@@ -68,7 +69,7 @@ async function detailText(jid, id) {
   } else {
     lines.push('Support Card tidak dapat di-upgrade.');
   }
-  return lines.join('\n');
+  return { text: lines.join('\n'), card };
 }
 
 function parseId(value) {
@@ -95,7 +96,12 @@ export default {
       if (sub === 'detail') {
         const id = parseId(ctx.args[1]);
         if (!id) return ctx.fail('Gunakan `.card detail <id>`.');
-        return ctx.reply(await detailText(ctx.sender, id));
+        const { text, card } = await detailText(ctx.sender, id);
+        const artPath = cardArtPath(card.card_id);
+        if (artPath) {
+          return ctx.reply({ image: { url: artPath }, caption: text });
+        }
+        return ctx.reply(text);
       }
 
       if (sub === 'equip') {

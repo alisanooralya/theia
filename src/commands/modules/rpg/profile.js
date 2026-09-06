@@ -6,20 +6,8 @@ import {
 } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
 import { cardService } from '#features/rpg/card.js';
+import { cardArtPath } from '#features/rpg/card-config.js';
 import { F } from '#helpers/index.js';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const CARD_DIR = join(__dirname, '..', '..', '..', '..', 'temp', 'card');
-
-const CARD_IMAGE_MAP = {
-  girgas: 'girgas.webp',
-  lena: 'lena.webp',
-  ameris: 'ameris.webp',
-  daisy: 'daisy.webp',
-};
 
 const SLOT_EMOJI = {
   flower: '🌸',
@@ -55,10 +43,12 @@ export default {
     const slotLines = await Promise.all(
       ['flower', 'feather', 'sands', 'goblet', 'circlet'].map(async (slot) => {
         const artifactId = inv?.[`${slot}_id`];
-        if (!artifactId) return `│• ${SLOT_EMOJI[slot]} -`;
+        if (!artifactId) return `${SLOT_EMOJI[slot]} -`;
+
         const a = await artifactModel.findById(artifactId);
-        if (!a) return `│• ${SLOT_EMOJI[slot]} -`;
-        return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
+        if (!a) return `${SLOT_EMOJI[slot]} -`;
+
+        return `${SLOT_EMOJI[slot]} ${a.name}`;
       })
     );
     const cardsByType = Object.fromEntries(
@@ -74,9 +64,7 @@ export default {
       `🏆 ${stats.win}W / ${stats.loss}L  🔥 ${user.daily_streak || 0} hari`,
     ].join('\n');
 
-    const mainCardId = cardsByType.main?.card_id ?? null;
-    const cardFileName = mainCardId ? CARD_IMAGE_MAP[mainCardId] : null;
-    const cardPath = cardFileName ? join(CARD_DIR, cardFileName) : null;
+    const cardPath = cardArtPath(cardsByType.main?.card_id);
 
     let cardImage;
     try {
