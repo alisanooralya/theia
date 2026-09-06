@@ -128,7 +128,7 @@ const ICONS = {
 };
 
 function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
-  roundRect(ctx, x, y, w, h, 18);
+  roundRect(ctx, x, y, w, h, 16);
   ctx.fillStyle = 'rgba(20,16,32,0.55)';
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
@@ -141,20 +141,20 @@ function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
   ctx.textBaseline = 'alphabetic';
 
   const cy = y + h / 2;
-  const textX = x + 64;
-  iconFn(ctx, x + 32, cy, 34, accent);
+  const textX = x + 60;
+  iconFn(ctx, x + 30, cy, 32, accent);
 
   ctx.font = 'bold 19px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(label, textX, cy - 14, w - 64 - 12);
+  ctx.fillText(label, textX, cy - 13, w - 60 - 12);
 
   ctx.font = 'bold 32px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(String(value), textX, cy + 24, w - 64 - 12);
+  ctx.fillText(String(value), textX, cy + 23, w - 60 - 12);
 }
 
 function cardSlot(ctx, x, y, w, h, label, card, accent) {
-  roundRect(ctx, x, y, w, h, 18);
+  roundRect(ctx, x, y, w, h, 16);
   ctx.fillStyle = 'rgba(20,16,32,0.55)';
   ctx.fill();
   ctx.strokeStyle = accent + '55';
@@ -164,16 +164,16 @@ function cardSlot(ctx, x, y, w, h, label, card, accent) {
   ctx.font = 'bold 16px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.textBaseline = 'top';
-  ctx.fillText(label.toUpperCase(), x + 18, y + 14, w - 36);
+  ctx.fillText(label.toUpperCase(), x + 18, y + 12, w - 36);
 
   ctx.font = 'bold 24px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(card?.name ?? '-', x + 18, y + 38, w - 36);
+  ctx.fillText(card?.name ?? '-', x + 18, y + 34, w - 36);
 
   if (card?.level) {
     ctx.font = 'bold 16px sans-serif';
     ctx.fillStyle = accent;
-    ctx.fillText(`Lv. ${card.level}`, x + 18, y + h - 26);
+    ctx.fillText(`Lv. ${card.level}`, x + 18, y + h - 24);
   }
 }
 
@@ -240,7 +240,7 @@ export async function renderProfileCard(data) {
   }
 
   // ---- Bottom panel geometry ----
-  const panelH = 470; // height of the stats panel
+  const panelH = 432; // height of the stats panel
   const panelY = H - panelH;
 
   // Soft fade where art meets the panel
@@ -262,32 +262,32 @@ export async function renderProfileCard(data) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // ---- Panel content ----
+  // ---- Panel content (compact rhythm) ----
   const px = pad;
   const contentW = W - pad * 2;
-  let y = panelY + 30;
+  let y = panelY + 24;
 
   // Name
   ctx.font = 'bold 40px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
   ctx.fillText(name, px, y, contentW);
-  y += 50;
+  y += 48;
 
   // Level
   ctx.font = 'bold 21px sans-serif';
   ctx.fillStyle = '#ffd97a';
   ctx.fillText(`Lv. ${level}`, px, y, contentW);
-  y += 36;
+  y += 32;
 
   // EXP bar
   const expPct = expNeeded > 0 ? exp / expNeeded : 0;
   statBar(ctx, px, y, contentW, 13, expPct, ['#ffd97a', '#ff9d4d']);
-  y += 21;
+  y += 19;
   ctx.font = '16px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.fillText(`${exp}/${expNeeded} EXP`, px, y, contentW);
-  y += 34;
+  y += 30;
 
   // HP row
   ICONS.heart(ctx, px + 10, y + 10, 22, '#ff5f6d');
@@ -299,16 +299,16 @@ export async function renderProfileCard(data) {
   ctx.textAlign = 'right';
   ctx.fillText(`${hp}/${maxHp}`, px + contentW, y + 2);
   ctx.textAlign = 'left';
-  y += 28;
+  y += 26;
   statBar(ctx, px, y, contentW, 18, maxHp > 0 ? hp / maxHp : 0, [
     '#ff5f6d',
     '#ff9966',
   ]);
-  y += 42;
+  y += 38;
 
   // Stat chips: ATK, DEF, CR
-  const chipH = 92;
-  const gap = 14;
+  const chipH = 88;
+  const gap = 12;
   const chipW = (contentW - gap * 2) / 3;
   statChip(ctx, px, y, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
   statChip(
@@ -333,11 +333,11 @@ export async function renderProfileCard(data) {
     `${critRate.toFixed(0)}%`,
     '#ffd15c'
   );
-  y += chipH + 18;
+  y += chipH + 14;
 
   // Card slots: main + support
-  const cardH = 92;
-  const cardGap = 14;
+  const cardH = 88;
+  const cardGap = 12;
   const cardW = (contentW - cardGap) / 2;
   cardSlot(ctx, px, y, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
   cardSlot(
