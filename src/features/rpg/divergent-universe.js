@@ -1062,7 +1062,7 @@ class DivergentUniverseService {
 
     let rounds = 0;
     let totalDamageTaken = 0;
-    let lastCrit = false;
+    let lastCrit;
 
     while (state.hp > 0) {
       rounds++;
@@ -1347,7 +1347,7 @@ class DivergentUniverseService {
     state.nodeIndex += 1;
   }
 
-  async _finish(run, t) {
+  async _finish(run, _t) {
     const state = run.state;
     const effects = totalEffects(state);
     const difficultyConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;

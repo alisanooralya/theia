@@ -4,12 +4,6 @@ import { logger } from '#helpers/logger.js';
 
 const GENERIC_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
-const commonHeaders = {
-  'user-agent': GENERIC_UA,
-  'sec-gpc': '1',
-  'sec-fetch-site': 'same-origin',
-  'x-ig-app-id': '936619743392459',
-};
 const mobileHeaders = {
   'x-ig-app-locale': 'en_US',
   'x-ig-device-locale': 'en_US',
@@ -133,7 +127,7 @@ class InstagramService {
       );
       const rawMatch = html?.match?.(/"init",\[\],\[(.*?)\]\],/);
       if (!rawMatch) return null;
-      let embedData = JSON.parse(rawMatch[1]);
+      const embedData = JSON.parse(rawMatch[1]);
       if (!embedData?.contextJSON) return null;
       return JSON.parse(embedData.contextJSON);
     } catch {
@@ -258,7 +252,7 @@ class InstagramService {
     if (sidecar) {
       const items = sidecar.edges
         .filter((e) => e.node?.display_url)
-        .map((e, i) => ({
+        .map((e) => ({
           type: e.node?.is_video && e.node?.video_url ? 'video' : 'image',
           url:
             e.node?.is_video && e.node?.video_url
@@ -287,7 +281,7 @@ class InstagramService {
     if (carousel) {
       const items = carousel
         .filter((e) => e?.image_versions2)
-        .map((e, i) => {
+        .map((e) => {
           const isVideo = !!e.video_versions;
           const imageUrl = e.image_versions2.candidates[0].url;
           const url = isVideo
@@ -316,8 +310,7 @@ class InstagramService {
   async _getPost(id) {
     const hasData = (d) =>
       d && d.gql_data !== null && d?.gql_data?.xdt_shortcode_media !== null;
-    let data = null,
-      result = null;
+    let data = null;
     try {
       const mediaId = await this._getMediaId(id);
       if (mediaId) data = await this._requestMobileApi(mediaId);
@@ -330,7 +323,7 @@ class InstagramService {
       throw new Error(
         'Gagal mengambil data. Post mungkin private atau dihapus.'
       );
-    result =
+    const result =
       data?.gql_data !== undefined
         ? this._extractOldPost(data, id)
         : this._extractNewPost(data, id);
@@ -352,7 +345,8 @@ class InstagramService {
       return Buffer.from(data);
     } catch (err) {
       throw new Error(
-        `Gagal download media Instagram (${err.response?.status ?? 'timeout'}).`
+        `Gagal download media Instagram (${err.response?.status ?? 'timeout'}).`,
+        { cause: err }
       );
     }
   }

@@ -46,5 +46,7 @@ export async function closeDatabase() {
   }
   try {
     await sql.end();
-  } catch {}
+  } catch (err) {
+    logger.warn({ err }, 'Database close failed');
+  }
 }

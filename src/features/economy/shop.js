@@ -3,7 +3,6 @@ import {
   walletModel,
   inventoryModel,
   itemModel,
-  statsModel,
 } from '#storage/models/index.js';
 
 const SELL_RATE = 0.6;
@@ -50,7 +49,7 @@ class ShopService {
     return { item, qty, earned };
   }
 
-  async equip(jid, itemId, userLevel = 1) {
+  async equip(jid, itemId, _userLevel = 1) {
     const item = await itemModel.findById(itemId);
     if (!item) throw new Error('Item tidak ditemukan.');
     if (!['weapon', 'armor'].includes(item.category))
@@ -60,7 +59,7 @@ class ShopService {
     return { item, atk: 0, def: 0, maxHp: 0 };
   }
 
-  async unequip(jid, slot, userLevel = 1) {
+  async unequip(jid, slot, _userLevel = 1) {
     if (!['weapon', 'armor'].includes(slot))
       throw new Error("Slot harus 'weapon' atau 'armor'.");
     return { slot, atk: 0, def: 0, maxHp: 0 };

@@ -158,7 +158,6 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
       }
     }
 
-    let settled = false;
     const task = {
       jid,
       content,
@@ -171,9 +170,6 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
     const p = new Promise((res, rej) => {
       task.resolve = res;
       task.reject = rej;
-    });
-    p.finally(() => {
-      settled = true;
     });
 
     if (!groups.has(jid)) {

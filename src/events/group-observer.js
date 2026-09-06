@@ -103,7 +103,7 @@ export async function onGroupParticipantsUpdate(
         const caption = WELCOME_TEKS.replace(/%name/, `@${jid.split('@')[0]}`);
         const image = await readFile(WELCOME_IMAGE);
 
-        let inviteUrl = 'https://hoyolab.com';
+        const inviteUrl = 'https://hoyolab.com';
         await sendLinkPreview(
           sock,
           id,

@@ -73,7 +73,9 @@ export default {
             await ctx.sock.sendMessage(ctx.jid, {
               delete: { remoteJid: ctx.jid, fromMe: true, id: playId },
             });
-          } catch {}
+          } catch {
+            // best-effort: pesan play mungkin sudah dihapus
+          }
         }
 
         const msg = await ctx.reply(run.state.lastResult);
@@ -91,7 +93,9 @@ export default {
             await ctx.sock.sendMessage(ctx.jid, {
               delete: { remoteJid: ctx.jid, fromMe: true, id: playId },
             });
-          } catch {}
+          } catch {
+            // best-effort: pesan play mungkin sudah dihapus
+          }
         }
         return ctx.fail(
           abandoned

@@ -17,7 +17,9 @@ class Orchestrator {
       if (typeof ext.destroy === 'function') {
         try {
           ext.destroy();
-        } catch {}
+        } catch (err) {
+          logger.warn({ err, name: ext.name }, 'Extension destroy failed');
+        }
       }
     }
     this._extensions = [];

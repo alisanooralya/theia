@@ -80,8 +80,7 @@ async function buildResultText(
   dMax,
   mentionMap
 ) {
-  const resolveName = async (jid) =>
-    mentionMap[jid] ?? (await displayName(jid));
+  const resolveName = async (jid) => mentionMap[jid] ?? displayName(jid);
 
   if (result.draw) {
     return [

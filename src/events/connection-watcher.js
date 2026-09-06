@@ -47,7 +47,9 @@ export async function onConnectionUpdate(update, restart, sock) {
     logger.info('WhatsApp Connected');
     try {
       await fsp.mkdir('./temp', { recursive: true });
-    } catch {}
+    } catch {
+      // best-effort: direktori temp mungkin sudah ada
+    }
     resolveOwnerLids(sock).catch(() => {});
     return;
   }
@@ -84,7 +86,9 @@ export async function onConnectionUpdate(update, restart, sock) {
               recursive: true,
               force: true,
             });
-          } catch {}
+          } catch {
+            // best-effort: session mungkin sudah tidak ada
+          }
           if (reconnectTimer) clearTimeout(reconnectTimer);
           reconnectTimer = setTimeout(restart, 2000);
           return;
@@ -92,8 +96,10 @@ export async function onConnectionUpdate(update, restart, sock) {
         logger.error('Session logged out');
         try {
           await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true });
-        } catch {}
-        process.exit(1);
+        } catch {
+          // best-effort: session mungkin sudah tidak ada
+        }
+        return process.exit(1);
 
       case DisconnectReason.badSession:
       case DisconnectReason.forbidden:
@@ -101,15 +107,19 @@ export async function onConnectionUpdate(update, restart, sock) {
         logger.error('WhatsApp banned / forbidden');
         try {
           await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true });
-        } catch {}
-        process.exit(1);
+        } catch {
+          // best-effort: session mungkin sudah tidak ada
+        }
+        return process.exit(1);
 
       case DisconnectReason.multideviceMismatch:
         logger.error('Multi-device mismatch — resetting session');
         try {
           await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true });
-        } catch {}
-        process.exit(1);
+        } catch {
+          // best-effort: session mungkin sudah tidak ada
+        }
+        return process.exit(1);
 
       default:
         logger.warn('Unknown disconnect: %d', statusCode);

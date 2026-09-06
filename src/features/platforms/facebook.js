@@ -106,7 +106,9 @@ class FacebookService {
           .replace(/&amp;/g, '&')
           .replace(/&quot;/g, '"')
           .replace(/&#039;/g, "'") ?? '';
-    } catch {}
+    } catch {
+      // best-effort: title opsional
+    }
     return {
       type: 'video',
       url: chosen,
@@ -132,7 +134,8 @@ class FacebookService {
       return Buffer.from(data);
     } catch (err) {
       throw new Error(
-        `Gagal download video Facebook (${err.response?.status ?? 'timeout'}).`
+        `Gagal download video Facebook (${err.response?.status ?? 'timeout'}).`,
+        { cause: err }
       );
     }
   }

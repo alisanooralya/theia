@@ -74,7 +74,7 @@ class BattleService {
     const loser = draw ? null : sim.loser;
 
     let rewardCash = REWARD_CASH;
-    let loserLoss = LOSER_LOSS;
+    const loserLoss = LOSER_LOSS;
     let rewarded = false;
 
     if (!draw) {
@@ -326,7 +326,7 @@ class BattleService {
     const events = [];
     const counts = { crit: 0, block: 0, counter: 0, powerful: 0, finishing: 0 };
 
-    let base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
+    const base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
     const vary = Math.floor(base * 0.2);
     let dmg = base + Math.floor(rng() * vary * 2) - vary;
 
@@ -388,7 +388,7 @@ class BattleService {
     const events = [];
     const counts = { crit: 0, block: 0, counter: 1, powerful: 0, finishing: 0 };
 
-    let base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
+    const base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
     let dmg = Math.floor(base * COUNTER_MULT);
     const crit = rng() < attacker.critRate;
     if (crit) {

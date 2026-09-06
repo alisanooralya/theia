@@ -148,7 +148,9 @@ export default {
       if (health <= 0) {
         try {
           await sock.groupParticipantsUpdate(s.jid, [s.sender], 'remove');
-        } catch {}
+        } catch (err) {
+          logger.warn({ err, jid: s.jid }, '[AntiToxic] Kick failed');
+        }
         await sql`DELETE FROM warns WHERE jid = ${s.sender} AND group_jid = ${s.jid}`;
         await sock.sendMessage(s.jid, {
           text: `🚫 @${s.sender.split('@')[0]} terdeteksi toxic, health 0 dan di-kick!`,

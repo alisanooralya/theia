@@ -2,7 +2,6 @@ import os from 'os';
 import { jidNormalizedUser } from 'baileys';
 import { commandRegistry } from '#commands/registry.js';
 import SETTINGS from '#environment/settings.js';
-import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
 
 async function isPrivileged(ctx) {
@@ -23,7 +22,9 @@ async function isPrivileged(ctx) {
         .filter(Boolean)
         .map(jidNormalizedUser);
       if (candidates.some((c) => admins.includes(c))) return true;
-    } catch {}
+    } catch {
+      // best-effort: gagal ambil metadata grup dianggap bukan admin
+    }
   }
   return false;
 }

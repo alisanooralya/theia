@@ -101,7 +101,6 @@ export default {
       return ctx.fail(error.message);
     }
 
-    let battleDone = false;
     try {
       const statusMsg = await ctx.reply(
         [
@@ -115,7 +114,6 @@ export default {
       await sleep(3000);
 
       const result = await bounty.simulateBattle(ctx.sender, sub, target.id);
-      battleDone = true;
 
       await userModel.recordBounty(ctx.sender);
 

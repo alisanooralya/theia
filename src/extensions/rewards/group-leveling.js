@@ -24,12 +24,16 @@ export default {
           const meta = await sock.groupMetadata(parsed.jid);
           groupName = meta.subject || '';
         }
-      } catch {}
+      } catch {
+        // best-effort: nama grup opsional
+      }
       await Promise.all([
         groupModel.ensure(parsed.jid, groupName),
         userModel.ensure(parsed.sender, { pushName: parsed.pushName || '' }),
       ]);
-    } catch {}
+    } catch (err) {
+      logger.warn({ err: err.message }, '[GroupLeveling] ensure failed');
+    }
     const key = `${parsed.jid}:${parsed.sender}`;
     const now = Date.now();
     if (cooldown.has(key) && now - cooldown.get(key) < COOLDOWN_MS) return true;

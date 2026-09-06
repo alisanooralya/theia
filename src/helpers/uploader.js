@@ -46,7 +46,7 @@ export async function uploadToUguu(input, options = {}) {
     if (!payload) throw new Error(`Respons tidak valid (HTTP ${res.status})`);
   } catch (err) {
     logger.error({ err, filename, mimetype }, 'Uguu upload failed');
-    throw new Error('Gagal upload file ke uguu.se.');
+    throw new Error('Gagal upload file ke uguu.se.', { cause: err });
   }
 
   if (payload.success !== true) {

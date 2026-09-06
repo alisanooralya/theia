@@ -32,7 +32,9 @@ export function setupShutdown() {
       try {
         sockRef.end(new Error('Process terminated'));
         sockRef.ws?.close();
-      } catch {}
+      } catch (err) {
+        process.stderr.write(`Socket close error: ${err}\n`);
+      }
     }
 
     orchestrator.destroyAll();

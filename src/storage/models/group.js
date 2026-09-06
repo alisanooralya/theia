@@ -70,7 +70,7 @@ class GroupModel {
     return (g?.antitoxic ?? 0) === 1;
   }
 
-  getPrefix(jid) {
+  getPrefix(_jid) {
     return null;
   }
 

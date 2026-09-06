@@ -10,13 +10,6 @@ const TYPE_ICON = {
   elite: '🛡',
   boss: '☠',
 };
-const TYPE_LABEL = {
-  battle: 'Battle',
-  event: 'Event',
-  treasure: 'Treasure',
-  elite: 'Elite',
-  boss: 'Boss',
-};
 
 function esc(s) {
   return String(s ?? '').replace(
@@ -126,7 +119,6 @@ function htmlLayout(html) {
 
 export function renderDuHtml(run) {
   const state = run.state;
-  const totalNodes = state.nodes.length;
   const currentIndex = state.nodeIndex;
   const mhp = maxHp(state);
   const status = statusLabel(run.status);

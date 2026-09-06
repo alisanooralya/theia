@@ -1,5 +1,4 @@
 import { reloadCommand } from '#commands/loader.js';
-import { logger } from '#helpers/logger.js';
 import { existsSync } from 'fs';
 import { join } from 'path';
 

@@ -9,7 +9,9 @@ import SETTINGS from '#environment/settings.js';
 const TEMP_DIR = path.join(process.cwd(), 'temp');
 try {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
-} catch {}
+} catch {
+  // best-effort: direktori temp mungkin sudah ada
+}
 
 function getRandom(ext) {
   return `${randomBytes(6).toString('hex')}.${ext}`;

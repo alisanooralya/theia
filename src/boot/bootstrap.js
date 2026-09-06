@@ -7,13 +7,8 @@ import { setSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 
 export async function bootstrap() {
-  let cmdCount = 0,
-    extCount = 0,
-    dbOk = false;
-
   try {
     await initializeDatabase();
-    dbOk = true;
     logger.info('[Boot] Database ready');
   } catch (err) {
     logger.fatal({ err }, '[Boot] Database setup failed');
@@ -22,10 +17,14 @@ export async function bootstrap() {
 
   try {
     await loadCommands();
-    cmdCount = commandRegistry.count();
+    const cmdCount = commandRegistry.count();
     await loadExtensions();
-    extCount = orchestrator.count();
-    logger.info('[Boot] Commands & extensions loaded');
+    const extCount = orchestrator.count();
+    logger.info(
+      '[Boot] Commands & extensions loaded (%d commands, %d extensions)',
+      cmdCount,
+      extCount
+    );
   } catch (err) {
     logger.fatal({ err }, '[Boot] Failed to load commands/extensions');
     process.exit(1);

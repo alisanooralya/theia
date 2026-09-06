@@ -80,8 +80,6 @@ function substatUpgradeFor(stat, fromLevel) {
   const v = SUBSTAT_VALUES[stat];
   if (!v) return 0;
   const nextMilestone = UPGRADE_MILESTONES.find((m) => m >= fromLevel) ?? 20;
-  const prevMilestone =
-    [...UPGRADE_MILESTONES].reverse().find((m) => m < nextMilestone) ?? 1;
   const steps = UPGRADE_MILESTONES.length;
   const stepFrom = UPGRADE_MILESTONES.indexOf(nextMilestone);
   const stepSize = Math.floor((v.max - v.min) / steps);

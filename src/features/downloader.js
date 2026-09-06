@@ -39,7 +39,7 @@ class DownloaderService {
       return Buffer.from(data);
     } catch (err) {
       logger.error({ err, url }, 'Downloader failed');
-      throw new Error(`Gagal download dari ${url}`);
+      throw new Error(`Gagal download dari ${url}`, { cause: err });
     }
   }
 
@@ -49,7 +49,7 @@ class DownloaderService {
       return data;
     } catch (err) {
       logger.error({ err, url }, 'Fetch JSON failed');
-      throw new Error('Gagal fetch data');
+      throw new Error('Gagal fetch data', { cause: err });
     }
   }
 
@@ -66,7 +66,7 @@ class DownloaderService {
       data = res;
     } catch (err) {
       logger.error({ err, url }, 'TikTok API request failed');
-      throw new Error('Gagal memanggil API TikTok.');
+      throw new Error('Gagal memanggil API TikTok.', { cause: err });
     }
 
     if (data?.status === false) {
@@ -143,7 +143,7 @@ class DownloaderService {
       data = res;
     } catch (err) {
       logger.error({ err, url }, 'YouTube API request failed');
-      throw new Error('Gagal memanggil API YouTube.');
+      throw new Error('Gagal memanggil API YouTube.', { cause: err });
     }
 
     if (data?.status === false) {

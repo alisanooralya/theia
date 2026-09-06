@@ -33,7 +33,6 @@ export default {
     const finalStats = await artifactService.getPlayerStats(jid);
     const expNeeded = await userModel.expForLevel(user.level + 1);
     const expPct = Math.round((user.exp / expNeeded) * 100);
-    const winrate = await statsModel.winrate(jid);
 
     const inv = await artifactService.getInventory(jid);
     const slotLines = await Promise.all(

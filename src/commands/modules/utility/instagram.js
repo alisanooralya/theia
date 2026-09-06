@@ -1,5 +1,4 @@
 import { instagramService } from '#features/platforms/instagram.js';
-import { downloaderService } from '#features/downloader.js';
 
 export default {
   name: 'instagram',

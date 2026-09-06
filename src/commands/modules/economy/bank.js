@@ -9,7 +9,6 @@ function growthLine(interest) {
 
 function depositFee(amount) {
   const fee = Math.floor(amount * 0.05);
-  const net = amount - fee;
   return `\n💸 Biaya admin 5%: *${F.formatNumber(fee)}*`;
 }
 

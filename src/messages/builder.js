@@ -7,39 +7,40 @@ function extractIE(
 ) {
   if (!extract) return { text, ie: [] };
 
-  let ie = [],
-    result = '',
+  const ie = [],
+    stack = [];
+  let result = '',
     last = 0,
     citation_index = 1,
     hyperlink_index = 0,
-    latex_index = 0,
-    stack = [];
+    latex_index = 0;
 
   for (let i = 0; i < text.length; i++) {
-    if (text[i] == '[' && text[i - 1] != '\\') {
+    if (text[i] === '[' && text[i - 1] !== '\\') {
       stack.push(i);
-    } else if (text[i] == ']' && (text[i + 1] == '(' || text[i + 1] == '<')) {
-      let start = stack.pop();
+    } else if (
+      text[i] === ']' &&
+      (text[i + 1] === '(' || text[i + 1] === '<')
+    ) {
+      const start = stack.pop();
       if (start == null) continue;
-      let open = text[i + 1],
-        close = open == '(' ? ')' : '>',
-        type = open == '(' ? 'link' : 'latex',
-        end = i + 2,
+      const open = text[i + 1],
+        close = open === '(' ? ')' : '>',
+        type = open === '(' ? 'link' : 'latex';
+      let end = i + 2,
         depth = 1;
       while (end < text.length && depth) {
-        if (text[end] == open && text[end - 1] != '\\') depth++;
-        else if (text[end] == close && text[end - 1] != '\\') depth--;
+        if (text[end] === open && text[end - 1] !== '\\') depth++;
+        else if (text[end] === close && text[end - 1] !== '\\') depth--;
         end++;
       }
       if (depth) continue;
-      let raw = text.slice(start + 1, i).trim(),
-        url = text.slice(i + 2, end - 1).trim(),
-        key,
-        tag,
-        data;
-      if (type == 'latex') {
+      const raw = text.slice(start + 1, i).trim(),
+        url = text.slice(i + 2, end - 1).trim();
+      let key, tag, data;
+      if (type === 'latex') {
         if (!latex) continue;
-        let [
+        const [
           txt = '',
           width = null,
           height = null,
@@ -160,7 +161,7 @@ class BaseBuilder {
   static async resize(buffer, x, y, fit = 'cover') {
     const { default: sharp } = await import('sharp');
 
-    return await sharp(buffer)
+    return sharp(buffer)
       .resize(x, y, {
         fit,
         position: 'center',
@@ -172,7 +173,7 @@ class BaseBuilder {
 
   static async fetchBuffer(url, options = {}, config = {}) {
     try {
-      let response = await fetch(url, options);
+      const response = await fetch(url, options);
       if (!response.ok) throw Error(`HTTP ${response.status}`);
       return Buffer.from(await response.arrayBuffer());
     } catch (error) {
@@ -536,7 +537,7 @@ class ButtonV2 extends BaseBuilder {
   }
 
   async build(jid, { ...options } = {}) {
-    let _thumbnail = this._image
+    const _thumbnail = this._image
       ? await BaseBuilder.resize(
           Buffer.isBuffer(this._image)
             ? this._image
@@ -660,7 +661,7 @@ class AIRich extends BaseBuilder {
   }
 
   addText(text, { hyperlink = true, citation = true, latex = true } = {}) {
-    if (typeof text != 'string') {
+    if (typeof text !== 'string') {
       throw new TypeError('Text must be a string');
     }
 
@@ -671,7 +672,7 @@ class AIRich extends BaseBuilder {
     });
 
     const inline_entities = extractedIE.ie.map(({ type, ie }) => {
-      if (type == 'hyperlink') {
+      if (type === 'hyperlink') {
         return {
           key: ie.key,
           metadata: {
@@ -682,7 +683,7 @@ class AIRich extends BaseBuilder {
           },
         };
       }
-      if (type == 'citation') {
+      if (type === 'citation') {
         return {
           key: ie.key,
           metadata: {
@@ -695,7 +696,7 @@ class AIRich extends BaseBuilder {
           },
         };
       }
-      if (type == 'latex') {
+      if (type === 'latex') {
         return {
           key: ie.key,
           metadata: {
@@ -1212,7 +1213,7 @@ class AIRich extends BaseBuilder {
     includesSubmessages = true,
     quoted,
     quotedParticipant,
-    ...options
+    ..._options
   } = {}) {
     const forward = forwarded
       ? {
@@ -1295,7 +1296,7 @@ class AIRich extends BaseBuilder {
       ...options,
     });
 
-    return await this.#client.relayMessage(jid, msg, { ...options });
+    return this.#client.relayMessage(jid, msg, { ...options });
   }
 
   static tokenizer(code, lang = 'javascript') {
@@ -1372,14 +1373,14 @@ class AIRich extends BaseBuilder {
       const c = code[i];
 
       if (/\s/.test(c)) {
-        let s = i;
+        const s = i;
         while (i < code.length && /\s/.test(code[i])) i++;
         push(code.slice(s, i), 0);
         continue;
       }
 
       if (c === '/' && code[i + 1] === '/') {
-        let s = i;
+        const s = i;
         i += 2;
         while (i < code.length && code[i] !== '\n') i++;
         push(code.slice(s, i), 5);
@@ -1387,7 +1388,7 @@ class AIRich extends BaseBuilder {
       }
 
       if (c === '"' || c === "'" || c === '`') {
-        let s = i;
+        const s = i;
         const q = c;
         i++;
         while (i < code.length) {
@@ -1402,14 +1403,14 @@ class AIRich extends BaseBuilder {
       }
 
       if (/[0-9]/.test(c)) {
-        let s = i;
+        const s = i;
         while (i < code.length && /[0-9.]/.test(code[i])) i++;
         push(code.slice(s, i), 4);
         continue;
       }
 
       if (/[a-zA-Z_$]/.test(c)) {
-        let s = i;
+        const s = i;
         while (i < code.length && /[a-zA-Z0-9_$]/.test(code[i])) i++;
         const word = code.slice(s, i);
 

@@ -49,10 +49,6 @@ function statusText(raidData, participant) {
 }
 
 function endedText(raid, participant) {
-  const totalDamage =
-    (participant?.damage ?? 0) > 0
-      ? `Damage: *${F.formatNumber(participant.damage)}*`
-      : 'Kamu tidak berpartisipasi di raid ini.';
   return [
     '🏁 *RAID SELESAI*',
     '',

@@ -41,7 +41,10 @@ export default defineConfig([
       'no-var': 'error',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
       'no-return-await': 'error',
-      'require-await': 'warn',
+      // Off: banyak method async sengaja me-return promise langsung
+      // (sql`...`, sql.begin(...), delegasi) dan method lifecycle
+      // extension (init/destroy/processMessage) wajib async by contract.
+      'require-await': 'off',
       'no-throw-literal': 'error',
       'no-console': 'warn',
     },
