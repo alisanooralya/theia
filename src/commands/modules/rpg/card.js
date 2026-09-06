@@ -1,4 +1,3 @@
-import { ButtonV2 } from '#messages/builder.js';
 import { cardService as cards } from '#features/rpg/card.js';
 import { userModel } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
@@ -92,15 +91,25 @@ export default {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
       if (!sub) {
-        const builder = new ButtonV2(ctx.sock)
-          .setTitle('CARD SYSTEM')
-          .setBody('Kelola koleksi, Card terpasang, dan upgrade Main Card.')
-          .setFooter('Main dan Support memiliki slot terpisah.')
-          .addButton('MAIN CARDS', '.card main')
-          .addButton('SUPPORT CARDS', '.card support')
-          .addButton('EQUIPPED', '.card equipped')
-          .addButton('UPGRADE', '.card upgrade');
-        return builder.send(ctx.jid);
+        return ctx.reply(
+          [
+            '╭──── 🃏 *CARD SYSTEM* ────╮',
+            '│',
+            '│ Kelola koleksi, Card terpasang, dan upgrade.',
+            '│ Slot Main dan Support terpisah.',
+            '│',
+            '│ *Perintah:*',
+            '│ • `.card main` - Lihat koleksi Main Card',
+            '│ • `.card support` - Lihat koleksi Support Card',
+            '│ • `.card equipped` - Lihat Card yang dipasang',
+            '│ • `.card detail <id>` - Lihat detail Card',
+            '│ • `.card equip <id>` - Pasang Card',
+            '│ • `.card unequip <main|support>` - Lepas Card',
+            '│ • `.card upgrade <id>` - Upgrade Main Card',
+            '│',
+            '╰────────────────────────╯',
+          ].join('\n')
+        );
       }
 
       if (sub === 'main' || sub === 'support') {
