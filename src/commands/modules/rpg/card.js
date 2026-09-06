@@ -11,8 +11,6 @@ function cardLine(card, index) {
   const stats = cards.calculateStats(card);
   const equipped = card.equipped ? ' *[Equipped]*' : '';
 
-  // Main Card diidentifikasi by nama (tanpa id).
-  // Support Card dinomori 1..N sesuai urutan koleksi.
   if (card.type === 'support') {
     return `#${index + 1}. *${card.name}* (${card.role}) Lv.${card.level}${equipped}`;
   }
@@ -88,18 +86,15 @@ function parseId(value) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-/**
- * Resolve input user menjadi owned card.
- * - Id nomor -> posisi 1..N di koleksi Support Card saja.
- * - Nama -> cocok case-insensitive ke card_id/nama Main Card saja.
- */
 async function resolveCard(jid, query) {
   const pos = parseId(query);
   if (pos) {
     const supports = await cards.getCards(jid, 'support');
     return supports[pos - 1] ?? null;
   }
-  const q = String(query ?? '').trim().toLowerCase();
+  const q = String(query ?? '')
+    .trim()
+    .toLowerCase();
   if (!q) return null;
   const mains = await cards.getCards(jid, 'main');
   return (

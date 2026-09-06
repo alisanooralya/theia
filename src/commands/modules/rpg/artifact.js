@@ -6,11 +6,6 @@ const SLOT_EMOJI = artifact.slotEmoji;
 const SLOTS = ['flower', 'feather', 'sands', 'goblet', 'circlet'];
 const MAX_SMELT = 20;
 
-/**
- * Ambil daftar ID artifact dari argumen. Pemisahnya spasi dan/atau koma,
- * jadi `1 2 4 17` dan `1, 2, 4, 15` sama-sama valid. Duplikat dibuang supaya
- * satu artifact tidak diproses dua kali.
- */
 function parseArtifactIds(rawArgs) {
   const ids = [];
   const invalid = [];
@@ -111,8 +106,6 @@ function helpText() {
     '',
     '*Smelt bisa banyak sekaligus:*',
     '`.artifact smelt 1 2 4 17`',
-    '`.artifact smelt 1, 2, 4, 15`',
-    `Maksimal ${MAX_SMELT} artifact per sekali smelt.`,
     '',
     '*Slot:* 🌸 Flower | 🪶 Feather | ⏳ Sands | 🏆 Goblet | 👑 Circlet',
     '*Level Max:* 20',
@@ -212,8 +205,6 @@ export default {
           message: 'ID tidak valid',
         }));
 
-        // Diproses satu per satu supaya satu ID yang gagal tidak membatalkan
-        // sisanya — tiap smelt sudah punya transaksinya sendiri.
         for (const id of ids) {
           try {
             smelted.push(await artifact.smelt(ctx.sender, id));
