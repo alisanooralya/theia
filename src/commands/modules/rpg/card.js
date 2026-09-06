@@ -26,8 +26,8 @@ async function collectionText(jid, type) {
     ...collection.map((card, i) => cardLine(card, i)),
     '',
     type === 'main'
-      ? 'Gunakan `.card detail <nama>` untuk melihat detail.'
-      : 'Gunakan `.card detail <id>` untuk melihat detail.',
+      ? 'Gunakan `.card` detail <nama> untuk melihat detail.'
+      : 'Gunakan `.card` detail <id> untuk melihat detail.',
   ].join('\n');
 }
 
@@ -122,7 +122,7 @@ export default {
 
       if (sub === 'detail') {
         const query = ctx.args[1];
-        if (!query) return ctx.fail('Gunakan `.card detail <nama|id>`');
+        if (!query) return ctx.fail('Gunakan `.card` detail <nama|id>');
 
         const { text, card } = await detailText(ctx.sender, query);
         const artPath = cardArtPath(card.card_id);
@@ -133,7 +133,7 @@ export default {
 
       if (sub === 'equip') {
         const query = ctx.args[1];
-        if (!query) return ctx.fail('Gunakan `.card equip <nama|id>`');
+        if (!query) return ctx.fail('Gunakan `.card` equip <nama|id>');
 
         const target = await resolveCard(ctx.sender, query);
         if (!target) return ctx.fail('Card tidak ditemukan.');
@@ -148,7 +148,7 @@ export default {
         const slot = ctx.args[1]?.toLowerCase();
         if (!['main', 'support'].includes(slot)) {
           return ctx.fail(
-            'Gunakan `.card unequip main` atau `.card unequip support`.'
+            'Gunakan `.card` unequip main atau `.card` unequip support.'
           );
         }
         const card = await cards.unequip(ctx.sender, slot);

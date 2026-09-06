@@ -42,9 +42,30 @@ const ICONS = {
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(cx, cy + s * 0.3);
-    ctx.bezierCurveTo(cx, cy, cx - s * 0.5, cy - s * 0.1, cx - s * 0.5, cy - s * 0.35);
-    ctx.bezierCurveTo(cx - s * 0.5, cy - s * 0.6, cx, cy - s * 0.6, cx, cy - s * 0.35);
-    ctx.bezierCurveTo(cx, cy - s * 0.6, cx + s * 0.5, cy - s * 0.6, cx + s * 0.5, cy - s * 0.35);
+    ctx.bezierCurveTo(
+      cx,
+      cy,
+      cx - s * 0.5,
+      cy - s * 0.1,
+      cx - s * 0.5,
+      cy - s * 0.35
+    );
+    ctx.bezierCurveTo(
+      cx - s * 0.5,
+      cy - s * 0.6,
+      cx,
+      cy - s * 0.6,
+      cx,
+      cy - s * 0.35
+    );
+    ctx.bezierCurveTo(
+      cx,
+      cy - s * 0.6,
+      cx + s * 0.5,
+      cy - s * 0.6,
+      cx + s * 0.5,
+      cy - s * 0.35
+    );
     ctx.bezierCurveTo(cx + s * 0.5, cy - s * 0.1, cx, cy, cx, cy + s * 0.3);
     ctx.fill();
   },
@@ -82,7 +103,12 @@ const ICONS = {
     ctx.lineTo(cx + s * 0.4, cy - s * 0.3);
     ctx.lineTo(cx + s * 0.4, cy + s * 0.1);
     ctx.quadraticCurveTo(cx + s * 0.4, cy + s * 0.45, cx, cy + s * 0.55);
-    ctx.quadraticCurveTo(cx - s * 0.4, cy + s * 0.45, cx - s * 0.4, cy + s * 0.1);
+    ctx.quadraticCurveTo(
+      cx - s * 0.4,
+      cy + s * 0.45,
+      cx - s * 0.4,
+      cy + s * 0.1
+    );
     ctx.lineTo(cx - s * 0.4, cy - s * 0.3);
     ctx.closePath();
     ctx.fill();
@@ -274,7 +300,10 @@ export async function renderProfileCard(data) {
   ctx.fillText(`${hp}/${maxHp}`, px + contentW, y + 2);
   ctx.textAlign = 'left';
   y += 28;
-  statBar(ctx, px, y, contentW, 18, maxHp > 0 ? hp / maxHp : 0, ['#ff5f6d', '#ff9966']);
+  statBar(ctx, px, y, contentW, 18, maxHp > 0 ? hp / maxHp : 0, [
+    '#ff5f6d',
+    '#ff9966',
+  ]);
   y += 42;
 
   // Stat chips: ATK, DEF, CR
@@ -282,8 +311,28 @@ export async function renderProfileCard(data) {
   const gap = 14;
   const chipW = (contentW - gap * 2) / 3;
   statChip(ctx, px, y, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
-  statChip(ctx, px + chipW + gap, y, chipW, chipH, ICONS.shield, 'DEF', def, '#6cc4ff');
-  statChip(ctx, px + (chipW + gap) * 2, y, chipW, chipH, ICONS.bolt, 'CRIT RATE', `${critRate.toFixed(0)}%`, '#ffd15c');
+  statChip(
+    ctx,
+    px + chipW + gap,
+    y,
+    chipW,
+    chipH,
+    ICONS.shield,
+    'DEF',
+    def,
+    '#6cc4ff'
+  );
+  statChip(
+    ctx,
+    px + (chipW + gap) * 2,
+    y,
+    chipW,
+    chipH,
+    ICONS.bolt,
+    'CRIT RATE',
+    `${critRate.toFixed(0)}%`,
+    '#ffd15c'
+  );
   y += chipH + 18;
 
   // Card slots: main + support
@@ -291,7 +340,16 @@ export async function renderProfileCard(data) {
   const cardGap = 14;
   const cardW = (contentW - cardGap) / 2;
   cardSlot(ctx, px, y, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
-  cardSlot(ctx, px + cardW + cardGap, y, cardW, cardH, 'Support Card', supportCard, '#6cc4ff');
+  cardSlot(
+    ctx,
+    px + cardW + cardGap,
+    y,
+    cardW,
+    cardH,
+    'Support Card',
+    supportCard,
+    '#6cc4ff'
+  );
 
   return canvas.encode('png');
 }
