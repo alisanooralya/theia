@@ -87,9 +87,7 @@ export default {
     const cardPath = join(CARD_DIR, cardFileName);
 
     try {
-      const builder = new Button(ctx.sock)
-        .setBody(text)
-        .setImage(cardPath);
+      const builder = new Button(ctx.sock).setBody(text).setImage(cardPath);
       return builder.send(ctx.jid);
     } catch {
       return ctx.reply(text);

@@ -148,9 +148,6 @@ export default {
         [
           '╭──── 🃏 *CARD SYSTEM* ────╮',
           '',
-          'Kelola koleksi, Card terpasang, dan upgrade.',
-          'Slot Main dan Support terpisah.',
-          '',
           equipped,
           '',
           '*Perintah:*',
