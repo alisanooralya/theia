@@ -72,9 +72,8 @@ async function detailText(jid, query) {
   }
 
   lines.push(
-    cards.passiveDescription(card),
+    `Passive: ${passiveUnlocked ? cards.passiveDescription(card) : '*Locked sampai Lv.50*'}`,
     '',
-    `Passive: ${passiveUnlocked ? '*Unlocked*' : '*Locked sampai Lv.50*'}`,
     `Status: ${current?.equipped ? '*Equipped*' : 'Tidak dipasang'}`
   );
 

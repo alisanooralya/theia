@@ -4,14 +4,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Optional: register a font that supports the glyphs you use (recommended for
-// consistent look across servers). If you skip this, canvas falls back to a
-// default system font.
-// GlobalFonts.registerFromPath(join(__dirname, 'fonts', 'Poppins-Bold.ttf'), 'Poppins Bold');
-// GlobalFonts.registerFromPath(join(__dirname, 'fonts', 'Poppins-Regular.ttf'), 'Poppins');
-
 const W = 720;
-const H = 1080;
+const H = 1000;
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -222,7 +216,7 @@ export async function renderProfileCard(data) {
 
   // ---- Canvas + panel geometry ----
   // Without equipped art, render the stats panel only (no empty art space).
-  const panelH = 432; // height of the stats panel
+  const panelH = 425; // height of the stats panel
   const Hc = showArt ? H : panelH + 48;
   const panelY = showArt ? Hc - panelH : 24;
 
