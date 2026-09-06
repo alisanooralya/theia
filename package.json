@@ -8,7 +8,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "db:migrate": "node src/storage/migration.js",
-    "db:seed": "node src/storage/seeds/initial-data.js"
+    "db:seed": "node src/storage/seeds/initial-data.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "imports": {
     "#environment/*": "./src/environment/*",
@@ -46,5 +48,11 @@
     "baileys@7.0.0-rc14": true,
     "better-sqlite3@13.0.3": true,
     "protobufjs@7.6.5": true
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.9.1",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.12.0"
   }
 }
