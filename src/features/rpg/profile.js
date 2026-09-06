@@ -42,9 +42,30 @@ const ICONS = {
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(cx, cy + s * 0.3);
-    ctx.bezierCurveTo(cx, cy, cx - s * 0.5, cy - s * 0.1, cx - s * 0.5, cy - s * 0.35);
-    ctx.bezierCurveTo(cx - s * 0.5, cy - s * 0.6, cx, cy - s * 0.6, cx, cy - s * 0.35);
-    ctx.bezierCurveTo(cx, cy - s * 0.6, cx + s * 0.5, cy - s * 0.6, cx + s * 0.5, cy - s * 0.35);
+    ctx.bezierCurveTo(
+      cx,
+      cy,
+      cx - s * 0.5,
+      cy - s * 0.1,
+      cx - s * 0.5,
+      cy - s * 0.35
+    );
+    ctx.bezierCurveTo(
+      cx - s * 0.5,
+      cy - s * 0.6,
+      cx,
+      cy - s * 0.6,
+      cx,
+      cy - s * 0.35
+    );
+    ctx.bezierCurveTo(
+      cx,
+      cy - s * 0.6,
+      cx + s * 0.5,
+      cy - s * 0.6,
+      cx + s * 0.5,
+      cy - s * 0.35
+    );
     ctx.bezierCurveTo(cx + s * 0.5, cy - s * 0.1, cx, cy, cx, cy + s * 0.3);
     ctx.fill();
   },
@@ -72,7 +93,12 @@ const ICONS = {
     ctx.lineTo(cx + s * 0.4, cy - s * 0.3);
     ctx.lineTo(cx + s * 0.4, cy + s * 0.1);
     ctx.quadraticCurveTo(cx + s * 0.4, cy + s * 0.45, cx, cy + s * 0.55);
-    ctx.quadraticCurveTo(cx - s * 0.4, cy + s * 0.45, cx - s * 0.4, cy + s * 0.1);
+    ctx.quadraticCurveTo(
+      cx - s * 0.4,
+      cy + s * 0.45,
+      cx - s * 0.4,
+      cy + s * 0.1
+    );
     ctx.lineTo(cx - s * 0.4, cy - s * 0.3);
     ctx.closePath();
     ctx.fill();
@@ -246,7 +272,10 @@ export async function renderProfileCard(data) {
   ctx.textAlign = 'right';
   ctx.fillText(`${hp}/${maxHp}`, px + rightW, hpY);
   ctx.textAlign = 'left';
-  statBar(ctx, px, hpY + 22, rightW, 16, maxHp > 0 ? hp / maxHp : 0, ['#ff5f6d', '#ff9966']);
+  statBar(ctx, px, hpY + 22, rightW, 16, maxHp > 0 ? hp / maxHp : 0, [
+    '#ff5f6d',
+    '#ff9966',
+  ]);
 
   // Stat chips: ATK, DEF, CR
   const chipY = hpY + 60;
@@ -254,8 +283,28 @@ export async function renderProfileCard(data) {
   const gap = 14;
   const chipW = (rightW - gap * 2) / 3;
   statChip(ctx, px, chipY, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
-  statChip(ctx, px + chipW + gap, chipY, chipW, chipH, ICONS.shield, 'DEF', def, '#6cc4ff');
-  statChip(ctx, px + (chipW + gap) * 2, chipY, chipW, chipH, ICONS.bolt, 'CRIT RATE', `${critRate.toFixed(0)}%`, '#ffd15c');
+  statChip(
+    ctx,
+    px + chipW + gap,
+    chipY,
+    chipW,
+    chipH,
+    ICONS.shield,
+    'DEF',
+    def,
+    '#6cc4ff'
+  );
+  statChip(
+    ctx,
+    px + (chipW + gap) * 2,
+    chipY,
+    chipW,
+    chipH,
+    ICONS.bolt,
+    'CRIT RATE',
+    `${critRate.toFixed(0)}%`,
+    '#ffd15c'
+  );
 
   // Card slots: main + support
   const cardY = chipY + chipH + 26;
@@ -263,7 +312,16 @@ export async function renderProfileCard(data) {
   const cardGap = 14;
   const cardW = (rightW - cardGap) / 2;
   cardSlot(ctx, px, cardY, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
-  cardSlot(ctx, px + cardW + cardGap, cardY, cardW, cardH, 'Support Card', supportCard, '#6cc4ff');
+  cardSlot(
+    ctx,
+    px + cardW + cardGap,
+    cardY,
+    cardW,
+    cardH,
+    'Support Card',
+    supportCard,
+    '#6cc4ff'
+  );
 
   // Footer divider
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';

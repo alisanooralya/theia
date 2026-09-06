@@ -29,6 +29,7 @@
     "#boot/*": "./src/boot/*"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.7",
     "axios": "^1.7.0",
     "baileys": "latest",
     "better-sqlite3": "^13.0.3",
