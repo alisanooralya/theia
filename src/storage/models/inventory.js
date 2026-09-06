@@ -40,13 +40,20 @@ class InventoryModel {
   }
 
   async remove(jid, itemId, qty = 1, client = sql) {
-    const row = await this.getItem(jid, itemId, client);
-    if (!row || row.quantity < qty)
-      throw new Error(`Item tidak cukup: ${itemId}`);
-    await client`
-      UPDATE inventories SET quantity = quantity - ${qty} WHERE jid = ${jid} AND item_id = ${itemId}
+    if (!Number.isInteger(qty) || qty < 1) {
+      throw new Error('Jumlah item tidak valid');
+    }
+    const rows = await client`
+      UPDATE inventories SET quantity = quantity - ${qty}
+      WHERE jid = ${jid} AND item_id = ${itemId} AND quantity >= ${qty}
+      RETURNING quantity
     `;
-    await client`DELETE FROM inventories WHERE jid = ${jid} AND quantity <= 0`;
+    if (!rows[0]) throw new Error(`Item tidak cukup: ${itemId}`);
+    if (rows[0].quantity === 0) {
+      await client`
+        DELETE FROM inventories WHERE jid = ${jid} AND item_id = ${itemId} AND quantity = 0
+      `;
+    }
   }
 
   async countSlots(jid, client = sql) {

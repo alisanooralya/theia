@@ -1,5 +1,7 @@
 import { raidService as raid } from '#features/rpg/raid.js';
 import { userModel } from '#storage/models/index.js';
+import { ButtonV2 } from '#messages/builder.js';
+import { cardService, RAID_SHOP } from '#features/rpg/card.js';
 
 export default {
   name: 'raidshop',
@@ -11,19 +13,38 @@ export default {
   async execute(ctx) {
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
+      const sub = ctx.args[0]?.toLowerCase();
+      if (sub === 'buy') {
+        const productId = ctx.args[1]?.toLowerCase();
+        const quantity = Number.parseInt(ctx.args[2] ?? '1', 10);
+        const result = await cardService.buyRaidShop(
+          ctx.sender,
+          productId,
+          quantity
+        );
+        return ctx.reply(
+          `✅ Membeli *${result.product.name}* ×${result.quantity} seharga 💠${result.cost} Raid Coin.`
+        );
+      }
       const raidCoin = await raid.getRaidCoin(ctx.sender);
-
-      return ctx.reply(
-        [
+      const text = [
           '╭──── 🏪 *RAID SHOP* ────╮',
           '│',
           `│ 💠 Raid Coin: *${raidCoin}*`,
           '│',
-          '│ Shop saat ini kosong.',
+          `│ 🧩 ${RAID_SHOP.card_core.name} ×1 — 💠${RAID_SHOP.card_core.price}`,
+          '│ Material upgrade Main Card',
+          '│',
+          `│ 🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
+          '│ Support Card Lv.1',
           '│',
           '╰──────────────────────╯',
-        ].join('\n')
-      );
+        ].join('\n');
+      const builder = new ButtonV2(ctx.sock)
+        .setBody(text)
+        .addButton('BUY CARD CORE', '.raidshop buy card_core 1')
+        .addButton('BUY RAID EMBLEM', '.raidshop buy raid_emblem');
+      return builder.send(ctx.jid);
     } catch (error) {
       return ctx.fail(error.message);
     }

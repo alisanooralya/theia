@@ -5,6 +5,7 @@ import {
   artifactModel,
 } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
+import { cardService } from '#features/rpg/card.js';
 import { F } from '#helpers/index.js';
 
 const SLOT_EMOJI = {
@@ -30,7 +31,10 @@ export default {
       statsModel.ensure(jid),
     ]);
 
-    const finalStats = await artifactService.getPlayerStats(jid);
+    const [finalStats, equippedCards] = await Promise.all([
+      artifactService.getPlayerStats(jid),
+      cardService.getEquipped(jid),
+    ]);
     const expNeeded = await userModel.expForLevel(user.level + 1);
     const expPct = Math.round((user.exp / expNeeded) * 100);
 
@@ -44,6 +48,9 @@ export default {
         return `│• ${SLOT_EMOJI[slot]} ${a.name}`;
       })
     );
+    const cardsByType = Object.fromEntries(
+      equippedCards.map((card) => [card.type, card])
+    );
 
     const text = [
       `╭──┄  *${user.push_name || 'Unknown'}*  ┄──`,
@@ -53,6 +60,8 @@ export default {
       `│• ⚔️ ${finalStats.atk}  🛡️ ${finalStats.def}  💥 ${finalStats.critRate.toFixed(0)}%`,
       '│',
       ...slotLines,
+      `│• 🃏 Main: ${cardsByType.main ? `${cardsByType.main.name} Lv.${cardsByType.main.level}` : '-'}`,
+      `│• 🎴 Support: ${cardsByType.support ? cardsByType.support.name : '-'}`,
       '│',
       `│• 🪙 ${F.formatNumber(wallet?.cash ?? 0)}  🏦 ${F.formatNumber(wallet?.bank ?? 0)}`,
       `│• 🏆 ${stats.win}W / ${stats.loss}L  🔥 ${user.daily_streak || 0} hari`,

@@ -128,6 +128,18 @@ class WalletModel {
     `;
   }
 
+  async spendCash(jid, amount, client = sql) {
+    if (!Number.isInteger(amount) || amount < 1)
+      throw new Error('Jumlah Coin tidak valid');
+    const rows = await client`
+      UPDATE wallets SET cash = cash - ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE jid = ${jid} AND cash >= ${amount}
+      RETURNING cash
+    `;
+    if (!rows[0]) throw new Error('Coin tidak cukup');
+    return rows[0].cash;
+  }
+
   async addBank(jid, amount, client = sql) {
     const w = await this.find(jid, client);
     if (amount < 0 && w && w.bank < Math.abs(amount))

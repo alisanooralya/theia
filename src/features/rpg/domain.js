@@ -1,5 +1,11 @@
 import { statsModel, walletModel, userModel } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
+import {
+  applyIncomingCardDamage,
+  applyOutgoingCardDamage,
+  cardService,
+  cardTurnStats,
+} from '#features/rpg/card.js';
 
 const CRIT_MULT = 1.5;
 const MAX_ROUNDS = 30;
@@ -38,12 +44,20 @@ function randInt(min, max) {
 }
 
 function calcDamage(attacker, defender) {
-  const base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
+  const attackerStats = cardTurnStats(attacker);
+  const defenderStats = cardTurnStats(defender);
+  const base = Math.max(
+    1,
+    attackerStats.atk - Math.floor(defenderStats.def / 2)
+  );
   const vary = Math.floor(base * 0.2);
   let dmg = base + Math.floor(Math.random() * vary * 2) - vary;
   const crit = Math.random() < attacker.critRate;
   if (crit) dmg = Math.floor(dmg * CRIT_MULT);
-  return { dmg: Math.max(1, dmg), crit };
+  dmg = applyOutgoingCardDamage(dmg, attacker);
+  dmg = applyIncomingCardDamage(dmg, defender);
+  attacker.cardHits = (attacker.cardHits ?? 0) + 1;
+  return { dmg, crit };
 }
 
 class DomainService {
@@ -69,7 +83,10 @@ class DomainService {
     if (base.hp <= 0)
       throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
 
-    const pStats = await artifactService.getPlayerStats(jid);
+    const [pStats, cardModifiers] = await Promise.all([
+      artifactService.getPlayerStats(jid),
+      cardService.getCombatModifiers(jid),
+    ]);
     const now = Math.floor(Date.now() / 1000);
     const effAtk =
       base.buff_expire > now ? pStats.atk + (base.buff_atk || 0) : pStats.atk;
@@ -81,7 +98,8 @@ class DomainService {
       max_hp: pStats.hp,
       atk: effAtk,
       def: effDef,
-      critRate: pStats.critRate / 100,
+      critRate: (pStats.critRate + cardModifiers.critRateBonus) / 100,
+      cardModifiers,
     };
 
     const boss = {

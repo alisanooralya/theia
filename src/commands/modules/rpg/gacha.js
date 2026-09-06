@@ -8,6 +8,8 @@ function formatResults(results) {
     if (r.type === 'zonk') return `${i + 1}. ❌ Zonk`;
     if (r.type === 'artifact')
       return `${i + 1}. 🧿 Artifact #${r.artifact.user_id}`;
+    if (r.type === 'card')
+      return `${i + 1}. 🃏 Main Card *${r.card.name}* #${r.card.id} (Lv.5)`;
     if (r.type === 'item') return `${i + 1}. 🎁 ${r.item.name}`;
     return `${i + 1}. ❓ Unknown`;
   });
@@ -17,6 +19,7 @@ function formatResults(results) {
     let key;
     if (r.type === 'zonk') key = '❌ Zonk';
     else if (r.type === 'artifact') key = '🧿 Artifact';
+    else if (r.type === 'card') key = `🃏 Main Card ${r.card.name}`;
     else if (r.type === 'item') key = `🎁 ${r.item.name}`;
     else key = '❓ Unknown';
     summary[key] = (summary[key] || 0) + 1;
@@ -64,7 +67,10 @@ export default {
 
       await sleep(1200);
 
-      const results = await gacha.pull(ctx.sender, count);
+      const requestKey = ctx.raw?.key?.id
+        ? `gacha:${ctx.sender}:${ctx.raw.key.id}`
+        : null;
+      const results = await gacha.pull(ctx.sender, count, requestKey);
       const text = formatResults(results);
 
       await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });

@@ -127,6 +127,18 @@ class RaidModel {
     const rows = await client`SELECT raid_coin FROM users WHERE jid = ${jid}`;
     return rows[0]?.raid_coin ?? 0;
   }
+
+  async spendRaidCoin(jid, amount, client = sql) {
+    if (!Number.isInteger(amount) || amount < 1)
+      throw new Error('Jumlah Raid Coin tidak valid');
+    const rows = await client`
+      UPDATE users SET raid_coin = raid_coin - ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE jid = ${jid} AND raid_coin >= ${amount}
+      RETURNING raid_coin
+    `;
+    if (!rows[0]) throw new Error('Raid Coin tidak cukup');
+    return rows[0].raid_coin;
+  }
 }
 
 export const raidModel = new RaidModel();

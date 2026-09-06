@@ -7,6 +7,11 @@ import {
   userModel,
   groupModel,
 } from '#storage/models/index.js';
+import {
+  applyOutgoingCardDamage,
+  cardService,
+  cardTurnStats,
+} from '#features/rpg/card.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
@@ -112,47 +117,52 @@ function resolveRaidWindow(start, end, now = Date.now()) {
   return { startAt, endAt };
 }
 
-function calcDamage(atk, critRate) {
+function calcDamage(atk, critRate, fighter = null) {
   const isCrit = Math.random() * 100 < critRate;
-  const baseDmg = Math.max(1, atk);
+  const combatant = fighter ?? { atk, hp: 1, max_hp: 1 };
+  const baseDmg = Math.max(1, cardTurnStats(combatant).atk);
+  const damage = applyOutgoingCardDamage(
+    Math.floor(isCrit ? baseDmg * CRIT_MULT : baseDmg),
+    combatant
+  );
+  if (fighter) fighter.cardHits = (fighter.cardHits ?? 0) + 1;
   return {
-    dmg: Math.floor(isCrit ? baseDmg * CRIT_MULT : baseDmg),
+    dmg: damage,
     crit: isCrit,
   };
 }
 
 async function getUserRaidStats(jid) {
-  const base = await statsModel.find(jid);
+  const [base, inventory, cardBonus, cardModifiers] = await Promise.all([
+    statsModel.find(jid),
+    artifactModel.getInventory(jid),
+    cardService.getStatBonus(jid),
+    cardService.getCombatModifiers(jid),
+  ]);
   const baseAtk = base?.atk ?? 30;
-  const baseCritRate = base?.crit_rate ?? 5;
-
   let artifactAtk = 0;
   let artifactCritRate = 0;
-  const inventory = await artifactModel.getInventory(jid);
   if (inventory) {
     const slots = ['flower', 'feather', 'sands', 'goblet', 'circlet'];
     for (const slot of slots) {
       const artifactId = inventory[`${slot}_id`];
       if (!artifactId) continue;
-      const art = await artifactModel.findById(artifactId);
-      if (!art) continue;
-      switch (art.main_stat) {
-        case 'atk':
-          artifactAtk += art.main_value;
-          break;
-        case 'atk_percent':
-          artifactAtk += Math.floor((baseAtk * art.main_value) / 100);
-          break;
-        case 'crit_rate':
-          artifactCritRate += art.main_value / 10;
-          break;
+      const artifact = await artifactModel.findById(artifactId);
+      if (!artifact) continue;
+      if (artifact.main_stat === 'atk') artifactAtk += artifact.main_value;
+      if (artifact.main_stat === 'atk_percent') {
+        artifactAtk += Math.floor((baseAtk * artifact.main_value) / 100);
+      }
+      if (artifact.main_stat === 'crit_rate') {
+        artifactCritRate += artifact.main_value / 10;
       }
     }
   }
-
   return {
-    atk: baseAtk + artifactAtk,
-    critRate: baseCritRate + artifactCritRate,
+    atk: baseAtk + artifactAtk + cardBonus.atk,
+    critRate:
+      (base?.crit_rate ?? 5) + artifactCritRate + cardModifiers.critRateBonus,
+    cardModifiers,
   };
 }
 
@@ -313,6 +323,14 @@ class RaidService {
     }
 
     const userStats = await getUserRaidStats(jid);
+    const raidFighter = {
+      atk: userStats.atk,
+      def: 0,
+      hp: participant.hp,
+      max_hp: RAID_USER_HP,
+      cardHits: 0,
+      cardModifiers: userStats.cardModifiers,
+    };
 
     const interval = setInterval(async () => {
       try {
@@ -333,7 +351,8 @@ class RaidService {
           return;
         }
 
-        const userDmg = calcDamage(userStats.atk, userStats.critRate);
+        raidFighter.hp = p.hp;
+        const userDmg = calcDamage(userStats.atk, userStats.critRate, raidFighter);
         const bossDmg = calcDamage(120, 5);
         const actualDamage = Math.min(userDmg.dmg, currentRaid.boss_hp);
         const newBossHp = Math.max(0, currentRaid.boss_hp - actualDamage);

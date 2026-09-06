@@ -5,6 +5,7 @@ import {
   walletModel,
   userModel,
 } from '#storage/models/index.js';
+import { cardService } from '#features/rpg/card.js';
 
 const SLOTS = {
   flower: { mainStat: 'hp', substats: false },
@@ -534,10 +535,11 @@ class ArtifactService {
         }
       }
     }
+    const card = await cardService.getStatBonus(jid);
     return {
-      hp: baseHp + artifactHp,
-      atk: baseAtk + artifactAtk,
-      def: baseDef + artifactDef,
+      hp: baseHp + artifactHp + card.hp,
+      atk: baseAtk + artifactAtk + card.atk,
+      def: baseDef + artifactDef + card.def,
       critRate: baseCritRate + artifactCritRate,
     };
   }

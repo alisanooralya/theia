@@ -75,6 +75,16 @@ const STATIC_SCHEMA = [
   `,
 
   `
+  INSERT INTO items (id, name, description, category, price, sellable, stackable, rarity, data)
+  VALUES ('card_core', 'Card Core', 'Material khusus untuk meningkatkan level Main Card',
+          'material', 0, 0, 1, 'rare', '{}')
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name, description = EXCLUDED.description,
+    category = EXCLUDED.category, sellable = EXCLUDED.sellable,
+    stackable = EXCLUDED.stackable, rarity = EXCLUDED.rarity
+  `,
+
+  `
   CREATE TABLE IF NOT EXISTS groups (
     jid         TEXT    PRIMARY KEY,
     name        TEXT    NOT NULL DEFAULT '',
@@ -248,6 +258,74 @@ const STATIC_SCHEMA = [
   `,
 
   `
+  CREATE TABLE IF NOT EXISTS cards (
+    id          TEXT    PRIMARY KEY,
+    name        TEXT    NOT NULL,
+    type        TEXT    NOT NULL CHECK(type IN ('main', 'support')),
+    role        TEXT    NOT NULL DEFAULT '',
+    max_level   INTEGER NOT NULL CHECK(max_level IN (1, 100)),
+    max_hp      INTEGER NOT NULL DEFAULT 0 CHECK(max_hp >= 0),
+    max_atk     INTEGER NOT NULL DEFAULT 0 CHECK(max_atk >= 0),
+    max_def     INTEGER NOT NULL DEFAULT 0 CHECK(max_def >= 0),
+    passive     TEXT    NOT NULL DEFAULT ''
+  )
+  `,
+
+  `
+  INSERT INTO cards (id, name, type, role, max_level, max_hp, max_atk, max_def, passive)
+  VALUES
+    ('girgas', 'Girgas', 'main', 'Attacker', 100, 910, 164, 32, 'Melee Drive'),
+    ('lena', 'Lena', 'main', 'Archer', 100, 760, 167, 38, 'Star Stacks'),
+    ('ameris', 'Ameris', 'main', 'Supporter', 100, 920, 216, 40, 'Choco Support'),
+    ('daisy', 'Daisy', 'main', 'Defender', 100, 960, 143, 22, 'Last Stand'),
+    ('raid_emblem', 'Raid Emblem', 'support', 'Utility', 1, 0, 0, 0, 'Raid Focus')
+  ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name, type = EXCLUDED.type, role = EXCLUDED.role,
+    max_level = EXCLUDED.max_level, max_hp = EXCLUDED.max_hp,
+    max_atk = EXCLUDED.max_atk, max_def = EXCLUDED.max_def,
+    passive = EXCLUDED.passive
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS user_cards (
+    id          BIGSERIAL PRIMARY KEY,
+    owner_jid   TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    card_id     TEXT    NOT NULL REFERENCES cards(id),
+    type        TEXT    NOT NULL CHECK(type IN ('main', 'support')),
+    level       INTEGER NOT NULL CHECK(level BETWEEN 1 AND 100),
+    reward_key  TEXT,
+    created_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    UNIQUE(owner_jid, id),
+    UNIQUE(owner_jid, id, type),
+    CHECK((type = 'main' AND level BETWEEN 5 AND 100) OR (type = 'support' AND level = 1)),
+    UNIQUE(owner_jid, reward_key)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS equipped_cards (
+    jid           TEXT   NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    slot          TEXT   NOT NULL CHECK(slot IN ('main', 'support')),
+    user_card_id  BIGINT NOT NULL,
+    updated_at    BIGINT NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    PRIMARY KEY(jid, slot),
+    UNIQUE(jid, user_card_id),
+    FOREIGN KEY(jid, user_card_id, slot)
+      REFERENCES user_cards(owner_jid, id, type) ON DELETE CASCADE
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS gacha_requests (
+    request_key TEXT   PRIMARY KEY,
+    jid         TEXT   NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    results     TEXT   NOT NULL DEFAULT '[]',
+    created_at  BIGINT NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
   CREATE TABLE IF NOT EXISTS raids (
     id          BIGSERIAL PRIMARY KEY,
     boss_name   TEXT    NOT NULL DEFAULT 'Raid Boss',
@@ -405,6 +483,10 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_market_news_type_tick ON market_news(type, start_tick DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_owner      ON artifacts(owner_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_artifacts_slot       ON artifacts(owner_jid, slot)`,
+  `CREATE INDEX IF NOT EXISTS idx_user_cards_owner     ON user_cards(owner_jid, id)`,
+  `CREATE INDEX IF NOT EXISTS idx_user_cards_definition ON user_cards(owner_jid, card_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_equipped_cards_instance ON equipped_cards(user_card_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_gacha_requests_jid   ON gacha_requests(jid, created_at DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_inventories_jid      ON inventories(jid)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_from    ON transactions(from_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_transactions_created ON transactions(created_at)`,
@@ -451,6 +533,7 @@ const MIGRATIONS = [
   `SELECT setval(pg_get_serial_sequence('inventories', 'id'), COALESCE(MAX(id), 1)) FROM inventories`,
   `SELECT setval(pg_get_serial_sequence('transactions', 'id'), COALESCE(MAX(id), 1)) FROM transactions`,
   `SELECT setval(pg_get_serial_sequence('artifacts', 'id'), COALESCE(MAX(id), 1)) FROM artifacts`,
+  `SELECT setval(pg_get_serial_sequence('user_cards', 'id'), COALESCE(MAX(id), 1)) FROM user_cards`,
   `SELECT setval(pg_get_serial_sequence('raids', 'id'), COALESCE(MAX(id), 1)) FROM raids`,
   `SELECT setval(pg_get_serial_sequence('raid_participants', 'id'), COALESCE(MAX(id), 1)) FROM raid_participants`,
   `SELECT setval(pg_get_serial_sequence('market_history', 'id'), COALESCE(MAX(id), 1)) FROM market_history`,

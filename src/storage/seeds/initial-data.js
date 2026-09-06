@@ -94,6 +94,17 @@ const ITEMS = [
     stackable: true,
     data: {},
   },
+  {
+    id: 'card_core',
+    name: 'Card Core',
+    description: 'Material khusus untuk meningkatkan level Main Card',
+    category: 'material',
+    price: 0,
+    rarity: 'rare',
+    sellable: false,
+    stackable: true,
+    data: {},
+  },
 ];
 
 await itemModel.bulkUpsert(ITEMS);

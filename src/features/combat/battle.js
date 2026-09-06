@@ -1,6 +1,12 @@
 import { sql } from '#storage/connection.js';
 import { userModel, walletModel, statsModel } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
+import {
+  applyIncomingCardDamage,
+  applyOutgoingCardDamage,
+  cardService,
+  cardTurnStats,
+} from '#features/rpg/card.js';
 
 const CRIT_MULT = 1.5;
 const HEAL_AFTER_PCT = 0.2;
@@ -42,8 +48,12 @@ class BattleService {
     if (dBase.hp <= 0) throw new Error('HP lawan sedang 0, tunggu dia heal.');
 
     const now = Math.floor(Date.now() / 1000);
-    const aStats = await artifactService.getPlayerStats(attackerJid);
-    const dStats = await artifactService.getPlayerStats(defenderJid);
+    const [aStats, dStats, aCard, dCard] = await Promise.all([
+      artifactService.getPlayerStats(attackerJid),
+      artifactService.getPlayerStats(defenderJid),
+      cardService.getCombatModifiers(attackerJid),
+      cardService.getCombatModifiers(defenderJid),
+    ]);
 
     const effAtk = (base, s) =>
       base.buff_expire > now ? s.atk + (base.buff_atk || 0) : s.atk;
@@ -56,7 +66,8 @@ class BattleService {
       max_hp: aStats.hp,
       atk: effAtk(aBase, aStats),
       def: effDef(aBase, aStats),
-      critRate: clamp(aStats.critRate / 100, 0, 0.95),
+      critRate: clamp((aStats.critRate + aCard.critRateBonus) / 100, 0, 0.95),
+      cardModifiers: aCard,
     };
     const defender = {
       jid: defenderJid,
@@ -64,7 +75,8 @@ class BattleService {
       max_hp: dStats.hp,
       atk: effAtk(dBase, dStats),
       def: effDef(dBase, dStats),
-      critRate: clamp(dStats.critRate / 100, 0, 0.95),
+      critRate: clamp((dStats.critRate + dCard.critRateBonus) / 100, 0, 0.95),
+      cardModifiers: dCard,
     };
 
     const sim = this._simulate(attacker, defender);
@@ -178,6 +190,8 @@ class BattleService {
       const round = i + 1;
       const r = { round, aHp, dHp, events: [] };
 
+      state.a.hp = aHp;
+      state.d.hp = dHp;
       const aOut = this._attack(state.a, state.d, dHp);
       dHp = aOut.newDefenderHp;
       r.events.push(...aOut.events);
@@ -209,6 +223,8 @@ class BattleService {
         }
       }
 
+      state.a.hp = aHp;
+      state.d.hp = dHp;
       const dOut = this._attack(state.d, state.a, aHp);
       aHp = dOut.newDefenderHp;
       r.events.push(...dOut.events);
@@ -326,7 +342,12 @@ class BattleService {
     const events = [];
     const counts = { crit: 0, block: 0, counter: 0, powerful: 0, finishing: 0 };
 
-    const base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
+    const attackerStats = cardTurnStats(attacker);
+    const defenderStats = cardTurnStats(defender);
+    const base = Math.max(
+      1,
+      attackerStats.atk - Math.floor(defenderStats.def / 2)
+    );
     const vary = Math.floor(base * 0.2);
     let dmg = base + Math.floor(rng() * vary * 2) - vary;
 
@@ -365,7 +386,9 @@ class BattleService {
       counts.block++;
     }
 
-    dmg = Math.max(1, dmg);
+    dmg = applyOutgoingCardDamage(dmg, attacker);
+    dmg = applyIncomingCardDamage(dmg, defender);
+    attacker.cardHits = (attacker.cardHits ?? 0) + 1;
 
     if (crit) events.push({ type: 'crit', by: attacker.jid, dmg });
     else if (powerful) events.push({ type: 'powerful', by: attacker.jid, dmg });
@@ -388,7 +411,12 @@ class BattleService {
     const events = [];
     const counts = { crit: 0, block: 0, counter: 1, powerful: 0, finishing: 0 };
 
-    const base = Math.max(1, attacker.atk - Math.floor(defender.def / 2));
+    const attackerStats = cardTurnStats(attacker);
+    const defenderStats = cardTurnStats(defender);
+    const base = Math.max(
+      1,
+      attackerStats.atk - Math.floor(defenderStats.def / 2)
+    );
     let dmg = Math.floor(base * COUNTER_MULT);
     const crit = rng() < attacker.critRate;
     if (crit) {
@@ -396,7 +424,8 @@ class BattleService {
       counts.crit++;
       attacker.momentum++;
     }
-    dmg = Math.max(1, dmg);
+    dmg = applyOutgoingCardDamage(dmg, attacker);
+    dmg = applyIncomingCardDamage(dmg, defender);
     const newDefenderHp = Math.max(0, defenderHp - dmg);
 
     events.push({ type: 'counter', by: attacker.jid, dmg, crit });

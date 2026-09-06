@@ -17,3 +17,4 @@ export { workModel } from './work.js';
 export { marketModel } from './market.js';
 export { marketNewsModel } from './market-news.js';
 export { meteorModel } from './meteor.js';
+export { cardModel } from './card.js';
