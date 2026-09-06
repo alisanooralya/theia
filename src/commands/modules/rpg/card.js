@@ -17,18 +17,28 @@ function cardLine(card, index) {
   return `*${card.name}* (${card.role}) Lv.${card.level}${equipped}`;
 }
 
-async function collectionText(jid, type) {
-  const collection = await cards.getCards(jid, type);
-  if (!collection.length) return `Kamu belum memiliki ${typeName(type)}.`;
-  return [
-    `*${typeName(type).toUpperCase()}* (${collection.length})`,
+async function collectionText(jid) {
+  const [mains, supports] = await Promise.all([
+    cards.getCards(jid, 'main'),
+    cards.getCards(jid, 'support'),
+  ]);
+  if (!mains.length && !supports.length) return 'Kamu belum memiliki Card.';
+  const lines = [`*KOLEKSI CARD* (${mains.length + supports.length})`, ''];
+  lines.push(`🃏 *MAIN CARD* (${mains.length})`, '');
+  if (mains.length) lines.push(...mains.map((card) => cardLine(card)));
+  else lines.push('-');
+  lines.push('', `🎴 *SUPPORT CARD* (${supports.length})`, '');
+  if (supports.length) {
+    lines.push(...supports.map((card, i) => cardLine(card, i)));
+  } else {
+    lines.push('-');
+  }
+  lines.push(
     '',
-    ...collection.map((card, i) => cardLine(card, i)),
-    '',
-    type === 'main'
-      ? 'Gunakan `.card` detail <nama> untuk melihat detail.'
-      : 'Gunakan `.card` detail <id> untuk melihat detail.',
-  ].join('\n');
+    'Gunakan `.card detail <nama|id>` untuk melihat detail.',
+    '(main pakai nama, support pakai id)'
+  );
+  return lines.join('\n');
 }
 
 async function equippedText(jid) {
@@ -115,8 +125,8 @@ export default {
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (sub === 'main' || sub === 'support') {
-        return ctx.reply(await collectionText(ctx.sender, sub));
+      if (sub === 'list' || sub === 'main' || sub === 'support') {
+        return ctx.reply(await collectionText(ctx.sender));
       }
 
       if (sub === 'detail') {
@@ -190,8 +200,7 @@ export default {
           equipped,
           '',
           '*Perintah:*',
-          '• `.card` main - Lihat koleksi Main Card',
-          '• `.card` support - Lihat koleksi Support Card',
+          '• `.card` list - Lihat semua koleksi Card',
           '• `.card` detail <nama|id> - Lihat detail (main: nama, support: id)',
           '• `.card` equip <nama|id> - Pasang (main: nama, support: id)',
           '• `.card` unequip <main|support> - Lepas Card',
