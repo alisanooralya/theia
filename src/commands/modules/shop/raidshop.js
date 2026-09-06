@@ -28,18 +28,16 @@ export default {
       const raidCoin = await raid.getRaidCoin(ctx.sender);
       const text = [
         '╭──── 🏪 *RAID SHOP* ────╮',
-        '│',
-        `│ 💠 Raid Coin: *${raidCoin}*`,
-        '│',
-        `│ 🧩 ${RAID_SHOP.card_core.name} ×1 — 💠${RAID_SHOP.card_core.price}`,
-        '│ Material upgrade Main Card',
-        '│ Beli: `.raidshop buy card_core [jumlah]`',
-        '│',
-        `│ 🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
-        '│ Support Card Lv.1',
-        '│ Beli: `.raidshop buy raid_emblem`',
-        '│',
-        '╰──────────────────────╯',
+        '',
+        `💠 Raid Coin: *${raidCoin}*`,
+        '',
+        `🧩 ${RAID_SHOP.card_core.name} ×1 — 💠${RAID_SHOP.card_core.price}`,
+        'Material upgrade Main Card',
+        'Beli: `.raidshop` buy card_core [jumlah]',
+        '',
+        `🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
+        'Support Card Lv.1',
+        'Beli: `.raidshop` buy raid_emblem',
       ].join('\n');
       return ctx.reply(text);
     } catch (error) {

@@ -143,6 +143,7 @@ export default {
         );
       }
 
+      const equipped = await equippedText(ctx.sender);
       return ctx.reply(
         [
           '╭──── 🃏 *CARD SYSTEM* ────╮',
@@ -150,7 +151,7 @@ export default {
           '│ Kelola koleksi, Card terpasang, dan upgrade.',
           '│ Slot Main dan Support terpisah.',
           '│',
-          ...equippedText(ctx.sender),
+          ...equipped,
           '│',
           '│ *Perintah:*',
           '│ • `.card main` - Lihat koleksi Main Card',
