@@ -53,15 +53,36 @@ export default {
     await statsModel.ensure(ctx.sender);
     let msg;
 
+    const isPercentBuff = data.atkPercent > 0 || data.defPercent > 0;
+    const pStats =
+      data.heal || isPercentBuff
+        ? await artifactService.getPlayerStats(ctx.sender)
+        : null;
+
     if (data.heal) {
       const stats = await statsModel.find(ctx.sender);
-      const pStats = await artifactService.getPlayerStats(ctx.sender);
       const maxHp = pStats.hp;
       if (stats.hp >= maxHp) ctx.fail('❤️ HP kamu sudah penuh!');
       const before = stats.hp;
       const after = Math.min(maxHp, before + data.heal * count);
       await statsModel.setHp(ctx.sender, after);
       msg = `❤️ HP +${after - before} (${after}/${maxHp})`;
+    } else if (data.atkPercent) {
+      const percent = data.atkPercent * count;
+      const bonus = Math.max(1, Math.floor((pStats.atk * percent) / 100));
+      await statsModel.applyBuff(ctx.sender, {
+        atk: bonus,
+        durationMs: BUFF_DURATION,
+      });
+      msg = `⚔️ ATK +${percent}% (+${bonus}) selama 1 jam!`;
+    } else if (data.defPercent) {
+      const percent = data.defPercent * count;
+      const bonus = Math.max(1, Math.floor((pStats.def * percent) / 100));
+      await statsModel.applyBuff(ctx.sender, {
+        def: bonus,
+        durationMs: BUFF_DURATION,
+      });
+      msg = `🛡️ DEF +${percent}% (+${bonus}) selama 1 jam!`;
     } else if (data.atk) {
       await statsModel.applyBuff(ctx.sender, {
         atk: data.atk * count,
