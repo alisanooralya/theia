@@ -32,8 +32,6 @@ async function equippedText(jid) {
   const equipped = await cards.getEquipped(jid);
   const byType = Object.fromEntries(equipped.map((card) => [card.type, card]));
   return [
-    '*EQUIPPED CARDS*',
-    '',
     `🃏 Main: ${byType.main ? `${byType.main.name} #${byType.main.id} Lv.${byType.main.level}` : '-'}`,
     `🎴 Support: ${byType.support ? `${byType.support.name} #${byType.support.id} Lv.1` : '-'}`,
   ].join('\n');
@@ -90,32 +88,9 @@ export default {
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (!sub) {
-        return ctx.reply(
-          [
-            '╭──── 🃏 *CARD SYSTEM* ────╮',
-            '│',
-            '│ Kelola koleksi, Card terpasang, dan upgrade.',
-            '│ Slot Main dan Support terpisah.',
-            '│',
-            '│ *Perintah:*',
-            '│ • `.card main` - Lihat koleksi Main Card',
-            '│ • `.card support` - Lihat koleksi Support Card',
-            '│ • `.card equipped` - Lihat Card yang dipasang',
-            '│ • `.card detail <id>` - Lihat detail Card',
-            '│ • `.card equip <id>` - Pasang Card',
-            '│ • `.card unequip <main|support>` - Lepas Card',
-            '│ • `.card upgrade <id>` - Upgrade Main Card',
-            '│',
-            '╰────────────────────────╯',
-          ].join('\n')
-        );
-      }
-
       if (sub === 'main' || sub === 'support') {
         return ctx.reply(await collectionText(ctx.sender, sub));
       }
-      if (sub === 'equipped') return ctx.reply(await equippedText(ctx.sender));
 
       if (sub === 'detail') {
         const id = parseId(ctx.args[1]);
@@ -145,7 +120,7 @@ export default {
         );
       }
 
-      if (sub === 'upgrade') {
+      if (sub === 'levelup') {
         const id = parseId(ctx.args[1]);
         if (!id) {
           return ctx.reply(
@@ -170,12 +145,22 @@ export default {
 
       return ctx.reply(
         [
-          '*CARD SYSTEM*',
-          '`.card main` / `.card support`',
-          '`.card detail <id>`',
-          '`.card equip <id>`',
-          '`.card unequip <main|support>`',
-          '`.card upgrade <id>`',
+          '╭──── 🃏 *CARD SYSTEM* ────╮',
+          '│',
+          '│ Kelola koleksi, Card terpasang, dan upgrade.',
+          '│ Slot Main dan Support terpisah.',
+          '│',
+          ...equippedText(ctx.sender),
+          '│',
+          '│ *Perintah:*',
+          '│ • `.card main` - Lihat koleksi Main Card',
+          '│ • `.card support` - Lihat koleksi Support Card',
+          '│ • `.card detail <id>` - Lihat detail Card',
+          '│ • `.card equip <id>` - Pasang Card',
+          '│ • `.card unequip <main|support>` - Lepas Card',
+          '│ • `.card levelup <id>` - Upgrade Main Card',
+          '│',
+          '╰────────────────────────╯',
         ].join('\n')
       );
     } catch (error) {
