@@ -22,11 +22,13 @@ export const RAID_SHOP = Object.freeze({
 });
 
 const PASSIVE_DESCRIPTIONS = Object.freeze({
-  girgas: 'Melee Drive: damage serangan +20%.',
-  lena: 'Star Stacks: setiap serangan memberi +10% ATK/DEF, maksimal 3 stack.',
-  ameris: 'Choco Support: Crit Rate +20%; setiap serangan ketiga mendapat +30% ATK.',
+  girgas:
+    'Lollipop: Setiap serangan berhasil memberi 1 Lollipop (+10% Damage per stack, maks 2 stack, durasi 8s, cooldown 2s).',
+  lena: 'Star Fragment: Saat terkena serangan musuh mendapat 1 Star Fragment (+10% ATK & DEF per stack, maks 3 stack, durasi 5s, cooldown 4s).',
+  ameris:
+    'Critical Support: Setiap 3 serangan berhasil, mengaktifkan Crit Rate +10% dan CDM 2.5x selama 4s (cooldown 6s).',
   daisy:
-    'Last Stand: damage +10% dan damage diterima -10%; saat HP <=30%, damage tambahan +20%.',
+    'Last Stand: Damage dealt +10%~+40% dan Damage taken -10%~-20% dinamis sesuai sisa HP.',
   raid_emblem: 'Raid Focus: damage serangan +5%.',
 });
 
@@ -70,19 +72,182 @@ export function combatModifiersForCards(main, support) {
     modifiers.maxStacks = 3;
   }
   if (main.card_id === 'ameris') {
-    modifiers.critRateBonus = 20;
-    modifiers.thirdHitAtk = 1.3;
+    modifiers.critRateBonus = 10;
+    modifiers.cdm = 2.5;
   }
   if (main.card_id === 'daisy') {
     modifiers.damageMultiplier *= 1.1;
-    modifiers.incomingDamageMultiplier = 0.9;
-    modifiers.lowHpDamageMultiplier = 1.2;
+    modifiers.incomingDamageMultiplier = 0.8;
   }
   return modifiers;
 }
 
-export function applyOutgoingCardDamage(damage, fighter) {
-  const modifiers = fighter.cardModifiers;
+export class CardBattleState {
+  constructor(mainCard, supportCard = null) {
+    this.mainCard = mainCard ?? null;
+    this.supportCard = supportCard ?? null;
+    this.isActive = Boolean(
+      mainCard &&
+        mainCard.type === 'main' &&
+        Number(mainCard.level) >= CARD_PASSIVE_LEVEL
+    );
+    this.cardId = this.isActive ? mainCard.card_id : null;
+
+    this.supportDamageMultiplier =
+      supportCard?.card_id === 'raid_emblem' ? 1.05 : 1.0;
+
+    // Girgas state
+    this.lollipopStacks = 0;
+    this.lollipopExpiresAt = 0;
+    this.lastLollipopTrigger = -Infinity;
+
+    // Lena state
+    this.starFragmentStacks = 0;
+    this.starFragmentExpiresAt = 0;
+    this.lastStarFragmentTrigger = -Infinity;
+
+    // Ameris state
+    this.userHits = 0;
+    this.amerisActiveUntil = 0;
+    this.lastAmerisActivation = -Infinity;
+  }
+
+  reset() {
+    this.lollipopStacks = 0;
+    this.lollipopExpiresAt = 0;
+    this.lastLollipopTrigger = -Infinity;
+
+    this.starFragmentStacks = 0;
+    this.starFragmentExpiresAt = 0;
+    this.lastStarFragmentTrigger = -Infinity;
+
+    this.userHits = 0;
+    this.amerisActiveUntil = 0;
+    this.lastAmerisActivation = -Infinity;
+  }
+
+  onHitDealt(now = Date.now()) {
+    if (!this.isActive) return;
+
+    if (this.cardId === 'girgas') {
+      if (now >= this.lollipopExpiresAt) {
+        this.lollipopStacks = 0;
+      }
+      if (now - this.lastLollipopTrigger >= 2000) {
+        this.lollipopStacks = Math.min(2, this.lollipopStacks + 1);
+        this.lollipopExpiresAt = now + 8000;
+        this.lastLollipopTrigger = now;
+      }
+    } else if (this.cardId === 'ameris') {
+      this.userHits++;
+      if (this.userHits % 3 === 0) {
+        if (now - this.lastAmerisActivation >= 6000) {
+          this.amerisActiveUntil = now + 4000;
+          this.lastAmerisActivation = now;
+        }
+      }
+    }
+  }
+
+  onHitReceived(now = Date.now()) {
+    if (!this.isActive) return;
+
+    if (this.cardId === 'lena') {
+      if (now >= this.starFragmentExpiresAt) {
+        this.starFragmentStacks = 0;
+      }
+      if (now - this.lastStarFragmentTrigger >= 4000) {
+        this.starFragmentStacks = Math.min(3, this.starFragmentStacks + 1);
+        this.starFragmentExpiresAt = now + 5000;
+        this.lastStarFragmentTrigger = now;
+      }
+    }
+  }
+
+  getStatModifiers(baseAtk, baseDef, now = Date.now()) {
+    let atk = baseAtk;
+    let def = baseDef;
+
+    if (this.isActive && this.cardId === 'lena') {
+      const stacks =
+        now < this.starFragmentExpiresAt ? this.starFragmentStacks : 0;
+      if (stacks > 0) {
+        const bonus = stacks * 0.1;
+        atk = Math.floor(baseAtk * (1 + bonus));
+        def = Math.floor(baseDef * (1 + bonus));
+      }
+    }
+
+    return { atk, def };
+  }
+
+  getCritModifiers(now = Date.now()) {
+    let critRateBonus = 0;
+    let cdm = 2.0;
+
+    if (this.isActive && this.cardId === 'ameris') {
+      if (now < this.amerisActiveUntil) {
+        critRateBonus = 10;
+        cdm = 2.5;
+      }
+    }
+
+    return { critRateBonus, cdm };
+  }
+
+  getDamageModifiers(currentHp, maxHp, now = Date.now()) {
+    let damageMultiplier = this.supportDamageMultiplier;
+    let incomingDamageMultiplier = 1.0;
+
+    if (!this.isActive) {
+      return { damageMultiplier, incomingDamageMultiplier };
+    }
+
+    if (this.cardId === 'girgas') {
+      const stacks =
+        now < this.lollipopExpiresAt ? this.lollipopStacks : 0;
+      damageMultiplier *= 1 + stacks * 0.1;
+    } else if (this.cardId === 'daisy') {
+      const hpRatio = maxHp > 0 ? currentHp / maxHp : 0;
+      let dealtBonus;
+      let takenMult;
+
+      if (hpRatio > 0.75) {
+        dealtBonus = 0.1;
+        takenMult = 0.8;
+      } else if (hpRatio > 0.5) {
+        dealtBonus = 0.2;
+        takenMult = 0.9;
+      } else if (hpRatio > 0.25) {
+        dealtBonus = 0.3;
+        takenMult = 0.9;
+      } else {
+        dealtBonus = 0.4;
+        takenMult = 0.9;
+      }
+
+      damageMultiplier *= 1 + dealtBonus;
+      incomingDamageMultiplier *= takenMult;
+    }
+
+    return { damageMultiplier, incomingDamageMultiplier };
+  }
+}
+
+export function createCardBattleState(main, support = null) {
+  return new CardBattleState(main, support);
+}
+
+export function applyOutgoingCardDamage(damage, fighter, now = Date.now()) {
+  if (fighter?.cardBattleState) {
+    const { damageMultiplier } = fighter.cardBattleState.getDamageModifiers(
+      fighter.hp,
+      fighter.max_hp,
+      now
+    );
+    return Math.max(1, Math.floor(damage * damageMultiplier));
+  }
+  const modifiers = fighter?.cardModifiers;
   if (!modifiers) return damage;
   let multiplier = modifiers.damageMultiplier ?? 1;
   if (modifiers.lowHpDamageMultiplier && fighter.hp / fighter.max_hp <= 0.3) {
@@ -91,18 +256,30 @@ export function applyOutgoingCardDamage(damage, fighter) {
   return Math.max(1, Math.floor(damage * multiplier));
 }
 
-export function applyIncomingCardDamage(damage, fighter) {
+export function applyIncomingCardDamage(damage, fighter, now = Date.now()) {
+  if (fighter?.cardBattleState) {
+    const { incomingDamageMultiplier } =
+      fighter.cardBattleState.getDamageModifiers(fighter.hp, fighter.max_hp, now);
+    return Math.max(1, Math.floor(damage * incomingDamageMultiplier));
+  }
   return Math.max(
     1,
-    Math.floor(damage * (fighter.cardModifiers?.incomingDamageMultiplier ?? 1))
+    Math.floor(damage * (fighter?.cardModifiers?.incomingDamageMultiplier ?? 1))
   );
 }
 
-export function cardTurnStats(fighter) {
-  const modifiers = fighter.cardModifiers;
-  const hits = fighter.cardHits ?? 0;
-  let atk = fighter.atk;
-  let def = fighter.def;
+export function cardTurnStats(fighter, now = Date.now()) {
+  if (fighter?.cardBattleState) {
+    return fighter.cardBattleState.getStatModifiers(
+      fighter.atk,
+      fighter.def,
+      now
+    );
+  }
+  const modifiers = fighter?.cardModifiers;
+  const hits = fighter?.cardHits ?? 0;
+  let atk = fighter?.atk ?? 0;
+  let def = fighter?.def ?? 0;
   if (modifiers?.stackPerHit) {
     const stacks = Math.min(hits, modifiers.maxStacks);
     atk = Math.floor(atk * (1 + modifiers.stackPerHit * stacks));
@@ -112,6 +289,20 @@ export function cardTurnStats(fighter) {
     atk = Math.floor(atk * modifiers.thirdHitAtk);
   }
   return { atk, def };
+}
+
+export function getCardCdm(fighter, now = Date.now()) {
+  if (fighter?.cardBattleState) {
+    return fighter.cardBattleState.getCritModifiers(now).cdm;
+  }
+  return 2.0;
+}
+
+export function getCardCritRate(fighter, now = Date.now()) {
+  const baseRate = fighter?.critRate ?? 0.05;
+  const bonus =
+    (fighter?.cardBattleState?.getCritModifiers(now).critRateBonus ?? 0) / 100;
+  return Math.max(0, Math.min(0.95, baseRate + bonus));
 }
 
 class CardService {
@@ -205,6 +396,14 @@ class CardService {
       cardModel.equipped(jid, 'support'),
     ]);
     return combatModifiersForCards(main, support);
+  }
+
+  async getBattleState(jid) {
+    const [main, support] = await Promise.all([
+      cardModel.equipped(jid, 'main'),
+      cardModel.equipped(jid, 'support'),
+    ]);
+    return new CardBattleState(main, support);
   }
 
   async buyRaidShop(jid, productId, quantity = 1) {

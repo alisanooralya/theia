@@ -11,6 +11,8 @@ import {
   applyOutgoingCardDamage,
   cardService,
   cardTurnStats,
+  getCardCdm,
+  getCardCritRate,
 } from '#features/rpg/card.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
@@ -24,7 +26,6 @@ const HP_RECOVERY_STOP = 80;
 const HP_RECOVERY_BREAKTIME = 200;
 const HP_LOW_RATIO = 0.15;
 const HP_LOW_THRESHOLD = Math.floor(RAID_USER_HP * HP_LOW_RATIO);
-const CRIT_MULT = 1.5;
 const ATTACK_INTERVAL = 30_000;
 
 const TZ = SETTINGS.timezone || 'Asia/Jakarta';
@@ -117,15 +118,23 @@ function resolveRaidWindow(start, end, now = Date.now()) {
   return { startAt, endAt };
 }
 
-function calcDamage(atk, critRate, fighter = null) {
-  const isCrit = Math.random() * 100 < critRate;
+function calcDamage(atk, critRate, fighter = null, now = Date.now()) {
   const combatant = fighter ?? { atk, hp: 1, max_hp: 1 };
-  const baseDmg = Math.max(1, cardTurnStats(combatant).atk);
-  const damage = applyOutgoingCardDamage(
-    Math.floor(isCrit ? baseDmg * CRIT_MULT : baseDmg),
-    combatant
+  const baseDmg = Math.max(1, cardTurnStats(combatant, now).atk);
+  const effectiveCritRate = getCardCritRate(
+    {
+      critRate: critRate / 100,
+      cardBattleState: combatant.cardBattleState,
+    },
+    now
   );
-  if (fighter) fighter.cardHits = (fighter.cardHits ?? 0) + 1;
+  const isCrit = Math.random() < effectiveCritRate;
+  const cdm = getCardCdm(combatant, now);
+  const rawDmg = Math.floor(isCrit ? baseDmg * cdm : baseDmg);
+  const damage = applyOutgoingCardDamage(rawDmg, combatant, now);
+  if (damage > 0 && fighter?.cardBattleState) {
+    fighter.cardBattleState.onHitDealt(now);
+  }
   return {
     dmg: damage,
     crit: isCrit,
@@ -133,11 +142,11 @@ function calcDamage(atk, critRate, fighter = null) {
 }
 
 async function getUserRaidStats(jid) {
-  const [base, inventory, cardBonus, cardModifiers] = await Promise.all([
+  const [base, inventory, cardBonus, cardBattleState] = await Promise.all([
     statsModel.find(jid),
     artifactModel.getInventory(jid),
     cardService.getStatBonus(jid),
-    cardService.getCombatModifiers(jid),
+    cardService.getBattleState(jid),
   ]);
   const baseAtk = base?.atk ?? 30;
   let artifactAtk = 0;
@@ -160,9 +169,8 @@ async function getUserRaidStats(jid) {
   }
   return {
     atk: baseAtk + artifactAtk + cardBonus.atk,
-    critRate:
-      (base?.crit_rate ?? 5) + artifactCritRate + cardModifiers.critRateBonus,
-    cardModifiers,
+    critRate: (base?.crit_rate ?? 5) + artifactCritRate,
+    cardBattleState,
   };
 }
 
@@ -328,35 +336,46 @@ class RaidService {
       def: 0,
       hp: participant.hp,
       max_hp: RAID_USER_HP,
-      cardHits: 0,
-      cardModifiers: userStats.cardModifiers,
+      cardBattleState: userStats.cardBattleState,
     };
 
     const interval = setInterval(async () => {
       try {
         const currentRaid = await raidModel.getActive();
         if (!currentRaid || currentRaid.status !== 'active') {
+          raidFighter.cardBattleState?.reset();
           this.stopAttackLoop(jid);
           return;
         }
 
         const p = await raidModel.getParticipant(currentRaid.id, jid);
         if (!p || p.status === 'stopped' || p.status === 'breaktime') {
+          raidFighter.cardBattleState?.reset();
           this.stopAttackLoop(jid);
           return;
         }
 
         if (currentRaid.boss_hp <= 0) {
+          raidFighter.cardBattleState?.reset();
           this.stopAttackLoop(jid);
           return;
         }
 
+        const now = Date.now();
         raidFighter.hp = p.hp;
-        const userDmg = calcDamage(userStats.atk, userStats.critRate, raidFighter);
-        const bossDmg = calcDamage(120, 5);
+        const userDmg = calcDamage(
+          userStats.atk,
+          userStats.critRate,
+          raidFighter,
+          now
+        );
+        const bossDmg = calcDamage(120, 5, null, now);
         const actualDamage = Math.min(userDmg.dmg, currentRaid.boss_hp);
         const newBossHp = Math.max(0, currentRaid.boss_hp - actualDamage);
         const newHp = Math.max(0, p.hp - bossDmg.dmg);
+        if (bossDmg.dmg > 0) {
+          raidFighter.cardBattleState?.onHitReceived(now);
+        }
 
         let newStatus = p.status;
         let breaktimeUntil = 0;
@@ -379,6 +398,7 @@ class RaidService {
         });
 
         if (newHp <= 0) {
+          raidFighter.cardBattleState?.reset();
           this.stopAttackLoop(jid);
           if (sock && jidChat) {
             const mentionJid = [jid];

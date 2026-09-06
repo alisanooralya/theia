@@ -5,9 +5,10 @@ import {
   applyOutgoingCardDamage,
   cardService,
   cardTurnStats,
+  getCardCdm,
+  getCardCritRate,
 } from '#features/rpg/card.js';
 
-const CRIT_MULT = 1.5;
 const MAX_ROUNDS = 30;
 
 const DIFFICULTY = {
@@ -43,20 +44,21 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function calcDamage(attacker, defender) {
-  const attackerStats = cardTurnStats(attacker);
-  const defenderStats = cardTurnStats(defender);
+function calcDamage(attacker, defender, now = Date.now()) {
+  const attackerStats = cardTurnStats(attacker, now);
+  const defenderStats = cardTurnStats(defender, now);
   const base = Math.max(
     1,
     attackerStats.atk - Math.floor(defenderStats.def / 2)
   );
   const vary = Math.floor(base * 0.2);
   let dmg = base + Math.floor(Math.random() * vary * 2) - vary;
-  const crit = Math.random() < attacker.critRate;
-  if (crit) dmg = Math.floor(dmg * CRIT_MULT);
-  dmg = applyOutgoingCardDamage(dmg, attacker);
-  dmg = applyIncomingCardDamage(dmg, defender);
-  attacker.cardHits = (attacker.cardHits ?? 0) + 1;
+  const critRate = getCardCritRate(attacker, now);
+  const cdm = getCardCdm(attacker, now);
+  const crit = Math.random() < critRate;
+  if (crit) dmg = Math.floor(dmg * cdm);
+  dmg = applyOutgoingCardDamage(dmg, attacker, now);
+  dmg = applyIncomingCardDamage(dmg, defender, now);
   return { dmg, crit };
 }
 
@@ -83,9 +85,9 @@ class DomainService {
     if (base.hp <= 0)
       throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
 
-    const [pStats, cardModifiers] = await Promise.all([
+    const [pStats, cardBattleState] = await Promise.all([
       artifactService.getPlayerStats(jid),
-      cardService.getCombatModifiers(jid),
+      cardService.getBattleState(jid),
     ]);
     const now = Math.floor(Date.now() / 1000);
     const effAtk =
@@ -98,8 +100,8 @@ class DomainService {
       max_hp: pStats.hp,
       atk: effAtk,
       def: effDef,
-      critRate: (pStats.critRate + cardModifiers.critRateBonus) / 100,
-      cardModifiers,
+      critRate: pStats.critRate / 100,
+      cardBattleState,
     };
 
     const boss = {
@@ -111,7 +113,9 @@ class DomainService {
     };
 
     const rounds = [];
+    const startTime = Date.now();
     for (let i = 0; i < MAX_ROUNDS && player.hp > 0 && boss.hp > 0; i++) {
+      const turnNow = startTime + i * 1000;
       const r = {
         round: i + 1,
         playerHp: player.hp,
@@ -119,10 +123,13 @@ class DomainService {
         events: [],
       };
 
-      const pDmg = calcDamage(player, boss);
+      const pDmg = calcDamage(player, boss, turnNow);
       boss.hp = Math.max(0, boss.hp - pDmg.dmg);
       r.events.push({ type: 'player_attack', dmg: pDmg.dmg, crit: pDmg.crit });
       r.bossHp = boss.hp;
+      if (pDmg.dmg > 0) {
+        player.cardBattleState?.onHitDealt(turnNow);
+      }
 
       if (boss.hp <= 0) {
         r.playerHp = player.hp;
@@ -130,13 +137,18 @@ class DomainService {
         break;
       }
 
-      const bDmg = calcDamage(boss, player);
+      const bDmg = calcDamage(boss, player, turnNow);
       player.hp = Math.max(0, player.hp - bDmg.dmg);
       r.events.push({ type: 'boss_attack', dmg: bDmg.dmg, crit: bDmg.crit });
       r.playerHp = player.hp;
+      if (bDmg.dmg > 0) {
+        player.cardBattleState?.onHitReceived(turnNow);
+      }
 
       rounds.push(r);
     }
+
+    player.cardBattleState?.reset();
 
     const won = boss.hp <= 0;
     await statsModel.setHp(jid, player.hp);

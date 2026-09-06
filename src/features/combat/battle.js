@@ -6,9 +6,10 @@ import {
   applyOutgoingCardDamage,
   cardService,
   cardTurnStats,
+  getCardCdm,
+  getCardCritRate,
 } from '#features/rpg/card.js';
 
-const CRIT_MULT = 1.5;
 const HEAL_AFTER_PCT = 0.2;
 const REWARD_CASH = 2_000;
 const LOSER_LOSS = 1_500;
@@ -48,11 +49,11 @@ class BattleService {
     if (dBase.hp <= 0) throw new Error('HP lawan sedang 0, tunggu dia heal.');
 
     const now = Math.floor(Date.now() / 1000);
-    const [aStats, dStats, aCard, dCard] = await Promise.all([
+    const [aStats, dStats, aCardState, dCardState] = await Promise.all([
       artifactService.getPlayerStats(attackerJid),
       artifactService.getPlayerStats(defenderJid),
-      cardService.getCombatModifiers(attackerJid),
-      cardService.getCombatModifiers(defenderJid),
+      cardService.getBattleState(attackerJid),
+      cardService.getBattleState(defenderJid),
     ]);
 
     const effAtk = (base, s) =>
@@ -66,8 +67,8 @@ class BattleService {
       max_hp: aStats.hp,
       atk: effAtk(aBase, aStats),
       def: effDef(aBase, aStats),
-      critRate: clamp((aStats.critRate + aCard.critRateBonus) / 100, 0, 0.95),
-      cardModifiers: aCard,
+      critRate: clamp(aStats.critRate / 100, 0, 0.95),
+      cardBattleState: aCardState,
     };
     const defender = {
       jid: defenderJid,
@@ -75,8 +76,8 @@ class BattleService {
       max_hp: dStats.hp,
       atk: effAtk(dBase, dStats),
       def: effDef(dBase, dStats),
-      critRate: clamp((dStats.critRate + dCard.critRateBonus) / 100, 0, 0.95),
-      cardModifiers: dCard,
+      critRate: clamp(dStats.critRate / 100, 0, 0.95),
+      cardBattleState: dCardState,
     };
 
     const sim = this._simulate(attacker, defender);
@@ -186,14 +187,17 @@ class BattleService {
       byJid[defenderJid].block += c.block;
     };
 
+    const startTime = Date.now();
     for (let i = 0; i < MAX_ROUNDS && aHp > 0 && dHp > 0; i++) {
       const round = i + 1;
+      const now = startTime + i * 1000;
       const r = { round, aHp, dHp, events: [] };
 
       state.a.hp = aHp;
       state.d.hp = dHp;
-      const aOut = this._attack(state.a, state.d, dHp);
+      const aOut = this._attack(state.a, state.d, dHp, now);
       dHp = aOut.newDefenderHp;
+      state.d.hp = dHp;
       r.events.push(...aOut.events);
       applyCounts(aOut.counts, a.jid, d.jid);
 
@@ -208,8 +212,9 @@ class BattleService {
       }
 
       if (aOut.countered) {
-        const cOut = this._counter(state.d, state.a, aHp);
+        const cOut = this._counter(state.d, state.a, aHp, now);
         aHp = cOut.newDefenderHp;
+        state.a.hp = aHp;
         r.events.push(...cOut.events);
         applyCounts(cOut.counts, d.jid, a.jid);
         if (aHp <= 0) {
@@ -225,8 +230,9 @@ class BattleService {
 
       state.a.hp = aHp;
       state.d.hp = dHp;
-      const dOut = this._attack(state.d, state.a, aHp);
+      const dOut = this._attack(state.d, state.a, aHp, now);
       aHp = dOut.newDefenderHp;
+      state.a.hp = aHp;
       r.events.push(...dOut.events);
       applyCounts(dOut.counts, d.jid, a.jid);
 
@@ -241,8 +247,9 @@ class BattleService {
       }
 
       if (dOut.countered) {
-        const cOut = this._counter(state.a, state.d, dHp);
+        const cOut = this._counter(state.a, state.d, dHp, now);
         dHp = cOut.newDefenderHp;
+        state.d.hp = dHp;
         r.events.push(...cOut.events);
         applyCounts(cOut.counts, a.jid, d.jid);
         if (dHp <= 0) {
@@ -270,6 +277,10 @@ class BattleService {
         );
       }
     }
+
+    // Clean up temporary battle passive state
+    a.cardBattleState?.reset();
+    d.cardBattleState?.reset();
 
     const realFinish = !!finishingBy;
 
@@ -338,12 +349,12 @@ class BattleService {
     };
   }
 
-  _attack(attacker, defender, defenderHp) {
+  _attack(attacker, defender, defenderHp, now = Date.now()) {
     const events = [];
     const counts = { crit: 0, block: 0, counter: 0, powerful: 0, finishing: 0 };
 
-    const attackerStats = cardTurnStats(attacker);
-    const defenderStats = cardTurnStats(defender);
+    const attackerStats = cardTurnStats(attacker, now);
+    const defenderStats = cardTurnStats(defender, now);
     const base = Math.max(
       1,
       attackerStats.atk - Math.floor(defenderStats.def / 2)
@@ -360,10 +371,12 @@ class BattleService {
     }
     dmg = Math.floor(dmg * momentumBonus);
 
-    const crit = rng() < attacker.critRate;
+    const critRate = getCardCritRate(attacker, now);
+    const cdm = getCardCdm(attacker, now);
+    const crit = rng() < critRate;
     let powerful = false;
     if (crit) {
-      dmg = Math.floor(dmg * CRIT_MULT);
+      dmg = Math.floor(dmg * cdm);
       counts.crit++;
       attacker.momentum++;
     } else if (rng() < POWERFUL_CHANCE) {
@@ -376,7 +389,7 @@ class BattleService {
     if (overdrive) events.push({ type: 'overdrive', by: attacker.jid });
 
     const blockChance = clamp(
-      defender.def / (defender.def + 200),
+      defenderStats.def / (defenderStats.def + 200),
       0,
       BLOCK_CHANCE_MAX
     );
@@ -386,8 +399,11 @@ class BattleService {
       counts.block++;
     }
 
-    dmg = applyOutgoingCardDamage(dmg, attacker);
-    dmg = applyIncomingCardDamage(dmg, defender);
+    dmg = applyOutgoingCardDamage(dmg, attacker, now);
+    dmg = applyIncomingCardDamage(dmg, defender, now);
+
+    attacker.cardBattleState?.onHitDealt(now);
+    defender.cardBattleState?.onHitReceived(now);
     attacker.cardHits = (attacker.cardHits ?? 0) + 1;
 
     if (crit) events.push({ type: 'crit', by: attacker.jid, dmg });
@@ -407,25 +423,31 @@ class BattleService {
     return { newDefenderHp, events, counts, countered };
   }
 
-  _counter(attacker, defender, defenderHp) {
+  _counter(attacker, defender, defenderHp, now = Date.now()) {
     const events = [];
     const counts = { crit: 0, block: 0, counter: 1, powerful: 0, finishing: 0 };
 
-    const attackerStats = cardTurnStats(attacker);
-    const defenderStats = cardTurnStats(defender);
+    const attackerStats = cardTurnStats(attacker, now);
+    const defenderStats = cardTurnStats(defender, now);
     const base = Math.max(
       1,
       attackerStats.atk - Math.floor(defenderStats.def / 2)
     );
     let dmg = Math.floor(base * COUNTER_MULT);
-    const crit = rng() < attacker.critRate;
+    const critRate = getCardCritRate(attacker, now);
+    const cdm = getCardCdm(attacker, now);
+    const crit = rng() < critRate;
     if (crit) {
-      dmg = Math.floor(dmg * CRIT_MULT);
+      dmg = Math.floor(dmg * cdm);
       counts.crit++;
       attacker.momentum++;
     }
-    dmg = applyOutgoingCardDamage(dmg, attacker);
-    dmg = applyIncomingCardDamage(dmg, defender);
+    dmg = applyOutgoingCardDamage(dmg, attacker, now);
+    dmg = applyIncomingCardDamage(dmg, defender, now);
+
+    attacker.cardBattleState?.onHitDealt(now);
+    defender.cardBattleState?.onHitReceived(now);
+
     const newDefenderHp = Math.max(0, defenderHp - dmg);
 
     events.push({ type: 'counter', by: attacker.jid, dmg, crit });
