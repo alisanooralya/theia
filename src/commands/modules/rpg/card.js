@@ -35,7 +35,7 @@ async function collectionText(jid) {
   }
   lines.push(
     '',
-    'Gunakan `.card detail <nama|id>` untuk melihat detail.',
+    'Gunakan `.card` detail <nama|id> untuk melihat detail.',
     '(main pakai nama, support pakai id)'
   );
   return lines.join('\n');
@@ -125,7 +125,7 @@ export default {
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (sub === 'list' || sub === 'main' || sub === 'support') {
+      if (sub === 'list') {
         return ctx.reply(await collectionText(ctx.sender));
       }
 
