@@ -67,23 +67,16 @@ export default {
 
     const text = [
       `╭──┄  *${user.push_name || 'Unknown'}*  ┄──`,
-      `│• ⭐ Lv. ${user.level} - ${user.exp}/${expNeeded} (${expPct}%)`,
-      '│',
-      `│• ❤️ ${stats.hp}/${finalStats.hp}`,
-      `│• ⚔️ ${finalStats.atk}  🛡️ ${finalStats.def}  💥 ${finalStats.critRate.toFixed(0)}%`,
-      '│',
+      '',
       ...slotLines,
-      `│• 🃏 Main: ${cardsByType.main ? `${cardsByType.main.name} Lv.${cardsByType.main.level}` : '-'}`,
-      `│• 🎴 Support: ${cardsByType.support ? cardsByType.support.name : '-'}`,
-      '│',
-      `│• 🪙 ${F.formatNumber(wallet?.cash ?? 0)}  🏦 ${F.formatNumber(wallet?.bank ?? 0)}`,
-      `│• 🏆 ${stats.win}W / ${stats.loss}L  🔥 ${user.daily_streak || 0} hari`,
-      '╰─────── ୨୧ ───────┘',
+      '',
+      `🪙 ${F.formatNumber(wallet?.cash ?? 0)}  🏦 ${F.formatNumber(wallet?.bank ?? 0)}`,
+      `🏆 ${stats.win}W / ${stats.loss}L  🔥 ${user.daily_streak || 0} hari`,
     ].join('\n');
 
-    const cardFileName =
-      CARD_IMAGE_MAP[cardsByType.main?.card_id] ?? 'girgas.webp';
-    const cardPath = join(CARD_DIR, cardFileName);
+    const mainCardId = cardsByType.main?.card_id ?? null;
+    const cardFileName = mainCardId ? CARD_IMAGE_MAP[mainCardId] : null;
+    const cardPath = cardFileName ? join(CARD_DIR, cardFileName) : null;
 
     let cardImage;
     try {

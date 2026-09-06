@@ -70,21 +70,31 @@ const ICONS = {
     ctx.fill();
   },
   sword(ctx, cx, cy, s, color) {
-    ctx.strokeStyle = color;
+    // Proper sword silhouette: blade + guard + grip + pommel, tilted diagonal.
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-Math.PI / 4);
     ctx.fillStyle = color;
-    ctx.lineWidth = s * 0.12;
-    ctx.lineCap = 'round';
+    const u = s / 2;
+    // Blade (tapered to a tip at the top)
     ctx.beginPath();
-    ctx.moveTo(cx - s * 0.35, cy + s * 0.35);
-    ctx.lineTo(cx + s * 0.35, cy - s * 0.35);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.15, cy + s * 0.15);
-    ctx.lineTo(cx - s * 0.4, cy + s * 0.4);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx - s * 0.4, cy + s * 0.4, s * 0.08, 0, Math.PI * 2);
+    ctx.moveTo(0, -u);
+    ctx.lineTo(u * 0.16, -u * 0.5);
+    ctx.lineTo(u * 0.16, u * 0.1);
+    ctx.lineTo(-u * 0.16, u * 0.1);
+    ctx.lineTo(-u * 0.16, -u * 0.5);
+    ctx.closePath();
     ctx.fill();
+    // Crossguard
+    roundRect(ctx, -u * 0.36, u * 0.1, u * 0.72, u * 0.16, u * 0.08);
+    ctx.fill();
+    // Grip
+    ctx.fillRect(-u * 0.07, u * 0.26, u * 0.14, u * 0.34);
+    // Pommel
+    ctx.beginPath();
+    ctx.arc(0, u * 0.6 + u * 0.12, u * 0.11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   },
   shield(ctx, cx, cy, s, color) {
     ctx.fillStyle = color;
@@ -125,15 +135,22 @@ function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  iconFn(ctx, x + 28, y + h / 2, 26, accent);
+  // Explicit text state: renderProfileCard leaves textBaseline on 'top',
+  // which would push the value text against the chip bottom edge.
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  const cy = y + h / 2;
+  const textX = x + 50;
+  iconFn(ctx, x + 26, cy, 24, accent);
 
   ctx.font = '15px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(label, x + 54, y + h / 2 - 12);
+  ctx.fillText(label, textX, cy - 7);
 
   ctx.font = 'bold 22px sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(String(value), x + 54, y + h / 2 + 12);
+  ctx.fillText(String(value), textX, cy + 19);
 }
 
 function cardSlot(ctx, x, y, w, h, label, card, accent) {
