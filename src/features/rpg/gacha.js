@@ -111,8 +111,9 @@ class GachaService {
 
       // Kunci baris user di atas membuat pull concurrent user yang sama
       // antre: pembacaan ownership di bawah selalu melihat hasil commit
-      // transaksi sebelumnya.
-      const cardDefs = await cardModel.definitions(null, t);
+      // transaksi sebelumnya. Pool gacha hanya Main Card; Support Card
+      // hanya dari raid shop.
+      const cardDefs = await cardModel.definitions('main', t);
       const ownedNow = await cardModel.owned(jid, null, t);
       const ownedIds = new Set(ownedNow.map((c) => c.card_id));
 

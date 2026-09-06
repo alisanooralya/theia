@@ -3,25 +3,13 @@ import { userModel } from '#storage/models/index.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function cardLine(i, card) {
-  if (card.type === 'support') {
-    return `${i + 1}. 🎴 Support Card *${card.name}* (Lv.1)`;
-  }
-  return `${i + 1}. 🃏 Main Card *${card.name}* (Lv.5)`;
-}
-
-function cardSummary(card) {
-  return card.type === 'support'
-    ? `🎴 Support Card ${card.name}`
-    : `🃏 Main Card ${card.name}`;
-}
-
 function formatResults(results) {
   const lines = results.map((r, i) => {
     if (r.type === 'zonk') return `${i + 1}. ❌ Zonk`;
     if (r.type === 'artifact')
       return `${i + 1}. 🧿 Artifact #${r.artifact.user_id}`;
-    if (r.type === 'card') return cardLine(i, r.card);
+    if (r.type === 'card')
+      return `${i + 1}. 🃏 Main Card *${r.card.name}* (Lv.5)`;
     if (r.type === 'item') return `${i + 1}. 🎁 ${r.item.name}`;
     return `${i + 1}. ❓ Unknown`;
   });
@@ -31,7 +19,7 @@ function formatResults(results) {
     let key;
     if (r.type === 'zonk') key = '❌ Zonk';
     else if (r.type === 'artifact') key = '🧿 Artifact';
-    else if (r.type === 'card') key = cardSummary(r.card);
+    else if (r.type === 'card') key = `🃏 Main Card ${r.card.name}`;
     else if (r.type === 'item') key = `🎁 ${r.item.name}`;
     else key = '❓ Unknown';
     summary[key] = (summary[key] || 0) + 1;
