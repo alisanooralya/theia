@@ -60,18 +60,18 @@ class CardModel {
       INSERT INTO user_cards (owner_jid, card_id, type, level, reward_key)
       SELECT ${jid}, id, type, CASE WHEN type = 'main' THEN 5 ELSE 1 END, ${rewardKey}
       FROM cards WHERE id = ${cardId}
-      ON CONFLICT (owner_jid, reward_key) DO NOTHING
+      ON CONFLICT (owner_jid, card_id) DO NOTHING
       RETURNING id
     `;
-    if (!rows[0] && rewardKey) {
-      const existing = await client`
-        SELECT id FROM user_cards WHERE owner_jid = ${jid} AND reward_key = ${rewardKey}
-      `;
-      return existing[0]
-        ? this.findOwned(jid, Number(existing[0].id), client)
-        : null;
-    }
-    return rows[0] ? this.findOwned(jid, Number(rows[0].id), client) : null;
+    if (rows[0]) return this.findOwned(jid, Number(rows[0].id), client);
+    // Baris sudah dimiliki (retry idempoten, concurrent grant, atau beli ulang):
+    // kembalikan card yang sudah ada, jangan buat duplikat.
+    const existing = await client`
+      SELECT id FROM user_cards WHERE owner_jid = ${jid} AND card_id = ${cardId}
+    `;
+    return existing[0]
+      ? this.findOwned(jid, Number(existing[0].id), client)
+      : null;
   }
 
   async updateLevel(jid, id, level, client = sql) {

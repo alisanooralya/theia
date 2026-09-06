@@ -278,7 +278,10 @@ const STATIC_SCHEMA = [
     ('lena', 'Lena', 'main', 'Archer', 100, 760, 167, 38, 'Star Stacks'),
     ('ameris', 'Ameris', 'main', 'Supporter', 100, 920, 216, 40, 'Choco Support'),
     ('daisy', 'Daisy', 'main', 'Defender', 100, 960, 143, 22, 'Last Stand'),
-    ('raid_emblem', 'Raid Emblem', 'support', 'Utility', 1, 0, 0, 0, 'Raid Focus')
+    ('raid_emblem', 'Raid Emblem', 'support', 'Utility', 1, 0, 0, 0, 'Raid Focus'),
+    ('treasure_hunter', 'Treasure Hunter', 'support', 'Utility', 1, 0, 0, 0, 'Treasure Hunter'),
+    ('iron_will', 'Iron Will', 'support', 'Utility', 1, 0, 0, 0, 'Iron Will'),
+    ('critical_eye', 'Critical Eye', 'support', 'Utility', 1, 0, 0, 0, 'Critical Eye')
   ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name, type = EXCLUDED.type, role = EXCLUDED.role,
     max_level = EXCLUDED.max_level, max_hp = EXCLUDED.max_hp,
@@ -299,7 +302,8 @@ const STATIC_SCHEMA = [
     UNIQUE(owner_jid, id),
     UNIQUE(owner_jid, id, type),
     CHECK((type = 'main' AND level BETWEEN 5 AND 100) OR (type = 'support' AND level = 1)),
-    UNIQUE(owner_jid, reward_key)
+    UNIQUE(owner_jid, reward_key),
+    UNIQUE(owner_jid, card_id)
   )
   `,
 
@@ -540,6 +544,16 @@ const MIGRATIONS = [
   `SELECT setval(pg_get_serial_sequence('market_trades', 'id'), COALESCE(MAX(id), 1)) FROM market_trades`,
   `SELECT setval(pg_get_serial_sequence('market_news', 'id'), COALESCE(MAX(id), 1)) FROM market_news`,
   `UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10`,
+  // Unique card ownership: satu user hanya boleh memiliki satu row per card_id.
+  // 1) Arahkan equipped yang menunjuk row duplikat ke row yang dipertahankan (id terkecil).
+  `UPDATE equipped_cards ec SET user_card_id = keep.id
+   FROM (SELECT owner_jid, card_id, MIN(id) AS id FROM user_cards GROUP BY owner_jid, card_id HAVING COUNT(*) > 1) keep
+   WHERE ec.user_card_id IN (SELECT uc.id FROM user_cards uc WHERE uc.owner_jid = keep.owner_jid AND uc.card_id = keep.card_id AND uc.id <> keep.id)`,
+  // 2) Hapus row duplikat, sisakan id terkecil per (owner_jid, card_id).
+  `DELETE FROM user_cards uc USING (SELECT owner_jid, card_id, MIN(id) AS keep_id FROM user_cards GROUP BY owner_jid, card_id HAVING COUNT(*) > 1) d
+   WHERE uc.owner_jid = d.owner_jid AND uc.card_id = d.card_id AND uc.id <> d.keep_id`,
+  // 3) Tegakkan unique ownership untuk install lama (install baru via CREATE TABLE).
+  `ALTER TABLE user_cards ADD CONSTRAINT uq_user_cards_owner_card UNIQUE (owner_jid, card_id)`,
 ];
 
 export async function createSchema() {

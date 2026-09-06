@@ -1,4 +1,5 @@
 import { statsModel, walletModel, userModel } from '#storage/models/index.js';
+import { cardService } from '#features/rpg/card.js';
 import { domainService } from '#features/rpg/domain.js';
 import { F } from '#helpers/index.js';
 
@@ -140,7 +141,10 @@ class BountyService {
     const config = this.getDifficultyConfig(difficulty);
     if (!config) throw new Error('Difficulty tidak valid.');
 
-    const coin = randInt(config.coin[0], config.coin[1]);
+    const coin = await cardService.coinRewardTotal(
+      jid,
+      randInt(config.coin[0], config.coin[1])
+    );
     const exp = randInt(config.exp[0], config.exp[1]);
 
     await walletModel.reward(

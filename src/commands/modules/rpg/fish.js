@@ -1,4 +1,5 @@
 import { userModel, walletModel } from '#storage/models/index.js';
+import { cardService } from '#features/rpg/card.js';
 import { F } from '#helpers/index.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -59,9 +60,12 @@ export default {
       await sleep(delay);
 
       const catchResult = pickFish();
-      const reward = Math.floor(
-        catchResult.reward[0] +
-          Math.random() * (catchResult.reward[1] - catchResult.reward[0])
+      const reward = await cardService.coinRewardTotal(
+        ctx.sender,
+        Math.floor(
+          catchResult.reward[0] +
+            Math.random() * (catchResult.reward[1] - catchResult.reward[0])
+        )
       );
 
       const [, { leveledUp, newLevel }] = await Promise.all([

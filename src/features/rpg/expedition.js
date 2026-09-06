@@ -4,6 +4,7 @@ import {
   walletModel,
   userModel,
 } from '#storage/models/index.js';
+import { cardService } from '#features/rpg/card.js';
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
 
@@ -172,8 +173,12 @@ class ExpeditionService {
       if (!row) return null;
 
       let level = { leveledUp: false, newLevel: 0 };
-      const coin = Number(row.reward_coin) || 0;
+      const baseCoin = Number(row.reward_coin) || 0;
       const exp = Number(row.reward_exp) || 0;
+      const coin =
+        baseCoin > 0
+          ? await cardService.coinRewardTotal(jid, baseCoin, t)
+          : 0;
 
       if (coin > 0)
         await walletModel.reward(

@@ -1,5 +1,6 @@
 import { sql } from '#storage/connection.js';
 import { meteorModel, walletModel, userModel } from '#storage/models/index.js';
+import { cardService } from '#features/rpg/card.js';
 import { F } from '#helpers/index.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
@@ -187,7 +188,11 @@ class MeteorService {
 
     for (const c of contributions) {
       const ratio = c.damage / totalDamage;
-      const coin = Math.max(CONFIG.minCoinReward, Math.floor(coinPool * ratio));
+      const coin = await cardService.coinRewardTotal(
+        c.jid,
+        Math.max(CONFIG.minCoinReward, Math.floor(coinPool * ratio)),
+        client
+      );
       const exp = Math.max(CONFIG.minExpReward, Math.floor(expPool * ratio));
 
       await walletModel.reward(c.jid, coin, `meteor mine #${meteorId}`, client);

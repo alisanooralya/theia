@@ -114,6 +114,7 @@ class BattleService {
         );
         await statsModel.recordWin(winner, t);
         await statsModel.recordLoss(loser, t);
+        rewardCash = await cardService.coinRewardTotal(winner, rewardCash, t);
         await walletModel.reward(winner, rewardCash, 'battle win', t);
         const lw = await walletModel.find(loser, t);
         const deduct = Math.min(loserLoss, lw?.cash ?? 0);

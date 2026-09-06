@@ -159,7 +159,10 @@ class DomainService {
     const config = DIFFICULTY[difficulty];
     if (!config) throw new Error('Difficulty tidak valid.');
 
-    const coinReward = randInt(config.coin[0], config.coin[1]);
+    const coinReward = await cardService.coinRewardTotal(
+      jid,
+      randInt(config.coin[0], config.coin[1])
+    );
     const expReward = randInt(config.exp[0], config.exp[1]);
 
     const artifacts = [];

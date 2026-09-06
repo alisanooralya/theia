@@ -63,6 +63,15 @@ export function singlePull(pool, random = Math.random) {
   return { type: 'item', item };
 }
 
+/**
+ * Kandidat card Gacha: hanya definisi yang BELUM dimiliki user.
+ * Murni (tanpa DB) agar mudah di-test.
+ */
+export function unownedCardPool(definitions, ownedCardIds) {
+  const owned = new Set(ownedCardIds);
+  return definitions.filter((d) => !owned.has(d.id));
+}
+
 class GachaService {
   constructor() {
     this.COIN_COST = GACHA_COST;
@@ -80,7 +89,6 @@ class GachaService {
 
     const shopItems = await itemModel.shopItems();
     const pool = buildPool(shopItems);
-    const mainCards = await cardModel.definitions('main');
     const results = [];
 
     return sql.begin(async (t) => {
@@ -101,6 +109,13 @@ class GachaService {
       await t`SELECT jid FROM users WHERE jid = ${jid} FOR UPDATE`;
       await walletModel.spendCash(jid, totalCost, t);
 
+      // Kunci baris user di atas membuat pull concurrent user yang sama
+      // antre: pembacaan ownership di bawah selalu melihat hasil commit
+      // transaksi sebelumnya.
+      const cardDefs = await cardModel.definitions(null, t);
+      const ownedNow = await cardModel.owned(jid, null, t);
+      const ownedIds = new Set(ownedNow.map((c) => c.card_id));
+
       for (let i = 0; i < count; i++) {
         const result = singlePull(pool);
 
@@ -118,17 +133,26 @@ class GachaService {
             });
           }
         } else if (result.type === 'card') {
+          const candidates = unownedCardPool(cardDefs, ownedIds);
+          if (!candidates.length) {
+            // Semua card sudah dimiliki: jangan beri duplikat,
+            // perlakukan pull ini sebagai zonk.
+            results.push({ type: 'zonk' });
+            continue;
+          }
           const definition = weightedRandom(
-            mainCards,
-            mainCards.map(() => 1)
+            candidates,
+            candidates.map(() => 1)
           );
-          if (!definition) throw new Error('Pool Main Card kosong.');
           const card = await cardService.grant(
             jid,
             definition.id,
             requestKey ? `${requestKey}:${i}` : null,
             t
           );
+          // Tandai langsung owned agar pull berikutnya dalam request
+          // yang sama tidak memilih card ini lagi.
+          ownedIds.add(definition.id);
           results.push({ type: 'card', card });
         } else if (result.type === 'item') {
           await inventoryModel.add(jid, result.item.id, 1, t);

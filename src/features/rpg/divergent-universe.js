@@ -8,6 +8,7 @@ import {
   walletModel,
 } from '#storage/models/index.js';
 import { artifactService } from '#features/rpg/artifact.js';
+import { cardService } from '#features/rpg/card.js';
 
 const PATHS = {
   destruction: {
@@ -1352,11 +1353,12 @@ class DivergentUniverseService {
     const effects = totalEffects(state);
     const difficultyConfig = DIFFICULTY[state.difficulty] || DIFFICULTY.medium;
     const multiplier = difficultyConfig.rewardMultiplier;
-    const rewardCash = Math.floor(
+    const baseCash = Math.floor(
       (FINAL_REWARD.baseCash + state.fragments * FINAL_REWARD.cashPerFragment) *
         (1 + (effects.cashMult || 0)) *
         multiplier
     );
+    const rewardCash = await cardService.coinRewardTotal(run.jid, baseCash);
     const rewardExp = Math.floor(
       (FINAL_REWARD.baseExp +
         state.blessings.length * FINAL_REWARD.expPerBlessing) *

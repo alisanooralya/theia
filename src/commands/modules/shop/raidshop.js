@@ -38,6 +38,18 @@ export default {
         `🎴 ${RAID_SHOP.raid_emblem.name} — 💠${RAID_SHOP.raid_emblem.price}`,
         'Support Card Lv.1',
         'Beli: `.raidshop` buy raid_emblem',
+        '',
+        `🎴 ${RAID_SHOP.treasure_hunter.name} — 💠${RAID_SHOP.treasure_hunter.price}`,
+        'Support Card Lv.1',
+        'Beli: `.raidshop` buy treasure_hunter',
+        '',
+        `🎴 ${RAID_SHOP.iron_will.name} — 💠${RAID_SHOP.iron_will.price}`,
+        'Support Card Lv.1',
+        'Beli: `.raidshop` buy iron_will',
+        '',
+        `🎴 ${RAID_SHOP.critical_eye.name} — 💠${RAID_SHOP.critical_eye.price}`,
+        'Support Card Lv.1',
+        'Beli: `.raidshop` buy critical_eye',
       ].join('\n');
       return ctx.reply(text);
     } catch (error) {

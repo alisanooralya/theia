@@ -19,9 +19,44 @@ export const RAID_SHOP = Object.freeze({
     quantity: 1,
     type: 'support',
   },
+  treasure_hunter: {
+    name: 'Treasure Hunter',
+    price: 40,
+    quantity: 1,
+    type: 'support',
+  },
+  iron_will: {
+    name: 'Iron Will',
+    price: 40,
+    quantity: 1,
+    type: 'support',
+  },
+  critical_eye: {
+    name: 'Critical Eye',
+    price: 50,
+    quantity: 1,
+    type: 'support',
+  },
 });
 
-const PASSIVE_DESCRIPTIONS = Object.freeze({
+/**
+ * Efek pasif tiap Support Card (fraksi, kecuali critRate dalam persen).
+ * Satu-satunya sumber kebenaran angka pasif support — dipakai oleh
+ * combatModifiersForCards, CardBattleState, dan coin bonus.
+ */
+export const SUPPORT_EFFECTS = Object.freeze({
+  raid_emblem: { damageDealt: 0.05 },
+  treasure_hunter: { coinBonus: 0.08 },
+  iron_will: { damageTaken: -0.05 },
+  critical_eye: { critRate: 5 },
+});
+
+export function supportEffects(supportCard) {
+  if (!supportCard) return {};
+  return SUPPORT_EFFECTS[supportCard.card_id] ?? {};
+}
+
+export const PASSIVE_DESCRIPTIONS = Object.freeze({
   girgas:
     'Lollipop: Setiap serangan berhasil memberi 1 Lollipop (+10% Damage per stack, maks 2 stack, durasi 8s, cooldown 2s).',
   lena: 'Star Fragment: Saat terkena serangan musuh mendapat 1 Star Fragment (+10% ATK & DEF per stack, maks 3 stack, durasi 5s, cooldown 4s).',
@@ -30,6 +65,9 @@ const PASSIVE_DESCRIPTIONS = Object.freeze({
   daisy:
     'Last Stand: Damage dealt +10%~+40% dan Damage taken -10%~-20% dinamis sesuai sisa HP.',
   raid_emblem: 'Raid Focus: damage serangan +5%.',
+  treasure_hunter: 'Treasure Hunter: reward Coin dari aktivitas RPG +8%.',
+  iron_will: 'Iron Will: damage yang diterima -5%.',
+  critical_eye: 'Critical Eye: Crit Rate +5%.',
 });
 
 export function calculateCardStats(card, level = card.level) {
@@ -59,11 +97,21 @@ export function passiveDescription(card) {
   return PASSIVE_DESCRIPTIONS[card.card_id] ?? card.passive;
 }
 
+/**
+ * Pengali reward Coin aktivitas RPG dari Support Card yang equipped.
+ * Murni dari data SUPPORT_EFFECTS — tidak menyentuh base amount.
+ */
+export function supportCoinMultiplier(supportCard) {
+  const fx = supportEffects(supportCard);
+  return 1 + (fx.coinBonus ?? 0);
+}
+
 export function combatModifiersForCards(main, support) {
+  const fx = supportEffects(support);
   const modifiers = {
-    damageMultiplier: support?.card_id === 'raid_emblem' ? 1.05 : 1,
-    incomingDamageMultiplier: 1,
-    critRateBonus: 0,
+    damageMultiplier: 1 + (fx.damageDealt ?? 0),
+    incomingDamageMultiplier: 1 + (fx.damageTaken ?? 0),
+    critRateBonus: fx.critRate ?? 0,
   };
   if (!main || main.level < CARD_PASSIVE_LEVEL) return modifiers;
   if (main.card_id === 'girgas') modifiers.damageMultiplier *= 1.2;
@@ -72,12 +120,12 @@ export function combatModifiersForCards(main, support) {
     modifiers.maxStacks = 3;
   }
   if (main.card_id === 'ameris') {
-    modifiers.critRateBonus = 10;
+    modifiers.critRateBonus += 10;
     modifiers.cdm = 2.5;
   }
   if (main.card_id === 'daisy') {
     modifiers.damageMultiplier *= 1.1;
-    modifiers.incomingDamageMultiplier = 0.8;
+    modifiers.incomingDamageMultiplier *= 0.8;
   }
   return modifiers;
 }
@@ -93,8 +141,10 @@ export class CardBattleState {
     );
     this.cardId = this.isActive ? mainCard.card_id : null;
 
-    this.supportDamageMultiplier =
-      supportCard?.card_id === 'raid_emblem' ? 1.05 : 1.0;
+    const sfx = supportEffects(supportCard);
+    this.supportDamageMultiplier = 1 + (sfx.damageDealt ?? 0);
+    this.supportIncomingMultiplier = 1 + (sfx.damageTaken ?? 0);
+    this.supportCritRateBonus = sfx.critRate ?? 0;
 
     // Girgas state
     this.lollipopStacks = 0;
@@ -182,12 +232,12 @@ export class CardBattleState {
   }
 
   getCritModifiers(now = Date.now()) {
-    let critRateBonus = 0;
+    let critRateBonus = this.supportCritRateBonus;
     let cdm = 2.0;
 
     if (this.isActive && this.cardId === 'ameris') {
       if (now < this.amerisActiveUntil) {
-        critRateBonus = 10;
+        critRateBonus += 10;
         cdm = 2.5;
       }
     }
@@ -197,7 +247,7 @@ export class CardBattleState {
 
   getDamageModifiers(currentHp, maxHp, now = Date.now()) {
     let damageMultiplier = this.supportDamageMultiplier;
-    let incomingDamageMultiplier = 1.0;
+    let incomingDamageMultiplier = this.supportIncomingMultiplier;
 
     if (!this.isActive) {
       return { damageMultiplier, incomingDamageMultiplier };
@@ -411,6 +461,19 @@ class CardService {
     return new CardBattleState(main, support);
   }
 
+  /**
+   * Total Coin reward aktivitas RPG setelah bonus Support Card
+   * (Treasure Hunter +8%). Dipakai HANYA di titik reward normal;
+   * transfer/bank/shop/market/refund tidak lewat sini.
+   */
+  async coinRewardTotal(jid, baseAmount, client = sql) {
+    const support = await cardModel.equipped(jid, 'support', client);
+    return Math.max(
+      0,
+      Math.floor(Number(baseAmount) * supportCoinMultiplier(support))
+    );
+  }
+
   async buyRaidShop(jid, productId, quantity = 1) {
     const product = RAID_SHOP[productId];
     if (!product) throw new Error('Item Raid Shop tidak ditemukan.');
@@ -421,6 +484,12 @@ class CardService {
       throw new Error('Support Card hanya dapat dibeli satu per transaksi.');
     }
     return sql.begin(async (t) => {
+      if (product.type === 'support') {
+        const ownedSupports = await cardModel.owned(jid, 'support', t);
+        if (ownedSupports.some((c) => c.card_id === productId)) {
+          throw new Error(`Kamu sudah memiliki *${product.name}*.`);
+        }
+      }
       const cost = product.price * quantity;
       await raidModel.spendRaidCoin(jid, cost, t);
       let reward;
