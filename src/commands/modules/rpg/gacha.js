@@ -8,24 +8,20 @@ import { ButtonV2 } from '#messages/builder.js';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function bannerData() {
-  const testId = Object.keys(CARD_IMAGE_MAP)[0];
+  const testId = Object.keys(CARD_IMAGE_MAP)[1];
   return {
-    name: 'GACHA',
-    subtitle: 'Standard Banner',
+    name: 'Haruka',
+    subtitle: 'Legendry Card',
     eraLabel: 'MYSTIC VIOLET',
-    rateUpText: 'RATE UP  ·  1%',
-    description: 'Pull untuk mendapatkan Main Card dan Support Card.',
+    rateUpText: 'RATE UP',
+    description:
+      "It's hard sometimes, but I'm glad I can help others. I'm going to keep protecting everyone's hopes and dreams. T-That's why I hope you keep cheering me on...!",
     artPath: cardArtPath(testId),
   };
 }
 
 async function sendGachaMenu(ctx) {
-  const text = [
-    '🎰 *GACHA*',
-    '',
-    'Pilih jumlah pull:',
-    '• Rate card 1% • artifact 8%',
-  ].join('\n');
+  const text = ['🎰 *GACHA*', '', 'Pilih jumlah pull:'].join('\n');
   try {
     const banner = await renderGachaBanner(bannerData());
     const { imageMessage } = await prepareWAMessageMedia(
