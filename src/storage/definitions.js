@@ -360,6 +360,60 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  // ---- Raid 2.0 (period-based cooperative raid) ----
+
+  `
+  CREATE TABLE IF NOT EXISTS raid_periods (
+    period_id    TEXT    PRIMARY KEY,
+    name         TEXT    NOT NULL DEFAULT '',
+    start_at     BIGINT  NOT NULL,
+    end_at       BIGINT  NOT NULL,
+    boss_count   INTEGER NOT NULL,
+    current_boss INTEGER NOT NULL DEFAULT 0,
+    status       TEXT    NOT NULL DEFAULT 'active',
+    completed_at BIGINT  NOT NULL DEFAULT 0,
+    created_at   BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at   BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS raid_bosses (
+    period_id    TEXT    NOT NULL REFERENCES raid_periods(period_id) ON DELETE CASCADE,
+    boss_index   INTEGER NOT NULL,
+    boss_id      TEXT    NOT NULL,
+    max_hp       BIGINT  NOT NULL,
+    remaining_hp BIGINT  NOT NULL,
+    defeated_at  BIGINT  NOT NULL DEFAULT 0,
+    created_at   BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at   BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    PRIMARY KEY (period_id, boss_index)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS raid_contributions (
+    period_id      TEXT    NOT NULL,
+    boss_index     INTEGER NOT NULL,
+    jid            TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    damage         BIGINT  NOT NULL DEFAULT 0,
+    hits           INTEGER NOT NULL DEFAULT 0,
+    reward_claimed INTEGER NOT NULL DEFAULT 0,
+    created_at     BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at     BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    PRIMARY KEY (period_id, boss_index, jid)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS raid_entries (
+    jid        TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+    day_key    TEXT    NOT NULL DEFAULT '',
+    used       INTEGER NOT NULL DEFAULT 0,
+    updated_at BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
   `
   CREATE TABLE IF NOT EXISTS market_commodities (
     id            TEXT    PRIMARY KEY,
@@ -502,6 +556,8 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_group_activity_user ON group_activity(user_jid)`,
   `CREATE INDEX IF NOT EXISTS idx_divergent_runs_status ON divergent_runs(status)`,
   `CREATE INDEX IF NOT EXISTS idx_meteor_contrib_meteor ON meteor_contributions(meteor_id, damage DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_raid_contrib_period ON raid_contributions(period_id, damage DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_raid_contrib_jid ON raid_contributions(jid)`,
 ];
 
 // Migration statements, applied on every startup (idempotent).

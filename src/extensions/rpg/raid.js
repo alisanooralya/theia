@@ -1,20 +1,14 @@
-import { raidModel } from '#storage/models/index.js';
-import {
-  raidService,
-  formatRaidClock,
-  formatRaidSchedule,
-} from '#features/rpg/raid.js';
+import { raidService } from '#features/rpg/raid.js';
 import { getSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 import { F } from '#helpers/index.js';
 
-const SCHEDULE_TICK_MS = 30_000;
+const MAINTAIN_TICK_MS = 60_000;
+const STATUS_TICK_MS = 60 * 60 * 1000;
 
+let maintainInterval = null;
 let statusInterval = null;
-let recoveryInterval = null;
-let scheduleInterval = null;
-let scheduleRunning = false;
-let pendingAnnouncement = null;
+let maintainRunning = false;
 let storedSock = null;
 let storedChatId = null;
 
@@ -29,139 +23,87 @@ async function announce(sock, text) {
   }
 }
 
-async function runSchedule() {
+async function runMaintain() {
   const sock = resolveSock();
+  const events = await raidService.maintain();
 
-  if (pendingAnnouncement && sock) {
-    const text = pendingAnnouncement;
-    pendingAnnouncement = null;
-    await announce(sock, text);
-  }
-
-  const result = await raidService.processSchedule();
-
-  if (result.activated) {
-    const raid = result.activated;
+  if (events.activated) {
+    const config = events.activated;
+    const totalHp = config.bosses.reduce((sum, boss) => sum + boss.maxHp, 0);
     const text = [
-      '⚔️ *RAID DIMULAI!*',
+      '⚔️ *RAID PERIOD DIMULAI!*',
       '',
-      `Boss: *${raid.boss_name}*`,
-      `HP: *${F.formatNumber(raid.boss_hp)}*`,
-      `Selesai: *${formatRaidClock(raid.end_at)}*`,
+      `Period: *${config.name}*`,
+      `Boss: *${config.bosses.length}* | Total HP: *${F.formatNumber(totalHp)}*`,
+      `${config.bosses[0].emoji} Boss pertama: *${config.bosses[0].name}*`,
       '',
-      'Ketik `.raid join` lalu `.raid attack` untuk ikut!',
+      'Ketik `.raid` untuk lihat status, `.raid attack` untuk ikut!',
     ].join('\n');
-    logger.info(
-      { raidId: raid.id, endAt: raid.end_at },
-      '[RaidSchedule] raid activated'
-    );
+    logger.info({ periodId: config.id }, '[Raid] period activated');
     if (sock) await announce(sock, text);
-    else pendingAnnouncement = text;
-    return;
   }
 
-  if (result.ended) {
-    await raidService.endRaid(sock, storedChatId);
-    logger.info(
-      { raidId: result.ended.id },
-      '[RaidSchedule] raid ended due to time'
-    );
+  if (events.completed) {
+    const config = events.completed;
+    const text = [
+      '🏁 *RAID PERIOD SELESAI!*',
+      '',
+      `Period: *${config.name}*`,
+      '',
+      'Terima kasih sudah ikut raid! Claim reward ketik `.raid claim`.',
+    ].join('\n');
+    logger.info({ periodId: config.id }, '[Raid] period ended');
+    if (sock) await announce(sock, text);
   }
 }
 
 export default {
-  name: 'raid-status',
+  name: 'raid-maintainer',
   processMessage(parsed, sock) {
     if (sock) storedSock = sock;
     if (parsed?.jid) storedChatId = parsed.jid;
   },
   async init() {
-    scheduleInterval = setInterval(async () => {
-      if (scheduleRunning) return;
-      scheduleRunning = true;
+    try {
+      await runMaintain();
+    } catch (err) {
+      logger.warn({ err: err.message }, '[Raid] initial maintain failed');
+    }
+
+    maintainInterval = setInterval(async () => {
+      if (maintainRunning) return;
+      maintainRunning = true;
       try {
-        await runSchedule();
+        await runMaintain();
       } catch (err) {
-        logger.warn({ err: err.message }, '[RaidSchedule] failed');
+        logger.warn({ err: err.message }, '[Raid] maintain failed');
       } finally {
-        scheduleRunning = false;
+        maintainRunning = false;
       }
-    }, SCHEDULE_TICK_MS);
+    }, MAINTAIN_TICK_MS);
 
-    statusInterval = setInterval(
-      async () => {
-        try {
-          const scheduled = await raidModel.getScheduled();
-          if (scheduled) {
-            logger.info(
-              `[RaidStatus] Raid scheduled at ${formatRaidSchedule(scheduled.start_at)}`
-            );
-            return;
-          }
-
-          const raid = await raidModel.getActive();
-          if (!raid) return;
-
-          const participants = await raidModel.getParticipants(raid.id);
-          logger.info(
-            `[RaidStatus] Raid HP: ${raid.boss_hp}, Participants: ${participants.length}`
-          );
-        } catch (err) {
-          logger.warn({ err: err.message }, '[RaidStatus] failed');
-        }
-      },
-      60 * 60 * 1000
-    );
-
-    recoveryInterval = setInterval(async () => {
+    statusInterval = setInterval(async () => {
       try {
-        const raid = await raidModel.getActive();
-        if (!raid) return;
-
-        const participants = await raidModel.getParticipants(raid.id);
-        for (const p of participants) {
-          if (p.status === 'breaktime' || p.status === 'stopped') {
-            const now = Date.now();
-            const recoveryRate = p.status === 'breaktime' ? 200 : 80;
-            let newHp = Math.min(2400, p.hp + recoveryRate);
-            let newStatus = p.status;
-            let breaktimeUntil = p.breaktime_until;
-
-            if (p.status === 'breaktime' && p.breaktime_until <= now) {
-              newHp = Math.min(2400, p.hp + recoveryRate);
-              if (newHp >= 2400) {
-                newStatus = 'active';
-                breaktimeUntil = 0;
-                newHp = 2400;
-              }
-            }
-
-            await raidModel.updateParticipant(raid.id, p.jid, {
-              hp: newHp,
-              damage: p.damage,
-              status: newStatus,
-              breaktimeUntil,
-            });
-          }
-        }
+        const overview = await raidService.getOverview(null);
+        if (overview.phase !== 'active' || !overview.activeBoss) return;
+        logger.info(
+          `[RaidStatus] ${overview.activeBoss.config.name} HP: ${overview.activeBoss.state?.remaining_hp ?? '??'}`
+        );
       } catch (err) {
-        logger.warn({ err: err.message }, '[RaidRecovery] failed');
+        logger.warn({ err: err.message }, '[RaidStatus] failed');
       }
-    }, 60 * 1000);
+    }, STATUS_TICK_MS);
 
     logger.info(
-      '[Raid] Initialized — manual schedule tick 30s, status hourly, recovery every minute'
+      '[Raid] Initialized — maintain tick 60s, status hourly'
     );
   },
   async destroy() {
-    if (scheduleInterval) clearInterval(scheduleInterval);
+    if (maintainInterval) clearInterval(maintainInterval);
     if (statusInterval) clearInterval(statusInterval);
-    if (recoveryInterval) clearInterval(recoveryInterval);
-    scheduleInterval = null;
+    maintainInterval = null;
     statusInterval = null;
-    recoveryInterval = null;
-    scheduleRunning = false;
-    pendingAnnouncement = null;
+    maintainRunning = false;
     storedSock = null;
     storedChatId = null;
   },

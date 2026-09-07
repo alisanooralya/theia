@@ -44,7 +44,9 @@ function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function calcDamage(attacker, defender, now = Date.now()) {
+// Formula damage inti Domain — juga dipakai Raid 2.0 (raid-battle.js)
+// supaya damage, crit, dan modifier Card konsisten antar mode.
+export function calcDamage(attacker, defender, now = Date.now()) {
   const attackerStats = cardTurnStats(attacker, now);
   const defenderStats = cardTurnStats(defender, now);
   const base = Math.max(
