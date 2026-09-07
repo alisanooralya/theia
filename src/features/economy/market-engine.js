@@ -9,6 +9,7 @@ import {
   MOMENTUM_GAIN,
   MOMENTUM_CLAMP,
   MAX_TICK_CHANGE,
+  POP_RATIO_GAIN,
 } from './market-config.js';
 
 function randInt(min, max) {
@@ -79,8 +80,16 @@ export function stepCommodity(state, options = {}) {
 
   const currentPhase = phaseConfig(phase);
   let popped = false;
-  if (phase === 'bubble' && currentPhase.popChance) {
-    const popChance = clamp(currentPhase.popChance * commodity.crashRisk, 0, 1);
+  // Hazard pop umum: berlaku di fase naik mana pun yang punya popChance
+  // (growth/boom/bubble), dan membesar seiring harga memanas sehingga
+  // puncak tiap siklus tidak bisa ditebak.
+  if (currentPhase.popChance) {
+    const heat = Math.max(0, price / commodity.basePrice - 1);
+    const popChance = clamp(
+      (currentPhase.popChance + POP_RATIO_GAIN * heat) * commodity.crashRisk,
+      0,
+      1
+    );
     if (Math.random() < popChance) {
       phase = 'crash';
       phaseTicks = rollPhaseDuration('crash');

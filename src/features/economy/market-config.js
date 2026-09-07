@@ -148,6 +148,8 @@ export const PHASES = {
     swing: 0.8,
     min: 3,
     max: 6,
+    // Reli kecil juga bisa mati muda sebelum mencapai boom.
+    popChance: 0.01,
     next: [
       ['boom', 0.5],
       ['normal', 0.35],
@@ -159,6 +161,8 @@ export const PHASES = {
     swing: 1.0,
     min: 2,
     max: 5,
+    // Reli panas bisa pecah kapan saja, tidak harus menunggu bubble.
+    popChance: 0.025,
     next: [
       ['bubble', 0.5],
       ['normal', 0.3],
@@ -209,6 +213,11 @@ export const MOMENTUM_CLAMP = 0.09;
 
 // Pagar keras perubahan harga per tick supaya tidak melonjak ekstrem.
 export const MAX_TICK_CHANGE = 0.35;
+
+// Kenaikan peluang pop per 1x basePrice di atas base (mis. ratio 2.0 = +gain).
+// Makin tinggi harga, makin besar chance pecah tiap tick — puncak tiap
+// siklus jadi acak dan tidak bisa ditebak pemain.
+export const POP_RATIO_GAIN = 0.03;
 
 // Peluang sebuah event ekonomi baru muncul pada satu tick.
 export const EVENT_CHANCE = 0.14;
