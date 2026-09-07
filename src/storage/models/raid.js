@@ -10,7 +10,12 @@ const PERIOD_NUMERIC_COLUMNS = [
   'updated_at',
 ];
 
-const BOSS_NUMERIC_COLUMNS = ['boss_index', 'max_hp', 'remaining_hp', 'defeated_at'];
+const BOSS_NUMERIC_COLUMNS = [
+  'boss_index',
+  'max_hp',
+  'remaining_hp',
+  'defeated_at',
+];
 
 const CONTRIBUTION_NUMERIC_COLUMNS = [
   'boss_index',

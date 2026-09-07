@@ -1,4 +1,3 @@
-import { prepareWAMessageMedia } from 'baileys';
 import { gachaService as gacha } from '#features/rpg/gacha.js';
 import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
 import { cardArtPath, CARD_IMAGE_MAP } from '#features/rpg/card-config.js';
@@ -24,10 +23,6 @@ async function sendGachaMenu(ctx) {
   const text = ['🎰 *GACHA*', '', 'Pilih jumlah pull:'].join('\n');
   try {
     const banner = await renderGachaBanner(bannerData());
-    const { imageMessage } = await prepareWAMessageMedia(
-      { image: banner },
-      { upload: ctx.sock.waUploadToServer }
-    );
     const builder = new Button(ctx.sock)
       .setBody(text)
       .setImage(banner)

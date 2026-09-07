@@ -74,15 +74,14 @@ class RaidService {
       state: bossStates.find((b) => b.boss_index === index) ?? null,
     }));
     const activeIndex = period?.current_boss ?? 0;
-    const phase =
-      period?.status === 'completed' ? 'completed' : 'active';
+    const phase = period?.status === 'completed' ? 'completed' : 'active';
 
     return {
       phase,
       periodConfig: activeConfig,
       period,
       bosses,
-      activeBoss: phase === 'active' ? bosses[activeIndex] ?? null : null,
+      activeBoss: phase === 'active' ? (bosses[activeIndex] ?? null) : null,
       entriesUsed,
       entriesLeft: Math.max(0, activeConfig.entriesPerDay - entriesUsed),
       myTotalDamage,
@@ -257,10 +256,7 @@ class RaidService {
       bosses,
       totalDamage: bosses.reduce((sum, b) => sum + b.damage, 0),
       entriesUsed,
-      entriesLeft: Math.max(
-        0,
-        (periodConfig.entriesPerDay ?? 3) - entriesUsed
-      ),
+      entriesLeft: Math.max(0, (periodConfig.entriesPerDay ?? 3) - entriesUsed),
     };
   }
 
@@ -390,9 +386,7 @@ class RaidService {
       (jid) => !exclude.includes(jid)
     );
     for (const target of targets) {
-      sock
-        .sendMessage(target, { text, mentions }, {})
-        .catch(() => {});
+      sock.sendMessage(target, { text, mentions }, {}).catch(() => {});
     }
     return targets;
   }
@@ -416,7 +410,8 @@ class RaidService {
       '',
       '*Top Kontribusi:*',
       ...top.map(
-        (c, i) => `${i + 1}. @${c.jid.split('@')[0]} — ${F.formatNumber(c.damage)}`
+        (c, i) =>
+          `${i + 1}. @${c.jid.split('@')[0]} — ${F.formatNumber(c.damage)}`
       ),
     ];
 

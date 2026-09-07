@@ -94,9 +94,7 @@ export default {
       }
     }, STATUS_TICK_MS);
 
-    logger.info(
-      '[Raid] Initialized — maintain tick 60s, status hourly'
-    );
+    logger.info('[Raid] Initialized — maintain tick 60s, status hourly');
   },
   async destroy() {
     if (maintainInterval) clearInterval(maintainInterval);
