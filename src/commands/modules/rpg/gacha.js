@@ -10,12 +10,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function bannerData() {
   const testId = Object.keys(CARD_IMAGE_MAP)[1];
   return {
-    name: 'Haruka',
-    subtitle: 'Legendry Card',
-    eraLabel: 'MYSTIC VIOLET',
-    rateUpText: 'RATE UP',
+    name: 'Lena',
+    subtitle: 'Archer',
+    eraLabel: 'Star Cluster Chief Scrivener',
+    rateUpText: 'NEW CARD RELEASED',
     description:
-      "It's hard sometimes, but I'm glad I can help others. I'm going to keep protecting everyone's hopes and dreams. T-That's why I hope you keep cheering me on...!",
+      "Nice to meet you! The captain has told me a lot about you. Apparently, you're an incredibly awesome mate. I have a feeling that we'll experience amazing things together beyond what I've read in books! Looking forward to working with you from now on, f-friend!",
     artPath: cardArtPath(testId),
   };
 }

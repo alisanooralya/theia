@@ -1,4 +1,31 @@
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const FONT_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  '..',
+  'temp',
+  'fonts'
+);
+for (const [file, alias] of [
+  ['SourceSans3-Regular.ttf', 'Banner Sans'],
+  ['SourceSans3-Bold.ttf', 'Banner Sans'],
+  ['NotoSerif-Regular.ttf', 'Banner Serif'],
+  ['NotoSerif-Bold.ttf', 'Banner Serif'],
+]) {
+  const fontPath = join(FONT_DIR, file);
+  if (existsSync(fontPath)) {
+    try {
+      GlobalFonts.registerFromPath(fontPath, alias);
+    } catch {
+      // Abaikan font rusak — fallback ke font sistem di bawah.
+    }
+  }
+}
 
 const W = 1000;
 const H = 660;
@@ -15,8 +42,8 @@ const PALETTE = {
   cream: '#efe6ff',
 };
 
-const SANS = '"Source Sans Pro", "Roboto", sans-serif';
-const SERIF = '"Noto Serif", serif';
+const SANS = '"Banner Sans", "Source Sans Pro", "Roboto", sans-serif';
+const SERIF = '"Banner Serif", "Noto Serif", serif';
 
 function seededRandom(seed) {
   let s = seed;
