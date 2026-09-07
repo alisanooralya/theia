@@ -3,7 +3,7 @@ import { gachaService as gacha } from '#features/rpg/gacha.js';
 import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
 import { cardArtPath, CARD_IMAGE_MAP } from '#features/rpg/card-config.js';
 import { userModel } from '#storage/models/index.js';
-import { ButtonV2 } from '#messages/builder.js';
+import { Button } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -28,7 +28,7 @@ async function sendGachaMenu(ctx) {
       { image: banner },
       { upload: ctx.sock.waUploadToServer }
     );
-    const builder = new ButtonV2(ctx.sock)
+    const builder = new Button(ctx.sock)
       .setBody(text)
       .setFooter('Rate card 1% • artifact 8%')
       .setMedia({ headerType: 4, imageMessage })
