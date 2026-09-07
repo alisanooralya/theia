@@ -1,5 +1,6 @@
 import { meteorService as meteor } from '#features/rpg/meteor.js';
 import { userModel } from '#storage/models/index.js';
+import { F } from '#helpers/index.js';
 import { Button } from '#messages/builder.js';
 
 function meteorCard(ctx, state) {
@@ -23,13 +24,10 @@ function meteorCard(ctx, state) {
 
 export default {
   name: 'mine',
-  aliases: ['mining', 'tambang', 'meteor'],
+  aliases: ['mining', 'tambang'],
   category: 'rpg',
   description: 'Tambang Meteor bersama user lain',
   cooldown: meteor.config.cooldownMs,
-  // Cooldown hanya dipasang setelah mining benar-benar terjadi. Tanpa ini
-  // dispatcher memasangnya di setiap eksekusi, termasuk saat `.mine` cuma
-  // menampilkan kartu status — user langsung kena cooldown tanpa menambang.
   manualCooldown: true,
 
   async execute(ctx) {
@@ -40,6 +38,16 @@ export default {
     if (sub === 'hit') {
       const result = await meteor.mine(ctx.sender);
       await ctx.applyCooldown();
+
+      if (result.alreadyCleared) {
+        return ctx.reply(
+          [
+            '☄️ Meteor keburu hancur.',
+            '',
+            `Bagian kamu: 🪙 +${F.formatNumber(result.coin)} • ⭐ +${F.formatNumber(result.exp)}`,
+          ].join('\n')
+        );
+      }
 
       if (!result.cleared) {
         return ctx.reply(meteor.formatMineResult(result));
@@ -52,16 +60,21 @@ export default {
     const state = await meteor.getState(ctx.sender);
 
     if (!state.meteor) {
-      return ctx.reply(
-        [
-          '☄️ *METEOR MINE*',
+      const lines = [
+        '☄️ *METEOR MINE*',
+        '',
+        'Meteor hari ini sudah hancur.',
+        'Meteor berikutnya muncul besok.',
+        '',
+        `🔋 Mining Point: ${state.pointsLeft}/${meteor.config.maxPointsPerDay}`,
+      ];
+      if (state.lastReward) {
+        lines.push(
           '',
-          'Meteor hari ini sudah hancur.',
-          'Meteor berikutnya muncul besok.',
-          '',
-          `🔋 Mining Point: ${state.pointsLeft}/${meteor.config.maxPointsPerDay}`,
-        ].join('\n')
-      );
+          `Bagian kamu: 🪙 +${F.formatNumber(state.lastReward.coin)} • ⭐ +${F.formatNumber(state.lastReward.exp)}`
+        );
+      }
+      return ctx.reply(lines.join('\n'));
     }
 
     return meteorCard(ctx, state);

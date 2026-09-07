@@ -80,6 +80,7 @@ class MeteorService {
         pointsLeft,
         dayKey,
         finishedToday: true,
+        lastReward: await this.lastReward(jid, dayKey),
       };
     }
 
@@ -99,12 +100,39 @@ class MeteorService {
     };
   }
 
+  /**
+   * Ringkasan reward user dari meteor yang sudah cleared pada dayKey.
+   * Dipakai saat user kalah race (meteor keburu hancur) dan untuk
+   * status finishedToday. Null kalau tidak ada / tidak ikut menambang.
+   */
+  async lastReward(jid, dayKey, client = sql) {
+    const today = await meteorModel.findByDayKey(dayKey, client);
+    if (!today || today.status !== 'cleared') return null;
+    const c = await meteorModel.getContribution(today.id, jid, client);
+    if (!c || !(c.damage > 0)) return null;
+    return {
+      meteorId: today.id,
+      coin: c.reward_coin ?? 0,
+      exp: c.reward_exp ?? 0,
+    };
+  }
+
+  async clearedInfo(jid, dayKey, client = sql) {
+    const reward = await this.lastReward(jid, dayKey, client);
+    if (!reward) return null;
+    return { alreadyCleared: true, ...reward };
+  }
+
   async mine(jid) {
     const dayKey = this.dayKey();
 
     return sql.begin(async (t) => {
       const meteor = await meteorModel.lockActive(t);
       if (!meteor) {
+        // Kalah race: meteor baru saja dihancurkan orang lain.
+        // Tampilkan bagian reward-nya alih-alih error.
+        const info = await this.clearedInfo(jid, dayKey, t);
+        if (info) return info;
         throw new Error(
           'Tidak ada Meteor aktif saat ini. Coba lagi nanti atau tunggu Meteor berikutnya.'
         );
@@ -170,7 +198,9 @@ class MeteorService {
       return {
         ...result,
         cleared: true,
-        nextToday: closed.day_key !== dayKey,
+        // Slot hari ini masih kosong kalau meteor yang hancur milik hari
+        // sebelumnya → meteor baru hari ini akan dibuat saat getState.
+        freshToday: closed.day_key !== dayKey,
         ...distribution,
       };
     });
@@ -280,11 +310,14 @@ class MeteorService {
       lines.push('', `🎉 *LEVEL UP!* Kamu sekarang level *${me.newLevel}*!`);
     }
 
-    lines.push(
-      '',
-      result.nextToday &&
-        `Meteor #${meteor.id} selesai. Meteor berikutnya besok.`
-    );
+    lines.push('');
+    if (result.freshToday) {
+      lines.push(
+        `Meteor #${meteor.id} selesai. Meteor hari ini telah muncul, lanjut menambang!`
+      );
+    } else {
+      lines.push(`Meteor #${meteor.id} selesai. Meteor berikutnya besok.`);
+    }
 
     return { text: lines.join('\n'), mentions: rewards.map((r) => r.jid) };
   }
