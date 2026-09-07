@@ -96,7 +96,7 @@ export async function renderGachaBanner(data = {}) {
   drawVignette(ctx);
   drawRibbon(ctx, 60, 48, 300, 56, rateUpText);
   drawTitle(ctx, 60, eraLabel, name, subtitle);
-  drawDescription(ctx, 60, 356, description);
+  drawDescription(ctx, 60, 354, description);
   drawFrame(ctx);
 
   return canvas.encode('png');
@@ -210,7 +210,7 @@ function drawTitle(ctx, mx, era, name, subtitle) {
     titleSize -= 8;
     ctx.font = `bold ${titleSize}px ${SERIF}`;
   }
-  const titleY = 142;
+  const titleY = 154;
   ctx.fillStyle = 'rgba(10,4,20,0.7)';
   ctx.fillText(name, mx + 3, titleY + 3, nameMax);
 

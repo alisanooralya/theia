@@ -30,10 +30,10 @@ async function sendGachaMenu(ctx) {
     );
     const builder = new Button(ctx.sock)
       .setBody(text)
+      .setImage(banner)
       .setFooter('Rate card 1% • artifact 8%')
-      .setMedia({ headerType: 4, imageMessage })
-      .addButton('🎰 GACHA 1', '.gacha 1')
-      .addButton('🎰 GACHA 10', '.gacha 10');
+      .addReply('🎰 GACHA 1', '.gacha 1')
+      .addReply('🎰 GACHA 10', '.gacha 10');
     return builder.send(ctx.jid);
   } catch {
     return ctx.reply(text);
