@@ -87,6 +87,7 @@ export default {
   description: 'Gacha item dan artifact',
   cooldown: 60_000,
   manualCooldown: true,
+  isProblem: true,
 
   async execute(ctx) {
     const rawCount = ctx.args[0];
