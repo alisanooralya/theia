@@ -6,7 +6,7 @@ import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 
 const CONFIG = Object.freeze({
-  maxHp: 12_000,
+  maxHp: 10_500,
   maxPointsPerDay: 3,
   cooldownMs: 5 * 60 * 1000,
   damageMin: 120,
