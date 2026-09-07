@@ -15,12 +15,16 @@ import {
   getActivePeriod,
   getLastEndedPeriod,
   getUpcomingPeriod,
-} from '#features/rpg/raid-period-config.js';
-import { F } from '#helpers/index.js';
+} from '#features/rpg/raid-period-config.js';import { F } from '#helpers/index.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 
 const TZ = SETTINGS.timezone || 'Asia/Jakarta';
+
+// State window harian per period id ('open' | 'closed') — in-memory,
+// dipakai maintain() untuk mendeteksi transisi buka/tutup window
+// (pengumuman sekali per transisi, bukan setiap tick).
+const windowStates = new Map();
 
 /**
  * Key hari kalender (YYYY-MM-DD) sesuai timezone bot.
@@ -104,7 +108,16 @@ class RaidService {
    */
   async attack(jid) {
     const periodConfig = getActivePeriod();
-    if (!periodConfig) throw new Error('Tidak ada Raid Period yang aktif.');
+    if (!periodConfig) {
+      const upcoming = getUpcomingPeriod();
+      if (upcoming?.dailyWindow) {
+        const w = upcoming.dailyWindow;
+        throw new Error(
+          `Raid sedang tutup. Dibuka lagi jam ${w.start} ${w.timeZone}.`
+        );
+      }
+      throw new Error('Tidak ada Raid Period yang aktif.');
+    }
 
     const snapshot = await buildRaidSnapshot(jid);
     const dayKey = raidDayKey();
@@ -344,11 +357,21 @@ class RaidService {
 
   /**
    * Maintenance berkala (dipanggil extension): buat row period baru saat
-   * period config aktif pertama kali, dan finalisasi period yang
-   * massanya sudah lewat. Return event untuk di-announce extension.
+   * period config aktif pertama kali, finalisasi period yang massanya
+   * sudah lewat, dan deteksi buka/tutup window harian (dailyWindow).
+   * Return event untuk di-announce extension.
+   *
+   * Period dailyWindow TIDAK pernah difinalisasi lewat sini — window
+   * tutup hanya berarti attack ditolak sementara; boss progression dan
+   * kontribusi berlanjut saat window dibuka lagi.
    */
   async maintain() {
-    const events = { activated: null, completed: null };
+    const events = {
+      activated: null,
+      completed: null,
+      windowOpened: null,
+      windowClosed: null,
+    };
 
     const activeConfig = getActivePeriod();
     if (activeConfig) {
@@ -356,11 +379,28 @@ class RaidService {
       if (!row) {
         await raidModel.ensurePeriod(activeConfig);
         events.activated = activeConfig;
+        if (activeConfig.recurring) windowStates.set(activeConfig.id, 'open');
+        return events;
+      }
+      if (
+        activeConfig.recurring &&
+        windowStates.get(activeConfig.id) !== 'open'
+      ) {
+        windowStates.set(activeConfig.id, 'open');
+        events.windowOpened = activeConfig;
       }
       return events;
     }
 
     const endedConfig = getLastEndedPeriod();
+    if (endedConfig?.recurring) {
+      if (windowStates.get(endedConfig.id) !== 'closed') {
+        windowStates.set(endedConfig.id, 'closed');
+        events.windowClosed = endedConfig;
+      }
+      return events;
+    }
+
     if (endedConfig) {
       const row = await raidModel.getPeriod(endedConfig.id);
       if (row && row.status === 'active') {

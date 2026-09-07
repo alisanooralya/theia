@@ -8,9 +8,16 @@
  * Struktur period:
  * - id          : identifier unik period (PK di tabel raid_periods).
  * - name        : nama tampilan period.
- * - startAt/endAt: batas waktu period dalam epoch ms. Period aktif jika
- *                  startAt <= now < endAt. Jika beberapa period tumpang
- *                  tindih, yang paling baru (startAt terbesar) menang.
+ * - startAt/endAt: batas waktu period permanen dalam epoch ms. Period aktif
+ *                  jika startAt <= now < endAt. Jika beberapa period
+ *                  tumpang tindih, yang paling baru (startAt terbesar) menang.
+ * - dailyWindow (alternatif startAt/endAt): window harian berulang, mis.
+ *                  { start: '08:00', end: '18:00', timeZone: 'Asia/Jakarta' }.
+ *                  Period hanya aktif dalam window tsb SETIAP HARI
+ *                  (08:00 <= now < 18:00). Boss progression, kontribusi, dan
+ *                  entry harian tetap utuh antar hari (id period sama);
+ *                  di luar window `.raid attack` ditolak. Window yang
+ *                  melewati tengah malam (end <= start) juga didukung.
  * - entriesPerDay: jumlah Raid Entry per player per hari kalender.
  * - bosses      : daftar boss sesuai urutan progression.
  *
@@ -35,13 +42,14 @@
  */
 
 const RAID_ENTRIES_PER_DAY = 3;
+const DEFAULT_WINDOW_TZ = 'Asia/Jakarta';
 
 const RAID_PERIODS = [
   {
     id: 'period-1',
     name: 'Raid Period 1',
-    startAt: 0,
-    endAt: Number.MAX_SAFE_INTEGER,
+    // Window harian: raid buka 08:00–18:00 WIB setiap hari.
+    dailyWindow: { start: '08:00', end: '18:00', timeZone: DEFAULT_WINDOW_TZ },
     entriesPerDay: RAID_ENTRIES_PER_DAY,
     bosses: [
       {
@@ -96,6 +104,128 @@ const RAID_PERIODS = [
   },
 ];
 
+// -----------------------------------------------------------------
+// Resolver window harian (dailyWindow)
+// -----------------------------------------------------------------
+
+function parseClock(input) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(input ?? '').trim());
+  if (!match) throw new Error(`Format jam window raid tidak valid: ${input}`);
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59)
+    throw new Error(`Jam window raid tidak valid: ${input}`);
+  return { hour, minute };
+}
+
+function zonedParts(ms, timeZone) {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  return Object.fromEntries(
+    fmt
+      .formatToParts(new Date(ms))
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, Number(part.value)])
+  );
+}
+
+function zonedOffset(ms, timeZone) {
+  const p = zonedParts(ms, timeZone);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - ms;
+}
+
+function zonedToMs(year, month, day, hour, minute, timeZone) {
+  const wall = Date.UTC(year, month - 1, day, hour, minute, 0);
+  const guess = wall - zonedOffset(wall, timeZone);
+  return wall - zonedOffset(guess, timeZone);
+}
+
+/**
+ * Hitung window harian untuk `now` (epoch ms). Return:
+ * - active        : true kalau now berada dalam window hari ini.
+ * - startAt/endAt : batas window yang relevan — window aktif kalau aktif,
+ *                   window BERIKUTNYA kalau tidak aktif.
+ * - lastEndAt     : akhir window terakhir yang sudah lewat (null saat aktif).
+ * Murni — tidak menyentuh config/DB.
+ */
+function dailyWindowState(window, now) {
+  const tz = window.timeZone || DEFAULT_WINDOW_TZ;
+  const start = parseClock(window.start);
+  const end = parseClock(window.end);
+  const p = zonedParts(now, tz);
+
+  const startAt0 = zonedToMs(p.year, p.month, p.day, start.hour, start.minute, tz);
+  const endAt0 = zonedToMs(p.year, p.month, p.day, end.hour, end.minute, tz);
+
+  if (endAt0 > startAt0) {
+    // Window sehari (mis. 08:00–18:00).
+    if (now >= startAt0 && now < endAt0) {
+      return { active: true, startAt: startAt0, endAt: endAt0, lastEndAt: null };
+    }
+    if (now < startAt0) {
+      const lastEndAt = zonedToMs(
+        p.year,
+        p.month,
+        p.day - 1,
+        end.hour,
+        end.minute,
+        tz
+      );
+      return { active: false, startAt: startAt0, endAt: endAt0, lastEndAt };
+    }
+    // Setelah tutup: window berikutnya besok.
+    const nextStartAt = zonedToMs(
+      p.year,
+      p.month,
+      p.day + 1,
+      start.hour,
+      start.minute,
+      tz
+    );
+    const nextEndAt = zonedToMs(
+      p.year,
+      p.month,
+      p.day + 1,
+      end.hour,
+      end.minute,
+      tz
+    );
+    return {
+      active: false,
+      startAt: nextStartAt,
+      endAt: nextEndAt,
+      lastEndAt: endAt0,
+    };
+  }
+
+  // Window lewat tengah malam (mis. 20:00–02:00): mulai hari ini, selesai besok.
+  const windowEnd = zonedToMs(
+    p.year,
+    p.month,
+    p.day + 1,
+    end.hour,
+    end.minute,
+    tz
+  );
+  if (now >= startAt0 && now < windowEnd) {
+    return { active: true, startAt: startAt0, endAt: windowEnd, lastEndAt: null };
+  }
+  // Dini hari / siang sebelum buka: window kemarin selesai di endAt0 hari ini.
+  return { active: false, startAt: startAt0, endAt: windowEnd, lastEndAt: endAt0 };
+}
+
+// -----------------------------------------------------------------
+// Resolver murni untuk daftar period statis (tanpa dailyWindow)
+// -----------------------------------------------------------------
+
 /**
  * Period config yang aktif pada `now` (epoch ms), atau null.
  * Jika beberapa period tumpang tindih, ambil yang startAt-nya paling besar.
@@ -136,16 +266,84 @@ export function resolveUpcomingPeriod(periods, now) {
   return upcoming;
 }
 
-export function getActivePeriod(now = Date.now()) {
-  return resolveActivePeriod(RAID_PERIODS, now);
-}
+// -----------------------------------------------------------------
+// Resolver utama — gabungkan period permanen + dailyWindow
+// -----------------------------------------------------------------
 
-export function getLastEndedPeriod(now = Date.now()) {
-  return resolveLastEndedPeriod(RAID_PERIODS, now);
+export function getActivePeriod(now = Date.now()) {
+  let active = null;
+  for (const period of RAID_PERIODS) {
+    let candidate = null;
+    if (period.dailyWindow) {
+      const state = dailyWindowState(period.dailyWindow, now);
+      if (state.active) {
+        candidate = {
+          ...period,
+          startAt: state.startAt,
+          endAt: state.endAt,
+          recurring: true,
+        };
+      }
+    } else if (now >= period.startAt && now < period.endAt) {
+      candidate = period;
+    }
+    if (candidate && (!active || candidate.startAt > active.startAt)) {
+      active = candidate;
+    }
+  }
+  return active;
 }
 
 export function getUpcomingPeriod(now = Date.now()) {
-  return resolveUpcomingPeriod(RAID_PERIODS, now);
+  let upcoming = null;
+  for (const period of RAID_PERIODS) {
+    let candidate = null;
+    if (period.dailyWindow) {
+      const state = dailyWindowState(period.dailyWindow, now);
+      if (!state.active && state.startAt > now) {
+        candidate = {
+          ...period,
+          startAt: state.startAt,
+          endAt: state.endAt,
+          recurring: true,
+        };
+      }
+    } else if (period.startAt > now) {
+      candidate = period;
+    }
+    if (candidate && (!upcoming || candidate.startAt < upcoming.startAt)) {
+      upcoming = candidate;
+    }
+  }
+  return upcoming;
+}
+
+/**
+ * Period terakhir yang sudah "selesai". Untuk period dailyWindow, yang
+ * dikembalikan adalah clone dengan endAt = akhir window terakhir yang
+ * sudah lewat + flag `recurring: true` — period TIDAK benar-benar tamat,
+ * dipakai agar `.raid claim` tetap bisa diakses di luar window.
+ */
+export function getLastEndedPeriod(now = Date.now()) {
+  let ended = null;
+  for (const period of RAID_PERIODS) {
+    let candidate = null;
+    if (period.dailyWindow) {
+      const state = dailyWindowState(period.dailyWindow, now);
+      if (!state.active && state.lastEndAt !== null && state.lastEndAt <= now) {
+        candidate = {
+          ...period,
+          startAt: 0,
+          endAt: state.lastEndAt,
+          recurring: true,
+        };
+      }
+    } else if (period.endAt <= now) {
+      candidate = period;
+    }
+    if (candidate && (!ended || candidate.endAt > ended.endAt)) ended = candidate;
+  }
+  return ended;
 }
 
 export function getPeriodById(periodId) {

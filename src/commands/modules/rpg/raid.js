@@ -13,6 +13,13 @@ const dayFormatter = new Intl.DateTimeFormat('id-ID', {
   month: 'short',
 });
 
+const clockFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TZ,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
 function bar(value, max, size = 10) {
   const filled = Math.max(0, Math.min(size, Math.round((value / max) * size)));
   return '█'.repeat(filled) + '░'.repeat(size - filled);
@@ -52,13 +59,18 @@ function helpText() {
 
 function statusText(overview) {
   if (overview.phase === 'upcoming') {
+    const start = new Date(overview.upcoming.startAt);
+    const dw = overview.upcoming.dailyWindow;
     return [
       '⚔️ *RAID*',
       '',
-      'Tidak ada Raid Period aktif.',
+      'Raid sedang tutup.',
       `Raid berikutnya: *${overview.upcoming.name}*`,
-      `Mulai: *${dayFormatter.format(new Date(overview.upcoming.startAt))}*`,
-    ].join('\n');
+      `Buka: *${dayFormatter.format(start)} ${clockFormatter.format(start)}*`,
+      dw ? `Window harian: *${dw.start}–${dw.end}* (${dw.timeZone})` : null,
+    ]
+      .filter((line) => line !== null)
+      .join('\n');
   }
 
   if (overview.phase === 'none') {
@@ -72,10 +84,12 @@ function statusText(overview) {
   } else if (overview.activeBoss) {
     const { config, state } = overview.activeBoss;
     const remaining = Math.max(0, state?.remaining_hp ?? config.maxHp);
+    const dw = overview.periodConfig.dailyWindow;
     lines.push(
       `Boss: ${config.emoji} *${config.name}* (Lv.${config.level})`,
       `HP: ${bar(remaining, config.maxHp, 12)} *${F.formatNumber(remaining)} / ${F.formatNumber(config.maxHp)}*`,
-      `Sisa waktu: *${formatTime(overview.remainingMs)}*`
+      dw ? `Window: *${dw.start}–${dw.end}* (${dw.timeZone})` : null,
+      `Tutup: *${clockFormatter.format(new Date(overview.periodConfig.endAt))}* (sisa ${formatTime(overview.remainingMs)})`
     );
   }
 
@@ -89,7 +103,7 @@ function statusText(overview) {
     `Damage kamu: *${F.formatNumber(overview.myTotalDamage)}*`
   );
 
-  return lines.join('\n');
+  return lines.filter((line) => line !== null).join('\n');
 }
 
 async function sendStatusPanel(ctx, overview) {

@@ -43,6 +43,33 @@ async function runMaintain() {
     if (sock) await announce(sock, text);
   }
 
+  if (events.windowOpened) {
+    const config = events.windowOpened;
+    const w = config.dailyWindow;
+    const text = [
+      '⚔️ *RAID DIBUKA!*',
+      '',
+      `Window hari ini: *${w.start}–${w.end}* (${w.timeZone})`,
+      'Ketik `.raid` untuk lihat boss aktif!',
+    ].join('\n');
+    logger.info({ periodId: config.id }, '[Raid] daily window opened');
+    if (sock) await announce(sock, text);
+  }
+
+  if (events.windowClosed) {
+    const config = events.windowClosed;
+    const w = config.dailyWindow;
+    const text = [
+      '🌙 *RAID DITUTUP!*',
+      '',
+      `Window hari ini (*${w.start}–${w.end}*) sudah selesai.`,
+      `Raid dibuka lagi besok *${w.start}*.`,
+      'Ketik `.raid claim` untuk klaim reward boss yang kalah.',
+    ].join('\n');
+    logger.info({ periodId: config.id }, '[Raid] daily window closed');
+    if (sock) await announce(sock, text);
+  }
+
   if (events.completed) {
     const config = events.completed;
     const text = [
