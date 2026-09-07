@@ -1,40 +1,34 @@
 import { prepareWAMessageMedia } from 'baileys';
 import { gachaService as gacha } from '#features/rpg/gacha.js';
 import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
-import { cardService } from '#features/rpg/card.js';
 import { cardArtPath, CARD_IMAGE_MAP } from '#features/rpg/card-config.js';
 import { userModel } from '#storage/models/index.js';
 import { ButtonV2 } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function bannerData(results) {
-  const pulled = results.find((r) => r.type === 'card');
-  if (pulled) {
-    return {
-      name: pulled.card.name,
-      subtitle: pulled.card.role || 'Main Card',
-      eraLabel: 'FEATURED PULL',
-      rateUpText: 'RATE UP  ·  1%',
-      description: cardService.passiveDescription(pulled.card),
-      artPath: cardArtPath(pulled.card.card_id),
-    };
-  }
-  const fallbackId = Object.keys(CARD_IMAGE_MAP)[0];
+// Banner rilis card (untuk testing pakai salah satu art temp/card).
+function bannerData() {
+  const testId = Object.keys(CARD_IMAGE_MAP)[0];
   return {
     name: 'GACHA',
     subtitle: 'Standard Banner',
     eraLabel: 'MYSTIC VIOLET',
     rateUpText: 'RATE UP  ·  1%',
     description: 'Pull untuk mendapatkan Main Card dan Support Card.',
-    artPath: cardArtPath(fallbackId),
+    artPath: cardArtPath(testId),
   };
 }
 
-async function sendGachaResult(ctx, results) {
-  const text = formatResults(results);
+async function sendGachaMenu(ctx) {
+  const text = [
+    '🎰 *GACHA*',
+    '',
+    'Pilih jumlah pull:',
+    '• Rate card 1% • artifact 8%',
+  ].join('\n');
   try {
-    const banner = await renderGachaBanner(bannerData(results));
+    const banner = await renderGachaBanner(bannerData());
     const { imageMessage } = await prepareWAMessageMedia(
       { image: banner },
       { upload: ctx.sock.waUploadToServer }
@@ -101,17 +95,17 @@ export default {
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (
-        !rawCount ||
-        !Number.isInteger(count) ||
-        (count !== 1 && count !== 10)
-      ) {
+      if (!rawCount) {
+        return sendGachaMenu(ctx);
+      }
+
+      if (!Number.isInteger(count) || (count !== 1 && count !== 10)) {
         return ctx.fail(
           'Masukkan jumlah gacha: 1 atau 10.\nContoh: `.gacha 1` atau `.gacha 10`'
         );
       }
 
-      await ctx.reply('🌠 Sedang melakukan gacha...');
+      const statusMsg = await ctx.reply('🌠 Sedang melakukan gacha...');
 
       await sleep(1200);
 
@@ -119,7 +113,9 @@ export default {
         ? `gacha:${ctx.sender}:${ctx.raw.key.id}`
         : null;
       const results = await gacha.pull(ctx.sender, count, requestKey);
-      return sendGachaResult(ctx, results);
+      const text = formatResults(results);
+
+      await ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
     } catch (error) {
       return ctx.fail(error.message);
     }
