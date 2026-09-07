@@ -121,9 +121,8 @@ export async function onGroupParticipantsUpdate(
       if (!group?.welcome) return;
       for (const participant of participants) {
         const jid = participant.phoneNumber || participant.id;
-        const groupName = meta?.subject ?? 'this group';
         await sock.sendMessage(id, {
-          text: `@${jid.split('@')[0]} has left ${groupName}. Goodbye!`,
+          text: `🌌 Traveler @${jid.split('@')[0]} telah melanjutkan perjalanannya.\nSetiap persinggahan memiliki akhirnya.\nTerima kasih telah singgah. Lanjutkan perjalananmu, dan kembalilah dengan kisahmu.`,
           mentions: [jid],
         });
       }
