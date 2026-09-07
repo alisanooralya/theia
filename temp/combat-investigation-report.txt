@@ -1,0 +1,272 @@
+================================================================================
+COMBAT SYSTEMS INVESTIGATION REPORT (READ-ONLY)
+Investigasi: Battle (PvP), Domain, dan potensi reuse untuk Raid 2.0
+Tanggal: 2026-09-07
+Catatan: Tidak ada file yang dimodifikasi. Semua temuan dari kode aktual;
+inferensi/asumsi diberi label jelas.
+================================================================================
+
+--------------------------------------------------------------------------------
+1. BATTLE ARCHITECTURE
+--------------------------------------------------------------------------------
+
+Entry points:
+
+| System | Entry | Flow |
+|---|---|---|
+| PvP    | .battle cmd -> src/commands/modules/rpg/battle.js -> konfirmasi via src/extensions/rpg/battle-confirm.js -> runBattle() -> battleService.fight() | src/features/combat/battle.js:42 |
+| Domain | .domain easy/medium/hard -> src/commands/modules/rpg/domain.js -> domainService.simulateBattle() -> simulateBattleAgainst() | src/features/rpg/domain.js:74,81 |
+| Bounty (reuse Domain) | bountyService.simulateBattle() -> domainService.simulateBattleAgainst(jid, target) | src/features/rpg/bounty.js:137 |
+
+Code path (Profile -> battle):
+
+  statsModel.ensure(jid)                     stats.js:9    -> base row (hp, max_hp, atk, def, crit_rate)
+  artifactService.getPlayerStats(jid)        artifact.js:485 -> base + artifact main/substats + Main Card flat stats
+  cardService.getBattleState(jid)            card.js:545   -> CardBattleState (in-memory, per battle)
+  buff overlay (atk/def jika buff_expire > now) battle.js:59-62 / domain.js:93-96
+  -> Fighter object                          battle.js:64-81 / domain.js:98-113
+  -> _simulate() / round loop                battle.js:146 / domain.js:117
+  -> per-attack: cardTurnStats + calcDamage  battle.js:353 / domain.js:47
+  -> result -> statsModel.setHp + rewards    battle.js:103-129 / domain.js:153-155
+
+Fighter object shape (kedua sistem, konvensi identik):
+
+  { jid, hp, max_hp, atk, def, critRate (0-1), cardBattleState }
+  Boss: { hp, max_hp, atk, def, critRate } - tanpa cardBattleState, tanpa jid (domain.js:107-113)
+
+--------------------------------------------------------------------------------
+2. PLAYER STATS
+--------------------------------------------------------------------------------
+
+| Stat | Sumber | Formula |
+|---|---|---|
+| Base HP | stats.max_hp (default 1200) | statis, tidak pernah naik (level-up hanya reset exp, user.js:26-44; statsModel.updateEquipment di stats.js:60 TIDAK punya pemanggil - dead code) |
+| Base ATK / DEF | stats.atk / stats.def (30 / 20) | statis |
+| Base Crit Rate | stats.crit_rate | default 10 pada install baru (definitions.js:46), 5 via ALTER untuk install lama (definitions.js:523) - tidak konsisten |
+| Final HP/ATK/DEF/Crit | artifactService.getPlayerStats (artifact.js:485-545) | base + artifact mainstat (flat atau % dari base) + artifact substats (hp/atk/def saja) + Main Card flat (calculateCardStats, card.js:73) |
+| Buff | battle.js:59 / domain.js:93 | + buff_atk/buff_def hanya jika buff_expire > now |
+| Crit Rate di combat | getCardCritRate (card.js:391) | clamp(base + cardBonus, 0, 0.95) |
+
+Snapshot semantics: battle menerima DERIVED FINAL STATS (base + artifacts + card flat),
+plus current persisted hp - snapshot saat fight dimulai. Efek pasif Card diterapkan
+live per-turn via cardTurnStats/CardBattleState (in-memory only, reset() setelah battle).
+
+Stat di Profile yang TIDAK dipakai combat: win, loss, win_streak (hanya multiplier
+reward PvP, post-battle), buff_exp_mult (hanya reward), updated_at, user level.
+Rob (rob.js:24) hanya pakai base atk/def mentah - tanpa artifacts/cards.
+
+--------------------------------------------------------------------------------
+3. TURN / ROUND SYSTEM (DOMAIN)
+--------------------------------------------------------------------------------
+
+- Satu round = 1 serangan player + 1 serangan boss (boss menyerang hanya jika
+  masih hidup setelah serangan player) - domain.js:126-148.
+- Player SELALU menyerang duluan; tidak ada SPD di codebase; tidak ada initiative roll.
+- MAX_ROUNDS = 30 (domain.js:12). Battle tipikal: boss Easy ~500 HP mati beberapa
+  round; Hard 4000 HP biasanya mencapai cap 30 round vs player lemah.
+- Combat disimulasikan INSTANT - satu synchronous for loop. "Durasi" adalah
+  VIRTUAL CLOCK: turnNow = startTime + i * 1000 (1 detik per round, domain.js:118)
+  hanya untuk mem.drive durasi/cooldown pasif Card.
+- Kondisi berakhir: boss.hp <= 0 (menang), player.hp <= 0 (kalah), atau 30 round
+  -> won = boss.hp <= 0 = false (round-limit = kekalahan player, domain.js:153).
+- Setelah battle: cardBattleState.reset(), statsModel.setHp(jid, player.hp) -
+  HP dipersist ke DB.
+- PvP: MAX_ROUNDS = 10, maks 4 attack/round (attack + kemungkinan counter tiap
+  sisi), round-limit -> pemenang by remaining HP atau draw (battle.js:288-297).
+
+--------------------------------------------------------------------------------
+4. DAMAGE CALCULATION
+--------------------------------------------------------------------------------
+
+Domain calcDamage (domain.js:47-63) - core identik dengan PvP _attack (battle.js:353-425):
+
+  attackerStats = cardTurnStats(attacker, now)     // stack ATK/DEF Lena live
+  defenderStats = cardTurnStats(defender, now)
+  base = max(1, attackerStats.atk - floor(defenderStats.def / 2))
+  vary = floor(base * 0.2)
+  dmg  = base + floor(random() * vary * 2) - vary   // variance +/-20%
+  if random() < critRate: dmg = floor(dmg * cdm)    // critRate clamped 0-0.95; cdm = 2.0 (ameris: 2.5 window)
+  dmg = applyOutgoingCardDamage(dmg, attacker, now) // Girgas/Daisy/Support dmg x, min 1
+  dmg = applyIncomingCardDamage(dmg, defender, now) // Iron Will/Daisy taken x, min 1
+
+Modifier khusus PvP (battle.js, TIDAK ada di Domain): Momentum (+4%/stack,
+Overdrive x1.25 di 3 stack), Powerful Hit (12% pada non-crit, x1.35), Block
+(chance def/(def+200) capped 0.18, non-crit, x0.45), Counter (12%, base x 0.7,
+bisa crit).
+
+- Minimum damage: 1 (via Math.max di base dan card-damage applier).
+  TIDAK ada maximum/cap damage.
+- Boss -> player: formula sama; boss tanpa cardBattleState sehingga step
+  outgoing card-nya no-op dan getCardCdm(boss) = 2.0; boss default critRate 0.05
+  (domain.js:112).
+- Kehilangan HP player dipersist; pemenang heal 20% max HP hanya di PvP
+  (battle.js:107-114).
+
+--------------------------------------------------------------------------------
+5. CARD INTEGRATION
+--------------------------------------------------------------------------------
+
+Hook berada di src/features/rpg/card.js:
+
+| Hook | Dipanggil di | Efek | Dependency timing |
+|---|---|---|---|
+| cardTurnStats (:361) | sebelum base damage | Lena: ATK/DEF x(1+0.1*stacks) | stack expire 5s virtual time; cooldown trigger 4s |
+| getCardCritRate (:391) | setelah base dmg | Critical Eye +5%, Ameris +10% dalam window 4s | window setiap hit ke-3, cooldown 6s |
+| getCardCdm (:384) | dengan crit | 2.0 base; Ameris 2.5 dalam window | window sama |
+| applyOutgoingCardDamage (:327) | setelah crit | Girgas +10%/stack (max 2, 8s), Daisy +10-40% by tier HP, Raid Emblem +5% | virtual time / rasio HP saat ini |
+| applyIncomingCardDamage (:345) | setelah outgoing | Iron Will -5%, Daisy taken x0.8-0.9 by tier HP | rasio HP saat ini |
+| onHitDealt/onHitReceived (:216/239) | setelah tiap attack | advance counter stack Girgas/Ameris/Lena | hit count + virtual time |
+
+State IN-MEMORY ONLY (CardBattleState dibuat per battle, reset() di akhir) -
+tidak ada yang dipersist. Semua pasif didrive oleh VIRTUAL CLOCK 1s/round,
+sehingga secara natural kompatibel dengan simulasi turn-based mana pun; tidak
+ada yang tergantung wall-clock waktu nyata. Path legacy fighter.cardModifiers
+di fungsi-fungsi ini hanya dipakai oleh Raid 1.0 (getCombatModifiers tidak
+punya pemanggil combat selain card.js sendiri).
+
+--------------------------------------------------------------------------------
+6. ARTIFACT INTEGRATION
+--------------------------------------------------------------------------------
+
+- Artifact yang terpasang dimuat via artifactModel.getInventory(jid) (5 slot)
+  di getPlayerStats (artifact.js:495-537).
+- Main stat + substat ditambahkan flat; stat % dihitung dari BASE stat;
+  crit_rate mainstat dikonversi /10.
+- Ya - termasuk OTOMATIS: PvP dan Domain memanggil artifactService.getPlayerStats()
+  yang sama. Ini satu-satunya fungsi stat reusable (dipakai juga tampilan profile).
+- Aman untuk reuse Raid - sudah dishare battle, domain, bounty (via domain),
+  dan profile.
+
+--------------------------------------------------------------------------------
+7. DOMAIN-SPECIFIC MECHANICS (vs ENGINE GENERIK)
+--------------------------------------------------------------------------------
+
+Domain-only (di src/features/rpg/domain.js): tabel DIFFICULTY (stat block boss,
+range reward, drop artifact), MAX_ROUNDS=30, grantRewards (coin x Treasure Hunter
+bonus, exp, generate artifact), formatVictory/Defeat, aturan round-limit-counts-
+as-defeat, UI tombol gambar di command.
+
+Engine generik (sudah terpisah): simulateBattleAgainst(jid, enemy) menerima
+objek {name, hp, atk, def, critRate?} apa pun - Bounty SUDAH membuktikan reuse
+ini (bounty.js:137 pass target sendiri). Core damage per-turn (calcDamage +
+card hooks) DUPLIKASI antara battle.js dan domain.js, bukan shared - layer
+share-nya adalah fungsi helper card.js.
+
+--------------------------------------------------------------------------------
+8. PVP VS DOMAIN COMPARISON
+--------------------------------------------------------------------------------
+
+| System | Battle Engine | Turn Logic | Stats | Damage | Cards | Real-time |
+|---|---|---|---|---|---|---|
+| PvP | battleService.fight/_simulate/_attack/_counter | 10 round, A->D->(counter), momentum/block/counter | sama getPlayerStats + buff, crit clamped | formula base sama + momentum/overdrive/powerful/block/counter | full CardBattleState | instant sim; PRESENTASI real-time (snapshot via edit pesan, sleep 2700ms); guard battle-state TTL 120s |
+| Domain | simulateBattleAgainst | 30 round, player duluan, 1+1 attack | sama, crit tidak di-pre-clamp (clamped saat pakai) | formula base saja | full CardBattleState | instant sim; sleep 3s kosmetik |
+
+Shared: fighter shape, pipeline stat, card helpers, formula damage base,
+persistensi HP. Beda: jumlah round, mekanik RNG ekstra PvP, aturan outcome
+round-limit, reward.
+
+(Konteks - Raid 1.0 src/features/rpg/raid.js: serangan real-time setInterval 30s,
+calcDamage sendiri TANPA DEF, boss deal flat ~120, HP participant tetap 2400,
+damage diakumulasi di DB.)
+
+--------------------------------------------------------------------------------
+9. RAID 2.0 REUSE POTENTIAL
+--------------------------------------------------------------------------------
+
+A. Langsung reusable:
+   - artifactService.getPlayerStats(jid) - snapshot stat lengkap (memperbaiki
+     partial stat loading atk-only Raid 1.0).
+   - cardService.getBattleState(jid) + semua helper card.js (cardTurnStats,
+     getCardCritRate, getCardCdm, applyOutgoing/IncomingCardDamage) - in-memory,
+     time-driven, engine-agnostic.
+   - simulateBattleAgainst(jid, enemy) sebagai engine "player vs custom boss"
+     yang paling mendekati (Bounty sudah mengadaptasinya).
+
+B. TIDAK sebaiknya direuse: DIFFICULTY/reward/drop artifact Domain; layer
+   block/counter/momentum PvP (di-tune untuk duel 10 round, akan mendistorsi
+   battle kontribusi 120 detik); mesin pending/confirm/state PvP (khusus
+   player-vs-player); aturan round-limit-defeat Domain (Raid butuh damage,
+   bukan win/loss); loop interval real-time 30s Raid 1.0.
+
+C. Adapter yang dibutuhkan (kecil): builder fighter/boss yang memetakan
+   getPlayerStats + buff + HP saat ini ke fighter shape, dan round-loop yang
+   (a) menghitung TOTAL damage dealt, bukan hanya cek kill, (b) berhenti pada
+   jumlah round yang memetakan ke 120 detik virtual time, (c) menulis
+   kontribusi ke raid_participants.damage. simulateBattleAgainst sudah
+   mengembalikan event per-round, tapi memutasi/mempersist HP player dan
+   mengembalikan win/loss - varian Raid butuh sum total-damage (event sudah
+   membawa dmg per player_attack, domain.js:128).
+
+D. Bisakah Raid mensimulasikan battle 120 detik tanpa engine kedua? YA -
+   virtual clock engine (startTime + i*1000, 1s/round) sudah memisahkan
+   waktu simulasi dari waktu nyata. 120 detik virtual = ~120 round (atau
+   pertahankan mapping 1-round=1s). Semua pasif card (durasi 8s/5s/4s,
+   cooldown) bekerja pada virtual clock itu. Tidak ada dependency real-time
+   di dalam core simulasi.
+
+--------------------------------------------------------------------------------
+10. RECOMMENDED RAID BATTLE FLOW
+--------------------------------------------------------------------------------
+
+  .raid attack (join/attack)
+  -> statsModel.ensure + cek HP>0 (pattern: domain.js:84-86)
+  -> snapshot: artifactService.getPlayerStats + cardService.getBattleState + buff overlay
+  -> build raid fighter {hp, max_hp, atk, def, critRate, cardBattleState}
+  -> build boss fighter {hp: boss_hp, max_hp, atk, def, critRate}
+  -> simulate round dengan virtual clock (reuse bentuk round-loop domain)
+     akumulasi totalDamage dari event player_attack
+  -> stop at: 120 detik virtual / HP player 0 / HP boss 0
+  -> cardBattleState.reset()
+  -> persist: damage participant += totalDamage; HP participant; HP boss
+     (transaksi, pattern sql.begin: battle.js:103)
+  -> return {totalDamage, rounds, playerFinalHp} untuk output pesan
+
+Ini persis mirror simulateBattleAgainst, mengganti return win/loss + HP-only
+dengan damage accounting - tanpa combat engine kedua.
+
+--------------------------------------------------------------------------------
+11. IMPORTANT FINDINGS
+--------------------------------------------------------------------------------
+
+1. Dua engine, satu layer helper share: PvP (battle.js) dan Domain (domain.js)
+   masing-masing berisi calcDamage/round-loop yang hampir identik; hanya fungsi
+   card.js yang benar-benar shared. Raid 2.0 sebaiknya dibangun di atas varian
+   Domain (sudah terbukti reusable oleh Bounty, bounty.js:137).
+
+2. Combat sepenuhnya INSTANT, virtual-clocked (startTime + i*1000); semua pasif
+   Card tergantung virtual time ini, bukan waktu nyata. Battle Raid 120 detik =
+   ~120 round tersimulasi, tanpa loop real-time.
+
+3. artifactService.getPlayerStats adalah pipeline stat tunggal (base + artifact
+   + Main Card flat, buff dioverlay pemanggil) - aman direuse; catatan: pakai
+   stats.max_hp sebagai base HP dan stat % di-scale dari base, bukan final stat.
+
+4. HP DIPERSIST, tidak direstore: statsModel.setHp setelah tiap battle; Raid 2.0
+   harus memutuskan persist HP player atau pakai model participant.hp terisolasi
+   ala Raid 1.0.
+
+5. Tidak ada stat SPD; player selalu menyerang duluan; round-limit di Domain =
+   kekalahan (Raid butuh total damage).
+
+6. Batas damage: min 1, tanpa cap max; crit rate hard-clamp 0-0.95; crit DMG 2.0
+   (2.5 window Ameris); variance +/-20%; DEF dikurangkan pada setengah nilai.
+
+7. State Card in-memory per battle (CardBattleState.reset() setelahnya) - tidak
+   ada concern persistensi untuk Raid, tapi tidak boleh dishare antar battle
+   concurrent user yang sama.
+
+8. Raid 1.0 mengabaikan DEF dan stat parsial (getUserRaidStats hanya menghitung
+   mainstat artifact atk/crit_rate, tanpa substat, HP tetap 2400) - reuse
+   getPlayerStats memperbaikinya gratis.
+
+9. Base stat tidak pernah bertumbuh (level-up tidak menyentuh stats;
+   statsModel.updateEquipment adalah dead code) - progresi hanya dari artifact
+   dan level Main Card.
+
+10. Catatan inkonsistensi: default crit_rate 10 di definitions.js:46 tapi 5 di
+    ALTER definitions.js:523 dan fallback getPlayerStats (artifact.js:490) -
+    perlu diketahui sebelum balancing boss Raid.
+
+================================================================================
+END OF REPORT
+================================================================================
