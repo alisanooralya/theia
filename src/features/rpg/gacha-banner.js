@@ -210,7 +210,7 @@ function drawTitle(ctx, mx, era, name, subtitle) {
     titleSize -= 8;
     ctx.font = `bold ${titleSize}px ${SERIF}`;
   }
-  const titleY = 164;
+  const titleY = 144;
   ctx.fillStyle = 'rgba(10,4,20,0.7)';
   ctx.fillText(name, mx + 3, titleY + 3, nameMax);
 
