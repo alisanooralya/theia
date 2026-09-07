@@ -23,6 +23,11 @@ const PALETTE = {
   cream: '#efe6ff',
 };
 
+// Font eksplisit yang tersedia di device (generic sans-serif/serif saja
+// tidak me-render huruf di @napi-rs/canvas pada environment ini).
+const SANS = '"Source Sans Pro", "Roboto", sans-serif';
+const SERIF = '"Noto Serif", serif';
+
 function seededRandom(seed) {
   let s = seed;
   return () => {
@@ -91,13 +96,13 @@ export async function renderGachaBanner(data = {}) {
   drawVignette(ctx);
 
   // --- 7. Rate-up ribbon ---------------------------------------------------
-  drawRibbon(ctx, 60, 55, 285, 52, rateUpText);
+  drawRibbon(ctx, 60, 48, 300, 56, rateUpText);
 
   // --- 8. Title lockup -----------------------------------------------------
   drawTitle(ctx, 60, eraLabel, name, subtitle);
 
   // --- 9. Description panel ------------------------------------------------
-  drawDescription(ctx, 60, 400, description);
+  drawDescription(ctx, 60, 392, description);
 
   // --- 10. Outer hairline frame --------------------------------------------
   drawFrame(ctx);
@@ -135,7 +140,7 @@ async function drawCharacter(ctx, artPath) {
   const img = await loadImage(artPath);
   const targetH = 820; // zoomed in: taller than the canvas, cropping top/feet
   const scale = targetH / img.height;
-  const targetW = img.width * scale;
+  const targetW = Math.round(img.width * scale);
   const x = W - targetW + 15; // shifted more toward center
   const y = -15; // lowered so the head isn't cropped
 
@@ -147,33 +152,31 @@ async function drawCharacter(ctx, artPath) {
   offCtx.drawImage(img, 0, 0, targetW, targetH);
 
   // Left-edge feather: fades the character into the backdrop.
-  const featherW = 210;
-  const mask = offCtx.createLinearGradient(0, 0, featherW, 0);
-  mask.addColorStop(0, 'rgba(0,0,0,0)');
-  mask.addColorStop(1, 'rgba(0,0,0,1)');
-  offCtx.save();
-  offCtx.globalCompositeOperation = 'destination-in';
-  offCtx.fillStyle = mask;
-  offCtx.fillRect(0, 0, featherW, targetH);
-  // keep everything to the right of the feather fully opaque
-  offCtx.fillStyle = 'rgba(0,0,0,1)';
-  offCtx.fillRect(featherW, 0, targetW - featherW, targetH);
-  offCtx.restore();
-
   // Bottom-edge feather: lets the feet melt into the ground shadow.
-  const featherH = 60;
-  const maskB = offCtx.createLinearGradient(0, targetH - featherH, 0, targetH);
-  maskB.addColorStop(0, 'rgba(0,0,0,1)');
-  maskB.addColorStop(1, 'rgba(0,0,0,0.15)');
-  offCtx.save();
-  offCtx.globalCompositeOperation = 'destination-in';
-  offCtx.fillStyle = 'rgba(0,0,0,1)';
-  offCtx.fillRect(0, 0, targetW, targetH - featherH);
-  offCtx.fillStyle = maskB;
-  offCtx.fillRect(0, targetH - featherH, targetW, featherH);
-  offCtx.restore();
+  // (Manual alpha ramp — gradient + destination-in tidak jalan di sini.)
+  featherAlpha(offCtx, targetW, targetH, 210, 60);
 
   ctx.drawImage(off, x, y);
+}
+
+/**
+ * Turunkan alpha piksel secara manual: 0 di tepi kiri → 1 setelah featherW,
+ * dan 1 → 0.15 di featherH piksel terbawah.
+ */
+function featherAlpha(offCtx, w, h, featherW, featherH) {
+  const img = offCtx.getImageData(0, 0, w, h);
+  const { data, width, height } = img;
+  const fw = Math.min(featherW, width);
+  const fh = Math.min(featherH, height);
+  for (let py = 0; py < height; py++) {
+    const bottomRamp =
+      py < height - fh ? 1 : 0.15 + (0.85 * (height - 1 - py)) / Math.max(1, fh - 1);
+    for (let px = 0; px < width; px++) {
+      const leftRamp = px >= fw ? 1 : px / fw;
+      data[(py * width + px) * 4 + 3] *= leftRamp * bottomRamp;
+    }
+  }
+  offCtx.putImageData(img, 0, 0);
 }
 
 function drawVignette(ctx) {
@@ -209,34 +212,42 @@ function drawRibbon(ctx, x, y, w, h, text) {
   ctx.stroke();
 
   ctx.fillStyle = PALETTE.cream;
-  ctx.font = "bold 23px 'DejaVu Sans', sans-serif";
+  ctx.font = `bold 26px ${SANS}`;
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + 32, y + h / 2 + 2, w - 40);
+  ctx.fillText(text, x + 32, y + h / 2 + 2, w - 48);
   ctx.textBaseline = 'alphabetic';
 }
 
 function drawTitle(ctx, mx, era, name, subtitle) {
+  ctx.textBaseline = 'top';
+
   // Era / collection label, tracked caps
   ctx.fillStyle = PALETTE.lavender;
-  ctx.font = "24px 'DejaVu Sans', sans-serif";
-  const eraY = 148;
-  drawTrackedText(ctx, mx, eraY, era, 7);
+  ctx.font = `30px ${SANS}`;
+  const eraY = 128;
+  drawTrackedText(ctx, mx, eraY, era, 8);
 
-  // Title drop shadow
-  const titleY = 178;
-  ctx.font = "bold 112px 'DejaVu Serif', serif";
+  // Title drop shadow (auto-fit agar tidak menabrak karakter)
+  let titleSize = 128;
+  ctx.font = `bold ${titleSize}px ${SERIF}`;
+  const nameMax = 560;
+  while (titleSize > 64 && ctx.measureText(name).width > nameMax) {
+    titleSize -= 8;
+    ctx.font = `bold ${titleSize}px ${SERIF}`;
+  }
+  const titleY = 164;
   ctx.fillStyle = 'rgba(10,4,20,0.7)';
-  ctx.fillText(name, mx + 3, titleY + 3, 880);
+  ctx.fillText(name, mx + 3, titleY + 3, nameMax);
 
   // Title
   ctx.fillStyle = PALETTE.gold;
-  ctx.fillText(name, mx, titleY, 880);
+  ctx.fillText(name, mx, titleY, nameMax);
 
   // Subtitle
-  const subY = titleY + 122;
-  ctx.font = "bold 32px 'DejaVu Serif', serif";
+  const subY = titleY + titleSize + 12;
+  ctx.font = `bold 38px ${SERIF}`;
   ctx.fillStyle = PALETTE.lavender;
-  ctx.fillText(subtitle, mx, subY, 560);
+  ctx.fillText(subtitle, mx, subY, nameMax);
 
   // Rule
   const ruleY = subY + 52;
@@ -246,6 +257,8 @@ function drawTitle(ctx, mx, era, name, subtitle) {
   ctx.moveTo(mx, ruleY);
   ctx.lineTo(mx + 400, ruleY);
   ctx.stroke();
+
+  ctx.textBaseline = 'alphabetic';
 }
 
 function drawTrackedText(ctx, x, y, text, tracking) {
@@ -258,9 +271,10 @@ function drawTrackedText(ctx, x, y, text, tracking) {
 
 function drawDescription(ctx, mx, startY, text) {
   ctx.fillStyle = PALETTE.cream;
-  ctx.font = "23px 'DejaVu Sans', sans-serif";
-  const maxWidth = 470;
-  const lineHeight = 32;
+  ctx.font = `27px ${SANS}`;
+  ctx.textBaseline = 'top';
+  const maxWidth = 480;
+  const lineHeight = 37;
   const words = String(text).split(' ');
   let line = '';
   let y = startY;
