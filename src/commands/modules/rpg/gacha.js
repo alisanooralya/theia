@@ -7,7 +7,6 @@ import { ButtonV2 } from '#messages/builder.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Banner rilis card (untuk testing pakai salah satu art temp/card).
 function bannerData() {
   const testId = Object.keys(CARD_IMAGE_MAP)[0];
   return {
@@ -87,6 +86,7 @@ export default {
   category: 'rpg',
   description: 'Gacha item dan artifact',
   cooldown: 60_000,
+  manualCooldown: true,
 
   async execute(ctx) {
     const rawCount = ctx.args[0];
@@ -106,7 +106,7 @@ export default {
       }
 
       const statusMsg = await ctx.reply('🌠 Sedang melakukan gacha...');
-
+      await ctx.applyCooldown();
       await sleep(1200);
 
       const requestKey = ctx.raw?.key?.id
