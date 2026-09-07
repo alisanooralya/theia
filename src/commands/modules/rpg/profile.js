@@ -37,8 +37,6 @@ export default {
       cardService.getEquipped(jid),
     ]);
     const expNeeded = await userModel.expForLevel(user.level + 1);
-    const expPct = Math.round((user.exp / expNeeded) * 100);
-
     const inv = await artifactService.getInventory(jid);
     const slotLines = await Promise.all(
       ['flower', 'feather', 'sands', 'goblet', 'circlet'].map(async (slot) => {

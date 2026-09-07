@@ -8,7 +8,6 @@ function typeName(type) {
 }
 
 function cardLine(card, index) {
-  const stats = cards.calculateStats(card);
   const equipped = card.equipped ? ' *[Equipped]*' : '';
 
   if (card.type === 'support') {
@@ -64,7 +63,6 @@ async function detailText(jid, query) {
   const current = owned.find((item) => item.id === card.id);
   const stats = cards.calculateStats(card);
   const passiveUnlocked = card.type === 'support' || card.level >= 50;
-  const cost = card.type === 'main' ? cards.getUpgradeCost(card.level) : null;
   const pos = owned.findIndex((item) => item.id === card.id) + 1;
   const title =
     card.type === 'support' ? `*${card.name}* #${pos}` : `*${card.name}*`;

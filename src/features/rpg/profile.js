@@ -1,5 +1,5 @@
-import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
-import { join, dirname } from 'path';
+import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
