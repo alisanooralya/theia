@@ -1,13 +1,5 @@
-/**
- * Gacha Character Banner — render template banner karakter sebagai PNG buffer.
- * Diadaptasi dari template standalone (canvas 1000x660) menjadi modul ESM
- * agar bisa dipakai langsung oleh command `.gacha`.
- */
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 
-// ---------------------------------------------------------------------------
-// Canvas + palette — grounded in the artwork (violet night, gold accents)
-// ---------------------------------------------------------------------------
 const W = 1000;
 const H = 660;
 
@@ -23,8 +15,6 @@ const PALETTE = {
   cream: '#efe6ff',
 };
 
-// Font eksplisit yang tersedia di device (generic sans-serif/serif saja
-// tidak me-render huruf di @napi-rs/canvas pada environment ini).
 const SANS = '"Source Sans Pro", "Roboto", sans-serif';
 const SERIF = '"Noto Serif", serif';
 
@@ -37,54 +27,38 @@ function seededRandom(seed) {
 }
 const rand = seededRandom(7);
 
-/**
- * Render banner gacha.
- * @param {object} data
- * @param {string} [data.name] - nama karakter
- * @param {string} [data.subtitle] - sub-judul (mis. role card)
- * @param {string} [data.eraLabel] - label koleksi
- * @param {string} [data.rateUpText] - teks ribbon
- * @param {string} [data.description] - deskripsi (mis. passive card)
- * @param {string} [data.artPath] - path file artwork karakter
- * @returns {Promise<Buffer>} PNG buffer
- */
 export async function renderGachaBanner(data = {}) {
   const {
-    name = 'GACHA',
-    subtitle = 'Standard Banner',
-    eraLabel = 'MYSTIC VIOLET',
-    rateUpText = 'RATE UP  ·  1%',
-    description = 'Pull untuk mendapatkan Main Card dan Support Card.',
+    name = '',
+    subtitle = '',
+    eraLabel = '',
+    rateUpText = '',
+    description = '',
     artPath = null,
   } = data;
 
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // --- 1. Background vertical gradient ---------------------------------
   const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
   bgGrad.addColorStop(0, PALETTE.bgTop);
   bgGrad.addColorStop(1, PALETTE.bgBottom);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // --- 2. Soft radial glows ---------------------------------------------
   drawRadialGlow(ctx, 760, 210, 430, PALETTE.glow, 0.55);
   drawRadialGlow(ctx, 810, 560, 300, PALETTE.magenta, 0.35);
 
-  // --- 3. Scattered sparkles --------------------------------------------
   drawSparkles(ctx);
 
-  // --- 4. Character art, zoomed in (feathered on left + bottom edges) --
   if (artPath) {
     try {
       await drawCharacter(ctx, artPath);
     } catch {
-      // Artwork gagal dimuat: lanjutkan tanpa karakter.
+      // ignore
     }
   }
 
-  // --- 5. Ground shadow ---------------------------------------------------
   ctx.save();
   ctx.fillStyle = 'rgba(5,2,15,0.45)';
   ctx.beginPath();
@@ -92,27 +66,14 @@ export async function renderGachaBanner(data = {}) {
   ctx.fill();
   ctx.restore();
 
-  // --- 6. Bottom + left vignette for text legibility --------------------
   drawVignette(ctx);
-
-  // --- 7. Rate-up ribbon ---------------------------------------------------
   drawRibbon(ctx, 60, 48, 300, 56, rateUpText);
-
-  // --- 8. Title lockup -----------------------------------------------------
   drawTitle(ctx, 60, eraLabel, name, subtitle);
-
-  // --- 9. Description panel ------------------------------------------------
-  drawDescription(ctx, 60, 392, description);
-
-  // --- 10. Outer hairline frame --------------------------------------------
+  drawDescription(ctx, 60, 360, description);
   drawFrame(ctx);
 
   return canvas.encode('png');
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function drawRadialGlow(ctx, cx, cy, r, color, strength) {
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
@@ -138,31 +99,20 @@ function drawSparkles(ctx) {
 
 async function drawCharacter(ctx, artPath) {
   const img = await loadImage(artPath);
-  const targetH = 820; // zoomed in: taller than the canvas, cropping top/feet
+  const targetH = 820;
   const scale = targetH / img.height;
   const targetW = Math.round(img.width * scale);
-  const x = W - targetW + 15; // shifted more toward center
-  const y = -15; // lowered so the head isn't cropped
+  const x = W - targetW + 15;
+  const y = -15;
 
-  // Render the character to an offscreen canvas first so we can feather
-  // its left/bottom edges into the background without affecting anything
-  // already drawn on the main canvas.
   const off = createCanvas(targetW, targetH);
   const offCtx = off.getContext('2d');
+
   offCtx.drawImage(img, 0, 0, targetW, targetH);
-
-  // Left-edge feather: fades the character into the backdrop.
-  // Bottom-edge feather: lets the feet melt into the ground shadow.
-  // (Manual alpha ramp — gradient + destination-in tidak jalan di sini.)
   featherAlpha(offCtx, targetW, targetH, 210, 60);
-
   ctx.drawImage(off, x, y);
 }
 
-/**
- * Turunkan alpha piksel secara manual: 0 di tepi kiri → 1 setelah featherW,
- * dan 1 → 0.15 di featherH piksel terbawah.
- */
 function featherAlpha(offCtx, w, h, featherW, featherH) {
   const img = offCtx.getImageData(0, 0, w, h);
   const { data, width, height } = img;
@@ -170,7 +120,9 @@ function featherAlpha(offCtx, w, h, featherW, featherH) {
   const fh = Math.min(featherH, height);
   for (let py = 0; py < height; py++) {
     const bottomRamp =
-      py < height - fh ? 1 : 0.15 + (0.85 * (height - 1 - py)) / Math.max(1, fh - 1);
+      py < height - fh
+        ? 1
+        : 0.15 + (0.85 * (height - 1 - py)) / Math.max(1, fh - 1);
     for (let px = 0; px < width; px++) {
       const leftRamp = px >= fw ? 1 : px / fw;
       data[(py * width + px) * 4 + 3] *= leftRamp * bottomRamp;
@@ -180,14 +132,12 @@ function featherAlpha(offCtx, w, h, featherW, featherH) {
 }
 
 function drawVignette(ctx) {
-  // Bottom fade
   const bottomGrad = ctx.createLinearGradient(0, H * 0.45, 0, H);
   bottomGrad.addColorStop(0, hexToRgba(PALETTE.ink, 0));
   bottomGrad.addColorStop(1, hexToRgba(PALETTE.ink, 0.88));
   ctx.fillStyle = bottomGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // Left fade (keeps the text block readable over the artwork)
   const leftGrad = ctx.createLinearGradient(0, 0, W * 0.62, 0);
   leftGrad.addColorStop(0, hexToRgba(PALETTE.ink, 0.55));
   leftGrad.addColorStop(1, hexToRgba(PALETTE.ink, 0));
@@ -221,13 +171,11 @@ function drawRibbon(ctx, x, y, w, h, text) {
 function drawTitle(ctx, mx, era, name, subtitle) {
   ctx.textBaseline = 'top';
 
-  // Era / collection label, tracked caps
   ctx.fillStyle = PALETTE.lavender;
   ctx.font = `30px ${SANS}`;
   const eraY = 128;
   drawTrackedText(ctx, mx, eraY, era, 8);
 
-  // Title drop shadow (auto-fit agar tidak menabrak karakter)
   let titleSize = 128;
   ctx.font = `bold ${titleSize}px ${SERIF}`;
   const nameMax = 560;
@@ -239,17 +187,14 @@ function drawTitle(ctx, mx, era, name, subtitle) {
   ctx.fillStyle = 'rgba(10,4,20,0.7)';
   ctx.fillText(name, mx + 3, titleY + 3, nameMax);
 
-  // Title
   ctx.fillStyle = PALETTE.gold;
   ctx.fillText(name, mx, titleY, nameMax);
 
-  // Subtitle
-  const subY = titleY + titleSize + 12;
+  const subY = titleY + titleSize;
   ctx.font = `bold 38px ${SERIF}`;
   ctx.fillStyle = PALETTE.lavender;
   ctx.fillText(subtitle, mx, subY, nameMax);
 
-  // Rule
   const ruleY = subY + 52;
   ctx.strokeStyle = PALETTE.gold;
   ctx.lineWidth = 2;
