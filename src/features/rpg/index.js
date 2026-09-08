@@ -58,6 +58,21 @@ export { rpgInventoryModel } from './models/rpg-inventory.model.js';
 export { inventoryService, createInventoryService } from './services/inventory-service.js';
 export { shopService, createShopService } from './services/shop-service.js';
 export {
+  GACHA_CONFIG,
+  allowedPullCounts,
+  gachaCost,
+  rollPull,
+  rollMainCard,
+  rollShopItem,
+  rollItemQuantity,
+} from './config/gacha-config.js';
+export { rpgGachaModel } from './models/rpg-gacha.model.js';
+export {
+  gachaService,
+  createGachaService,
+  makeRequestKey,
+} from './services/gacha-service.js';
+export {
   MAX_ROUNDS_DEFAULT,
   ROUND_SECONDS,
   createBattle,

@@ -122,12 +122,13 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
 
     /**
      * Grant a card. Unknown ids throw; already-owned cards are returned
-     * as-is with isNew: false (never duplicated).
+     * as-is with isNew: false (never duplicated). Accepts an optional
+     * transaction client so callers (gacha, rewards) stay atomic.
      */
-    async grantCard(userId, cardId) {
+    async grantCard(userId, cardId, client) {
       const def = requireDefinition(cardId);
-      await players.ensure(userId);
-      const { row, isNew } = await cards.grant(userId, cardId, def.kind);
+      await players.ensure(userId, client);
+      const { row, isNew } = await cards.grant(userId, cardId, def.kind, client);
       return { card: enrichCard(row, def.kind), isNew };
     },
 

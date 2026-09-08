@@ -129,6 +129,17 @@ const STATIC_SCHEMA = [
     UNIQUE(user_id, item_id)
   )
   `,
+
+  // RPG 2.0 Gacha idempotency keys. First claim wins; retries read back
+  // the stored results instead of granting rewards twice.
+  `
+  CREATE TABLE IF NOT EXISTS rpg_gacha_requests (
+    request_key TEXT    PRIMARY KEY,
+    user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    results     TEXT    NOT NULL DEFAULT '[]',
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
 ];
 
 export async function createSchema() {
