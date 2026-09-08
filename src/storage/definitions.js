@@ -57,24 +57,9 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid)`,
 ];
 
-const MIGRATIONS = [
-  `ALTER TABLE groups ADD COLUMN IF NOT EXISTS antitoxic INTEGER NOT NULL DEFAULT 0`,
-  `ALTER TABLE groups ADD COLUMN IF NOT EXISTS greeting INTEGER NOT NULL DEFAULT 1`,
-  `ALTER TABLE groups ADD COLUMN IF NOT EXISTS openclose INTEGER NOT NULL DEFAULT 0`,
-  `ALTER TABLE warns ADD COLUMN IF NOT EXISTS damage INTEGER NOT NULL DEFAULT 0`,
-  `SELECT setval(pg_get_serial_sequence('warns', 'id'), COALESCE(MAX(id), 1)) FROM warns`,
-];
-
 export async function createSchema() {
   for (const stmt of STATIC_SCHEMA) {
     await sql.unsafe(stmt);
-  }
-  for (const stmt of MIGRATIONS) {
-    try {
-      await sql.unsafe(stmt);
-    } catch {
-      void 0;
-    }
   }
   logger.info('Schema ready');
 }
