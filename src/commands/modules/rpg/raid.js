@@ -186,6 +186,7 @@ async function topText(limit = 10) {
   if (leaderboard.length === 0) {
     return '🏆 *RAID TOP*\n\nBelum ada kontribusi di period ini.';
   }
+
   const lines = ['🏆 *RAID TOP KONTRIBUSI*', ''];
   leaderboard.forEach((row, i) => {
     lines.push(
@@ -194,7 +195,6 @@ async function topText(limit = 10) {
   });
   return {
     text: lines.join('\n'),
-    mentions: leaderboard.map((row) => row.jid),
   };
 }
 
@@ -230,7 +230,7 @@ export default {
   groupOnly: true,
 
   async execute(ctx) {
-    const sub = ctx.args[0]?.toLowerCase() || 'help';
+    const sub = ctx.args[0]?.toLowerCase() || '';
 
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -265,8 +265,7 @@ export default {
 
       if (sub === 'top') {
         const top = await topText(10);
-        if (typeof top === 'string') return ctx.reply(top);
-        return ctx.reply(top.text, { mentions: top.mentions });
+        return ctx.reply(top.text);
       }
 
       if (sub === 'bosses') {
