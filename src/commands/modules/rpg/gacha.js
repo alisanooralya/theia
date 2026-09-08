@@ -12,7 +12,8 @@ export const GACHA_USAGE =
 export function parseGachaArgs(args) {
   if (!args || args.length === 0) return null;
   const count = Number(args[0]);
-  if (!Number.isInteger(count)) throw new RangeError('Jumlah gacha harus 1 atau 10.');
+  if (!Number.isInteger(count))
+    throw new RangeError('Jumlah gacha harus 1 atau 10.');
   if (!(count in GACHA_CONFIG.costs)) {
     throw new RangeError('Jumlah gacha harus 1 atau 10.');
   }
@@ -36,14 +37,17 @@ export function formatGachaResult(outcome) {
   const items = {};
   let zonk = 0;
   for (const result of outcome.results) {
-    if (result.type === 'main') mains[result.cardName] = (mains[result.cardName] ?? 0) + 1;
+    if (result.type === 'main')
+      mains[result.cardName] = (mains[result.cardName] ?? 0) + 1;
     else if (result.type === 'shopItem') {
       items[result.itemName] = (items[result.itemName] ?? 0) + result.quantity;
     } else zonk += 1;
   }
   lines.push('', '🎁 *Total Reward:*');
-  for (const [name, qty] of Object.entries(mains)) lines.push(`• ${name} ×${qty}`);
-  for (const [name, qty] of Object.entries(items)) lines.push(`• ${name} ×${qty}`);
+  for (const [name, qty] of Object.entries(mains))
+    lines.push(`• ${name} ×${qty}`);
+  for (const [name, qty] of Object.entries(items))
+    lines.push(`• ${name} ×${qty}`);
   if (zonk > 0) lines.push(`• Zonk ×${zonk}`);
   return lines.join('\n');
 }
@@ -52,7 +56,10 @@ export function formatGachaResult(outcome) {
  * Full command flow with injectable delay (tests assert one delay).
  * Animation sent once, single wait, pulls run once, result sent once.
  */
-export async function executeGacha(ctx, { sleepFn = F.sleep, pullFn = null } = {}) {
+export async function executeGacha(
+  ctx,
+  { sleepFn = F.sleep, pullFn = null } = {}
+) {
   const count = parseGachaArgs(ctx.args);
   if (count === null) {
     await ctx.reply(GACHA_USAGE);
@@ -60,7 +67,8 @@ export async function executeGacha(ctx, { sleepFn = F.sleep, pullFn = null } = {
   }
   await ctx.reply('🎰 Sedang melakukan gacha...');
   await sleepFn(GACHA_CONFIG.animationDelayMs);
-  const pull = pullFn ?? ((sender, n, opts) => gachaService.pull(sender, n, opts));
+  const pull =
+    pullFn ?? ((sender, n, opts) => gachaService.pull(sender, n, opts));
   const outcome = await pull(ctx.sender, count, {
     requestKey: makeRequestKey(ctx.sender),
   });
@@ -73,7 +81,7 @@ export default {
   name: 'gacha',
   aliases: ['gach', 'roll'],
   category: 'rpg',
-  description: 'Gacha Main Card dan item (.gacha 1 / .gacha 10)',
+  description: 'Gacha Main Card dan item',
   cooldown: 10_000,
 
   async execute(ctx) {

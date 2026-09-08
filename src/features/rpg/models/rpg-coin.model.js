@@ -20,7 +20,8 @@ class RpgCoinModel {
   }
 
   async get(userId, client = sql) {
-    const rows = await client`SELECT * FROM rpg_wallets WHERE user_id = ${userId}`;
+    const rows =
+      await client`SELECT * FROM rpg_wallets WHERE user_id = ${userId}`;
     return rows[0] ?? null;
   }
 

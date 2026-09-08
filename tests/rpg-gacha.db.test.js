@@ -75,7 +75,10 @@ describe('gacha (database)', { skip: !dbAvailable }, () => {
       ['rpg_gacha_requests', 'request_key', `${userId}:freshchain`],
     ];
     for (const [table, col, val] of checks) {
-      const rows = await sql.unsafe(`SELECT * FROM ${table} WHERE ${col} = $1`, [val]);
+      const rows = await sql.unsafe(
+        `SELECT * FROM ${table} WHERE ${col} = $1`,
+        [val]
+      );
       assert.ok(rows.length >= 1, table);
     }
   });
@@ -103,7 +106,10 @@ describe('gacha (database)', { skip: !dbAvailable }, () => {
     assert.ok((await inventoryService.getItemQuantity(userId, 'cerelia')) > 0);
     const zonks = out.results.filter((r) => r.type === 'zonk').length;
     assert.ok(zonks > 0);
-    assert.equal(await rpgCoinModel.getBalance(userId), 100000 - GACHA_CONFIG.costs[10]);
+    assert.equal(
+      await rpgCoinModel.getBalance(userId),
+      100000 - GACHA_CONFIG.costs[10]
+    );
   });
 
   it('15-16. owned and same-request duplicate mains become zonk', async () => {
@@ -116,7 +122,8 @@ describe('gacha (database)', { skip: !dbAvailable }, () => {
     });
     // lena owned -> zonk every time; no duplicate granted.
     assert.ok(out.results.every((r) => r.type === 'zonk'));
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId}`;
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId}`;
     assert.equal(rows[0].n, 1);
 
     const userId2 = await makeUser('dup2');
@@ -147,7 +154,10 @@ describe('gacha (database)', { skip: !dbAvailable }, () => {
       random: seqRandom([ZONK]),
     });
     assert.ok(out2.results.every((r) => r.type === 'zonk'));
-    assert.equal(await cardService.getOwnedCards(userId2).then((c) => c.main.length), 0);
+    assert.equal(
+      await cardService.getOwnedCards(userId2).then((c) => c.main.length),
+      0
+    );
   });
 
   it('23-24. spend + rewards atomic; failure rolls back coin', async () => {
@@ -203,7 +213,8 @@ describe('gacha (database)', { skip: !dbAvailable }, () => {
     assert.ok(fulfilled.length >= 1);
     // Exactly one winner charged coin once.
     assert.equal(await rpgCoinModel.getBalance(userId), 0);
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId}`;
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId}`;
     assert.ok(rows[0].n <= 1);
     if (fulfilled.length === 2) {
       const dupes = fulfilled.filter((r) => r.value.duplicate);

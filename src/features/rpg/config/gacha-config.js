@@ -18,7 +18,9 @@ export const GACHA_CONFIG = Object.freeze({
 });
 
 const rateTotal =
-  GACHA_CONFIG.rates.mainCard + GACHA_CONFIG.rates.zonk + GACHA_CONFIG.rates.shopItem;
+  GACHA_CONFIG.rates.mainCard +
+  GACHA_CONFIG.rates.zonk +
+  GACHA_CONFIG.rates.shopItem;
 if (Math.abs(rateTotal - 1) > 1e-9) {
   throw new RangeError(`gacha rates must total 1, got ${rateTotal}`);
 }
@@ -31,7 +33,8 @@ export function allowedPullCounts() {
 /** Total coin cost for a pull count. Throws for unsupported counts. */
 export function gachaCost(count) {
   const cost = GACHA_CONFIG.costs[count];
-  if (cost === undefined) throw new RangeError(`unsupported gacha count: ${count}`);
+  if (cost === undefined)
+    throw new RangeError(`unsupported gacha count: ${count}`);
   return cost;
 }
 
@@ -39,7 +42,8 @@ export function gachaCost(count) {
 export function rollPull(random = Math.random) {
   const roll = random();
   if (roll < GACHA_CONFIG.rates.mainCard) return 'main';
-  if (roll < GACHA_CONFIG.rates.mainCard + GACHA_CONFIG.rates.zonk) return 'zonk';
+  if (roll < GACHA_CONFIG.rates.mainCard + GACHA_CONFIG.rates.zonk)
+    return 'zonk';
   return 'shopItem';
 }
 
@@ -54,7 +58,8 @@ export function rollMainCard(random = Math.random) {
 export function rollShopItem(random = Math.random) {
   const items = getPurchasableItems();
   if (!items.length) throw new RangeError('no purchasable shop items');
-  return items[Math.min(items.length - 1, Math.floor(random() * items.length))].id;
+  return items[Math.min(items.length - 1, Math.floor(random() * items.length))]
+    .id;
 }
 
 /** Item quantity for a shop-item pull, within the configured range. */

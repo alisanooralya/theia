@@ -15,7 +15,11 @@ const BASE = Object.freeze({
   critDmg: 2.0,
 });
 
-function stubService({ base = BASE, bonuses = { main: null, sign: null }, calls = null } = {}) {
+function stubService({
+  base = BASE,
+  bonuses = { main: null, sign: null },
+  calls = null,
+} = {}) {
   return createFinalStatService({
     statService: {
       getBaseStats: async (userId) => {
@@ -49,7 +53,10 @@ describe('getFinalStats (pure)', () => {
 
   it('adds main card HP/ATK/DEF and keeps currentHp from base', async () => {
     const final = await stubService({
-      bonuses: { main: { cardId: 'girgas', level: 25, hp: 388, atk: 92, def: 15 }, sign: null },
+      bonuses: {
+        main: { cardId: 'girgas', level: 25, hp: 388, atk: 92, def: 15 },
+        sign: null,
+      },
     }).getFinalStats('u');
     assert.equal(final.maxHp, 100 + 388);
     assert.equal(final.atk, 10 + 92);
@@ -61,7 +68,13 @@ describe('getFinalStats (pure)', () => {
     const final = await stubService({
       bonuses: {
         main: { cardId: 'girgas', level: 25, hp: 388, atk: 92, def: 15 },
-        sign: { cardId: 'girgas_sign', level: 10, atk: 27, def: 10, compatible: true },
+        sign: {
+          cardId: 'girgas_sign',
+          level: 10,
+          atk: 27,
+          def: 10,
+          compatible: true,
+        },
       },
     }).getFinalStats('u');
     assert.equal(final.maxHp, 488);
@@ -74,7 +87,13 @@ describe('getFinalStats (pure)', () => {
     const final = await stubService({
       bonuses: {
         main: { cardId: 'girgas', level: 25, hp: 388, atk: 92, def: 15 },
-        sign: { cardId: 'daisy_sign', level: 10, atk: 22, def: 15, compatible: false },
+        sign: {
+          cardId: 'daisy_sign',
+          level: 10,
+          atk: 22,
+          def: 15,
+          compatible: false,
+        },
       },
     }).getFinalStats('u');
     assert.deepEqual(Object.keys(final).sort(), [
@@ -103,6 +122,9 @@ describe('getFinalStats (pure)', () => {
   });
 
   it('throws when base stats are missing', async () => {
-    await assert.rejects(stubService({ base: null }).getFinalStats('u'), RangeError);
+    await assert.rejects(
+      stubService({ base: null }).getFinalStats('u'),
+      RangeError
+    );
   });
 });

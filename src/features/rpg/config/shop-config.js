@@ -15,12 +15,28 @@
  */
 import { CERELIA_ITEM } from './card-config.js';
 
-function shopItem({ id, name, description, price, currency = 'coin', category = 'rpg', purchasable = true }) {
+function shopItem({
+  id,
+  name,
+  description,
+  price,
+  currency = 'coin',
+  category = 'rpg',
+  purchasable = true,
+}) {
   if (!id || !name) throw new RangeError('shop item needs id and name');
   if (!Number.isInteger(price) || price < 0) {
     throw new RangeError(`shop item ${id} needs a non-negative integer price`);
   }
-  return Object.freeze({ id, name, description: description ?? '', price, currency, category, purchasable });
+  return Object.freeze({
+    id,
+    name,
+    description: description ?? '',
+    price,
+    currency,
+    category,
+    purchasable,
+  });
 }
 
 export const SHOP_ITEMS = Object.freeze({

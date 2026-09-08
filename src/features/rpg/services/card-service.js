@@ -61,7 +61,13 @@ export function enrichCard(row, kind) {
   return enriched;
 }
 
-export function createCardService({ playerModel, cardModel, coinModel, inventoryModel, db = sql } = {}) {
+export function createCardService({
+  playerModel,
+  cardModel,
+  coinModel,
+  inventoryModel,
+  db = sql,
+} = {}) {
   const players = playerModel ?? rpgPlayerModel;
   const cards = cardModel ?? rpgCardModel;
   const coins = coinModel ?? rpgCoinModel;
@@ -93,7 +99,11 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
       fromLevel: current.level,
       toLevel: cost.toLevel,
       levels: cost.levels,
-      cost: { coin: cost.coin, cerelia: cost.cerelia, materialId: cost.materialId },
+      cost: {
+        coin: cost.coin,
+        cerelia: cost.cerelia,
+        materialId: cost.materialId,
+      },
     };
   }
 
@@ -128,7 +138,12 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
     async grantCard(userId, cardId, client) {
       const def = requireDefinition(cardId);
       await players.ensure(userId, client);
-      const { row, isNew } = await cards.grant(userId, cardId, def.kind, client);
+      const { row, isNew } = await cards.grant(
+        userId,
+        cardId,
+        def.kind,
+        client
+      );
       return { card: enrichCard(row, def.kind), isNew };
     },
 
@@ -155,13 +170,32 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
       const def = requireDefinition(cardId);
       const max = maxLevelFor(def.kind);
       const current = await cards.find(userId, cardId, def.kind);
-      if (!current) return { can: false, reason: 'not-owned', cost: null, fromLevel: null, toLevel: null };
+      if (!current)
+        return {
+          can: false,
+          reason: 'not-owned',
+          cost: null,
+          fromLevel: null,
+          toLevel: null,
+        };
       const toLevel = targetLevel ?? current.level + 1;
       if (!Number.isInteger(toLevel) || toLevel <= current.level) {
-        return { can: false, reason: 'invalid-target', cost: null, fromLevel: current.level, toLevel };
+        return {
+          can: false,
+          reason: 'invalid-target',
+          cost: null,
+          fromLevel: current.level,
+          toLevel,
+        };
       }
       if (toLevel > max) {
-        return { can: false, reason: 'exceeds-max', cost: null, fromLevel: current.level, toLevel };
+        return {
+          can: false,
+          reason: 'exceeds-max',
+          cost: null,
+          fromLevel: current.level,
+          toLevel,
+        };
       }
       const cost = getBulkLevelUpCost(def.kind, current.level, toLevel);
       const [coin, cerelia] = await Promise.all([
@@ -169,12 +203,30 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
         inventory.getQuantity(userId, cost.materialId),
       ]);
       if (coin < cost.coin) {
-        return { can: false, reason: 'insufficient-coin', cost, fromLevel: current.level, toLevel };
+        return {
+          can: false,
+          reason: 'insufficient-coin',
+          cost,
+          fromLevel: current.level,
+          toLevel,
+        };
       }
       if (cerelia < cost.cerelia) {
-        return { can: false, reason: 'insufficient-cerelia', cost, fromLevel: current.level, toLevel };
+        return {
+          can: false,
+          reason: 'insufficient-cerelia',
+          cost,
+          fromLevel: current.level,
+          toLevel,
+        };
       }
-      return { can: true, reason: null, cost, fromLevel: current.level, toLevel };
+      return {
+        can: true,
+        reason: null,
+        cost,
+        fromLevel: current.level,
+        toLevel,
+      };
     },
 
     /**
@@ -206,7 +258,8 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
      */
     async equipMainCard(userId, cardId) {
       const def = requireDefinition(cardId);
-      if (def.kind !== 'main') throw new RangeError(`not a main card: ${cardId}`);
+      if (def.kind !== 'main')
+        throw new RangeError(`not a main card: ${cardId}`);
       const current = await cards.find(userId, cardId, 'main');
       if (!current) throw new RangeError(`card not owned: ${cardId}`);
       const row = await cards.equip(userId, cardId, 'main');
@@ -220,7 +273,8 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
      */
     async equipSignCard(userId, cardId) {
       const def = requireDefinition(cardId);
-      if (def.kind !== 'sign') throw new RangeError(`not a sign card: ${cardId}`);
+      if (def.kind !== 'sign')
+        throw new RangeError(`not a sign card: ${cardId}`);
       const current = await cards.find(userId, cardId, 'sign');
       if (!current) throw new RangeError(`card not owned: ${cardId}`);
       const main = await cards.equipped(userId, 'main');
@@ -261,7 +315,9 @@ export function createCardService({ playerModel, cardModel, coinModel, inventory
       const def = requireDefinition(row.card_id);
       const main = await cards.equipped(userId, 'main');
       const enriched = enrichCard(row, 'sign');
-      enriched.signCompatible = main ? isSignCompatible(def, main.card_id) : false;
+      enriched.signCompatible = main
+        ? isSignCompatible(def, main.card_id)
+        : false;
       return enriched;
     },
 

@@ -31,7 +31,11 @@ export default {
         return;
       }
       const quantity = qtyRaw === undefined ? 1 : Number(qtyRaw);
-      const result = await shopService.buyItem(ctx.sender, (itemId ?? '').toLowerCase(), quantity);
+      const result = await shopService.buyItem(
+        ctx.sender,
+        (itemId ?? '').toLowerCase(),
+        quantity
+      );
       await ctx.reply(
         [
           `✅ Membeli *${result.item.name}* × ${result.quantity}`,

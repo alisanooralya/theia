@@ -76,8 +76,22 @@ describe('battle creation', () => {
   });
 
   it('refuses battle when player currentHp <= 0', () => {
-    assert.throws(() => createBattle({ playerStats: { ...HERO, currentHp: 0 }, enemy: enemy() }), RangeError);
-    assert.throws(() => createBattle({ playerStats: { ...HERO, currentHp: -5 }, enemy: enemy() }), RangeError);
+    assert.throws(
+      () =>
+        createBattle({
+          playerStats: { ...HERO, currentHp: 0 },
+          enemy: enemy(),
+        }),
+      RangeError
+    );
+    assert.throws(
+      () =>
+        createBattle({
+          playerStats: { ...HERO, currentHp: -5 },
+          enemy: enemy(),
+        }),
+      RangeError
+    );
   });
 
   it('26. battle state never aliases source final stats or config', () => {
@@ -92,7 +106,11 @@ describe('battle creation', () => {
 describe('damage calculation', () => {
   it('5. basic attack follows the formula (multiplier 1.0)', () => {
     // 100 atk vs 10 def: 100 * (100/110) = 90.909 -> 91
-    const { damage, isCrit } = calculateDamage({ atk: 100, def: 10, roll: 0.99 });
+    const { damage, isCrit } = calculateDamage({
+      atk: 100,
+      def: 10,
+      roll: 0.99,
+    });
     assert.equal(damage, 91);
     assert.equal(isCrit, false);
   });
@@ -106,19 +124,42 @@ describe('damage calculation', () => {
   });
 
   it('7. DEF Ignore reduces effective DEF (25% of 200 -> 150)', () => {
-    const ignored = calculateDamage({ atk: 100, def: 200, defIgnore: 0.25, roll: 0.99 });
+    const ignored = calculateDamage({
+      atk: 100,
+      def: 200,
+      defIgnore: 0.25,
+      roll: 0.99,
+    });
     const plain = calculateDamage({ atk: 100, def: 150, roll: 0.99 });
     assert.equal(ignored.damage, plain.damage);
     assert.equal(ignored.damage, 40);
   });
 
   it('7b. DEF Ignore clamps to 0..1 and is not true damage', () => {
-    const full = calculateDamage({ atk: 100, def: 200, defIgnore: 1, roll: 0.99 });
+    const full = calculateDamage({
+      atk: 100,
+      def: 200,
+      defIgnore: 1,
+      roll: 0.99,
+    });
     assert.equal(full.damage, 100);
-    const over = calculateDamage({ atk: 100, def: 200, defIgnore: 9, roll: 0.99 });
+    const over = calculateDamage({
+      atk: 100,
+      def: 200,
+      defIgnore: 9,
+      roll: 0.99,
+    });
     assert.equal(over.damage, 100);
-    const neg = calculateDamage({ atk: 100, def: 200, defIgnore: -5, roll: 0.99 });
-    assert.equal(neg.damage, calculateDamage({ atk: 100, def: 200, roll: 0.99 }).damage);
+    const neg = calculateDamage({
+      atk: 100,
+      def: 200,
+      defIgnore: -5,
+      roll: 0.99,
+    });
+    assert.equal(
+      neg.damage,
+      calculateDamage({ atk: 100, def: 200, roll: 0.99 }).damage
+    );
   });
 
   it('8. minimum damage is 1', () => {
@@ -127,28 +168,52 @@ describe('damage calculation', () => {
   });
 
   it('9. normal attack without crit', () => {
-    const r = calculateDamage({ atk: 100, def: 10, critRate: 0.5, critDmg: 2, roll: 0.9 });
+    const r = calculateDamage({
+      atk: 100,
+      def: 10,
+      critRate: 0.5,
+      critDmg: 2,
+      roll: 0.9,
+    });
     assert.equal(r.isCrit, false);
     assert.equal(r.damage, 91);
   });
 
   it('10/13. crit multiplies damage by critDmg', () => {
-    const r = calculateDamage({ atk: 100, def: 10, critRate: 0.5, critDmg: 2.5, roll: 0.1 });
+    const r = calculateDamage({
+      atk: 100,
+      def: 10,
+      critRate: 0.5,
+      critDmg: 2.5,
+      roll: 0.1,
+    });
     assert.equal(r.isCrit, true);
     assert.equal(r.damage, Math.round(100 * (100 / 110) * 2.5));
   });
 
   it('11. crit rate 0 never crits', () => {
-    assert.equal(calculateDamage({ atk: 100, def: 0, critRate: 0, roll: 0.0 }).isCrit, false);
+    assert.equal(
+      calculateDamage({ atk: 100, def: 0, critRate: 0, roll: 0.0 }).isCrit,
+      false
+    );
   });
 
   it('12. crit rate 1 always crits', () => {
-    assert.equal(calculateDamage({ atk: 100, def: 0, critRate: 1, roll: 0.999 }).isCrit, true);
+    assert.equal(
+      calculateDamage({ atk: 100, def: 0, critRate: 1, roll: 0.999 }).isCrit,
+      true
+    );
   });
 
   it('11b/12b. crit rate clamps to 0..1', () => {
-    assert.equal(calculateDamage({ atk: 50, def: 0, critRate: 5, roll: 0.99 }).isCrit, true);
-    assert.equal(calculateDamage({ atk: 50, def: 0, critRate: -2, roll: 0.0 }).isCrit, false);
+    assert.equal(
+      calculateDamage({ atk: 50, def: 0, critRate: 5, roll: 0.99 }).isCrit,
+      true
+    );
+    assert.equal(
+      calculateDamage({ atk: 50, def: 0, critRate: -2, roll: 0.0 }).isCrit,
+      false
+    );
   });
 
   it('29. player and enemy share one damage path', () => {
@@ -166,7 +231,10 @@ describe('damage calculation', () => {
 
 describe('turn order and rounds', () => {
   it('4. player attacks first within a round', () => {
-    const s = createBattle({ playerStats: HERO, enemy: enemy({ maxHp: 10000 }) });
+    const s = createBattle({
+      playerStats: HERO,
+      enemy: enemy({ maxHp: 10000 }),
+    });
     const next = runRound(s, 'basic_attack', NO_CRIT);
     assert.equal(next.log[0].actor, 'player');
     assert.equal(next.log[1].actor, 'enemy');
@@ -174,7 +242,10 @@ describe('turn order and rounds', () => {
   });
 
   it('24. round advances after both turns', () => {
-    const s = createBattle({ playerStats: HERO, enemy: enemy({ maxHp: 10000 }) });
+    const s = createBattle({
+      playerStats: HERO,
+      enemy: enemy({ maxHp: 10000 }),
+    });
     const next = runRound(s, 'basic_attack', NO_CRIT);
     assert.equal(next.round, 2);
     assert.equal(next.status, 'ONGOING');
@@ -195,10 +266,18 @@ describe('turn order and rounds', () => {
 
 describe('active skills and cooldowns', () => {
   it('14. active skill damage uses its multiplier', () => {
-    const s = createBattle({ playerStats: HERO, enemy: enemy(), playerSkills: { active: skill({ multiplier: 2 }) } });
+    const s = createBattle({
+      playerStats: HERO,
+      enemy: enemy(),
+      playerSkills: { active: skill({ multiplier: 2 }) },
+    });
     const next = playerTurn(s, 'skill', NO_CRIT);
     assert.equal(next.log[0].action, 'skill');
-    const basic = playerTurn(createBattle({ playerStats: HERO, enemy: enemy() }), 'basic_attack', NO_CRIT);
+    const basic = playerTurn(
+      createBattle({ playerStats: HERO, enemy: enemy() }),
+      'basic_attack',
+      NO_CRIT
+    );
     assert.ok(next.log[0].damage > basic.log[0].damage);
   });
 
@@ -207,11 +286,18 @@ describe('active skills and cooldowns', () => {
     assert.equal(skillReadyRound(1, 6), 4);
     assert.equal(cooldownRounds(2), 1);
     assert.throws(() => cooldownRounds(0), RangeError);
-    let s = createBattle({ playerStats: HERO, enemy: enemy({ maxHp: 10000 }), playerSkills: { active: skill() } });
+    let s = createBattle({
+      playerStats: HERO,
+      enemy: enemy({ maxHp: 10000 }),
+      playerSkills: { active: skill() },
+    });
     s = playerTurn(s, 'skill', NO_CRIT);
     assert.equal(s.player.cooldowns.skill, 4);
     const r2 = { ...s, round: 2 };
-    assert.equal(playerTurn(r2, 'skill', NO_CRIT).log.at(-1).action, 'basic_attack');
+    assert.equal(
+      playerTurn(r2, 'skill', NO_CRIT).log.at(-1).action,
+      'basic_attack'
+    );
     const r4 = { ...s, round: 4 };
     assert.equal(playerTurn(r4, 'skill', NO_CRIT).log.at(-1).action, 'skill');
   });
@@ -225,7 +311,10 @@ describe('active skills and cooldowns', () => {
       playerSkills: { active: skill() },
     });
     const used = playerTurn(locked, 'skill', NO_CRIT);
-    assert.equal(playerTurn(used, 'skill', NO_CRIT).log.at(-1).action, 'basic_attack');
+    assert.equal(
+      playerTurn(used, 'skill', NO_CRIT).log.at(-1).action,
+      'basic_attack'
+    );
   });
 });
 
@@ -234,13 +323,25 @@ describe('passives and triggers', () => {
     return createBattle({
       playerStats: HERO,
       enemy: enemy({ maxHp: 10000 }),
-      playerSkills: { passives: [{ name, source: 'test', trigger, modifiers: mods, effects: [] }] },
+      playerSkills: {
+        passives: [
+          { name, source: 'test', trigger, modifiers: mods, effects: [] },
+        ],
+      },
     });
   }
 
   it('18. attack-trigger passive modifies outgoing damage and is logged', () => {
-    const plain = playerTurn(createBattle({ playerStats: HERO, enemy: enemy({ maxHp: 10000 }) }), 'basic_attack', NO_CRIT);
-    const buffed = playerTurn(withPassive({ damageMult: 1.5 }), 'basic_attack', NO_CRIT);
+    const plain = playerTurn(
+      createBattle({ playerStats: HERO, enemy: enemy({ maxHp: 10000 }) }),
+      'basic_attack',
+      NO_CRIT
+    );
+    const buffed = playerTurn(
+      withPassive({ damageMult: 1.5 }),
+      'basic_attack',
+      NO_CRIT
+    );
     assert.ok(buffed.log[0].damage > plain.log[0].damage);
     assert.ok(buffed.log[0].triggered.includes('Test Passive'));
     assert.deepEqual(plain.log[0].triggered, []);
@@ -250,11 +351,24 @@ describe('passives and triggers', () => {
     const guard = createBattle({
       playerStats: { ...HERO, maxHp: 10000, currentHp: 10000 },
       enemy: enemy(),
-      playerSkills: { passives: [{ name: 'Guard', source: 'test', trigger: 'defend', modifiers: { guardMult: 0.5 }, effects: [] }] },
+      playerSkills: {
+        passives: [
+          {
+            name: 'Guard',
+            source: 'test',
+            trigger: 'defend',
+            modifiers: { guardMult: 0.5 },
+            effects: [],
+          },
+        ],
+      },
     });
     const hit = enemyTurn(guard, NO_CRIT);
     const plain = enemyTurn(
-      createBattle({ playerStats: { ...HERO, maxHp: 10000, currentHp: 10000 }, enemy: enemy() }),
+      createBattle({
+        playerStats: { ...HERO, maxHp: 10000, currentHp: 10000 },
+        enemy: enemy(),
+      }),
       NO_CRIT
     );
     assert.ok(hit.log[0].damage < plain.log[0].damage);
@@ -273,22 +387,38 @@ describe('enemy AI', () => {
     const s = createBattle({
       playerStats: { ...HERO, maxHp: 10000, currentHp: 10000 },
       enemy: { ...enemy(), behavior: 'basic' },
-      enemySkills: { active: { name: 'Smash', multiplier: 9, cooldownSec: 2, unlocked: true } },
+      enemySkills: {
+        active: {
+          name: 'Smash',
+          multiplier: 9,
+          cooldownSec: 2,
+          unlocked: true,
+        },
+      },
     });
     assert.equal(enemyTurn(s, NO_CRIT).log[0].action, 'basic_attack');
   });
 
   it('20. skill_based uses skill when ready, else basic', () => {
     const foe = { ...enemy(), behavior: 'skill_based' };
-    const skills = { active: { name: 'Smash', multiplier: 3, cooldownSec: 4, unlocked: true } };
-    const s = createBattle({ playerStats: { ...HERO, maxHp: 10000, currentHp: 10000 }, enemy: foe, enemySkills: skills });
+    const skills = {
+      active: { name: 'Smash', multiplier: 3, cooldownSec: 4, unlocked: true },
+    };
+    const s = createBattle({
+      playerStats: { ...HERO, maxHp: 10000, currentHp: 10000 },
+      enemy: foe,
+      enemySkills: skills,
+    });
     const first = enemyTurn(s, NO_CRIT);
     assert.equal(first.log[0].action, 'skill');
     assert.equal(enemyTurn(first, NO_CRIT).log.at(-1).action, 'basic_attack');
   });
 
   it('rejects unknown behavior', () => {
-    const s = createBattle({ playerStats: HERO, enemy: { ...enemy(), behavior: 'genius' } });
+    const s = createBattle({
+      playerStats: HERO,
+      enemy: { ...enemy(), behavior: 'genius' },
+    });
     assert.throws(() => enemyTurn(s, NO_CRIT), RangeError);
   });
 });
@@ -322,8 +452,20 @@ describe('battle end', () => {
 describe('persistence and log', () => {
   it('27. engine has no database/message/timer dependencies', async () => {
     const { readFile } = await import('node:fs/promises');
-    const src = await readFile(new URL('../src/features/rpg/services/battle-engine.js', import.meta.url), 'utf8');
-    for (const banned of ['#storage', 'baileys', 'whatsapp', 'setTimeout', 'setInterval', 'sendMessage', 'inventory', 'wallet']) {
+    const src = await readFile(
+      new URL('../src/features/rpg/services/battle-engine.js', import.meta.url),
+      'utf8'
+    );
+    for (const banned of [
+      '#storage',
+      'baileys',
+      'whatsapp',
+      'setTimeout',
+      'setInterval',
+      'sendMessage',
+      'inventory',
+      'wallet',
+    ]) {
       assert.ok(!src.includes(banned), `banned reference: ${banned}`);
     }
   });
@@ -359,17 +501,34 @@ describe('skill-config adapter', () => {
     assert.equal(active.multiplier, 1.1);
     assert.equal(active.cooldownSec, 8);
     assert.deepEqual(passives, []);
-    const up = battleSkillsFromEffects([fx({ upgraded: true, effects: [{ stat: 'atk', mode: 'pct', value: 0.25 }] })]);
+    const up = battleSkillsFromEffects([
+      fx({
+        upgraded: true,
+        effects: [{ stat: 'atk', mode: 'pct', value: 0.25 }],
+      }),
+    ]);
     assert.equal(up.active.multiplier, 1.25);
   });
 
   it('maps passives generically without card branches', () => {
     const { active, passives } = battleSkillsFromEffects([
-      fx({ source: 'main-passive', name: 'Sugar Rush', effects: [{ stat: 'critRate', mode: 'add', value: 0.05 }] }),
-      fx({ source: 'sign-passive', cardId: 'girgas_sign', name: 'Drive', effects: [{ stat: 'def', mode: 'pct', value: 0.1 }] }),
+      fx({
+        source: 'main-passive',
+        name: 'Sugar Rush',
+        effects: [{ stat: 'critRate', mode: 'add', value: 0.05 }],
+      }),
+      fx({
+        source: 'sign-passive',
+        cardId: 'girgas_sign',
+        name: 'Drive',
+        effects: [{ stat: 'def', mode: 'pct', value: 0.1 }],
+      }),
     ]);
     assert.equal(active, null);
-    assert.deepEqual(passives.map((p) => p.trigger), ['attack', 'defend']);
+    assert.deepEqual(
+      passives.map((p) => p.trigger),
+      ['attack', 'defend']
+    );
     assert.deepEqual(passives[0].modifiers, { critRateBonus: 0.05 });
     assert.deepEqual(passives[1].modifiers, { guardMult: 0.9 });
   });
@@ -377,7 +536,14 @@ describe('skill-config adapter', () => {
   it('30. every existing main card adapts with no card-id logic', () => {
     for (const [id, def] of Object.entries(MAIN_CARDS)) {
       const { active } = battleSkillsFromEffects([
-        { source: 'main-active', cardId: id, name: def.active.name, upgraded: false, cooldownMs: def.active.cooldownMs, effects: def.active.effects },
+        {
+          source: 'main-active',
+          cardId: id,
+          name: def.active.name,
+          upgraded: false,
+          cooldownMs: def.active.cooldownMs,
+          effects: def.active.effects,
+        },
       ]);
       assert.ok(active.multiplier >= 1, id);
       assert.equal(active.cooldownSec, def.active.cooldownMs / 1000);

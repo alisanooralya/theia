@@ -38,14 +38,23 @@ function mainCard(over = {}) {
 function signCard(over = {}) {
   return {
     cardId: 'girgas_sign',
-    definition: { name: 'Girgas Sign', passive: { name: 'Lollipop Drive' }, compatibleCard: 'girgas' },
+    definition: {
+      name: 'Girgas Sign',
+      passive: { name: 'Lollipop Drive' },
+      compatibleCard: 'girgas',
+    },
     stats: { atk: 20, def: 8 },
     signCompatible: true,
     ...over,
   };
 }
 
-function stubService({ final = FINAL, main = null, sign = null, calls = null } = {}) {
+function stubService({
+  final = FINAL,
+  main = null,
+  sign = null,
+  calls = null,
+} = {}) {
   return createProfileService({
     finalStatsService: {
       getFinalStats: async (userId) => {
@@ -69,7 +78,11 @@ function stubService({ final = FINAL, main = null, sign = null, calls = null } =
 describe('profile data', () => {
   it('reads all numbers from Final Stats Service only', async () => {
     const calls = { final: [], main: [], sign: [] };
-    const data = await stubService({ calls, main: mainCard(), sign: signCard() }).getProfileData('u');
+    const data = await stubService({
+      calls,
+      main: mainCard(),
+      sign: signCard(),
+    }).getProfileData('u');
     assert.deepEqual(calls.final, ['u']);
     assert.deepEqual(calls.main, ['u']);
     assert.deepEqual(calls.sign, ['u']);
@@ -84,7 +97,11 @@ describe('profile data', () => {
 
   it('propagates service errors instead of rendering partial data', async () => {
     const broken = createProfileService({
-      finalStatsService: { getFinalStats: async () => { throw new Error('db down'); } },
+      finalStatsService: {
+        getFinalStats: async () => {
+          throw new Error('db down');
+        },
+      },
       cardService: {
         getEquippedMainCard: async () => null,
         getEquippedSignCard: async () => null,
@@ -132,7 +149,10 @@ describe('profile formatting', () => {
   });
 
   it('marks incompatible sign passive inactive but keeps bonuses', async () => {
-    const t = await text({ main: mainCard(), sign: signCard({ signCompatible: false }) });
+    const t = await text({
+      main: mainCard(),
+      sign: signCard({ signCompatible: false }),
+    });
     assert.ok(t.includes('ATK +20'));
     assert.ok(t.includes('DEF +8'));
     assert.ok(t.includes('Passive: Inactive'));
@@ -143,7 +163,10 @@ describe('profile formatting', () => {
     const locked = await text({
       main: mainCard({
         level: 1,
-        skills: { active: { unlocked: false, upgraded: false }, passive: { unlocked: false, upgraded: false } },
+        skills: {
+          active: { unlocked: false, upgraded: false },
+          passive: { unlocked: false, upgraded: false },
+        },
       }),
     });
     assert.ok(locked.includes('Lv.25'));
@@ -151,7 +174,10 @@ describe('profile formatting', () => {
     const maxed = await text({
       main: mainCard({
         level: 100,
-        skills: { active: { unlocked: true, upgraded: true }, passive: { unlocked: true, upgraded: true } },
+        skills: {
+          active: { unlocked: true, upgraded: true },
+          passive: { unlocked: true, upgraded: true },
+        },
       }),
     });
     assert.ok(maxed.includes('Upgraded'));
@@ -173,14 +199,27 @@ describe('profile command', () => {
     assert.equal(cmd.category, 'rpg');
     assert.equal(typeof cmd.execute, 'function');
     const src = (cmd.execute.toString() + JSON.stringify(cmd)).toLowerCase();
-    for (const banned of ['base +', 'getbaseStats', 'update(', 'setcurrenthp', 'insert into', 'update rpg']) {
-      assert.ok(!src.includes(banned), `command must stay thin, found: ${banned}`);
+    for (const banned of [
+      'base +',
+      'getbaseStats',
+      'update(',
+      'setcurrenthp',
+      'insert into',
+      'update rpg',
+    ]) {
+      assert.ok(
+        !src.includes(banned),
+        `command must stay thin, found: ${banned}`
+      );
     }
   });
 
   it('replies with rendered profile and handles errors', async () => {
     const { readFile } = await import('node:fs/promises');
-    const src = await readFile(new URL('../src/commands/modules/rpg/profile.js', import.meta.url), 'utf8');
+    const src = await readFile(
+      new URL('../src/commands/modules/rpg/profile.js', import.meta.url),
+      'utf8'
+    );
     assert.ok(src.includes('getProfileData'));
     assert.ok(src.includes('formatProfile'));
     assert.ok(src.includes('ctx.reply'));

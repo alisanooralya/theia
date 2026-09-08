@@ -37,7 +37,11 @@ export {
   isSignCompatible,
   signPassiveState,
 } from './services/skill-engine.js';
-export { cardService, createCardService, enrichCard } from './services/card-service.js';
+export {
+  cardService,
+  createCardService,
+  enrichCard,
+} from './services/card-service.js';
 export {
   finalStatService,
   createFinalStatService,
@@ -55,7 +59,10 @@ export {
 } from './config/shop-config.js';
 export { rpgCoinModel } from './models/rpg-coin.model.js';
 export { rpgInventoryModel } from './models/rpg-inventory.model.js';
-export { inventoryService, createInventoryService } from './services/inventory-service.js';
+export {
+  inventoryService,
+  createInventoryService,
+} from './services/inventory-service.js';
 export { shopService, createShopService } from './services/shop-service.js';
 export {
   GACHA_CONFIG,

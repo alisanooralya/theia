@@ -113,8 +113,14 @@ describe('final stats (database)', { skip: !dbAvailable }, () => {
     await cardService.equipSignCard(userId, 'daisy_sign');
     const s = cardStatsAtLevel(getSignCard('daisy_sign'), 1);
     const final = await finalStatService.getFinalStats(userId);
-    assert.equal(final.atk, 10 + cardStatsAtLevel(getMainCard('girgas'), 1).atk + s.atk);
-    assert.equal(final.def, 5 + cardStatsAtLevel(getMainCard('girgas'), 1).def + s.def);
+    assert.equal(
+      final.atk,
+      10 + cardStatsAtLevel(getMainCard('girgas'), 1).atk + s.atk
+    );
+    assert.equal(
+      final.def,
+      5 + cardStatsAtLevel(getMainCard('girgas'), 1).def + s.def
+    );
     assert.deepEqual(Object.keys(final).sort(), [
       'atk',
       'critDmg',
@@ -139,7 +145,11 @@ describe('final stats (database)', { skip: !dbAvailable }, () => {
     const after = await finalStatService.getFinalStats(userId);
     const m = cardStatsAtLevel(getMainCard('ameris'), 11);
     const s = cardStatsAtLevel(getSignCard('ameris_sign'), 11);
-    assert.ok(after.maxHp > before.maxHp && after.atk > before.atk && after.def > before.def);
+    assert.ok(
+      after.maxHp > before.maxHp &&
+        after.atk > before.atk &&
+        after.def > before.def
+    );
     assert.equal(after.maxHp, 100 + m.hp);
     assert.equal(after.atk, 10 + m.atk + s.atk);
     assert.equal(after.def, 5 + m.def + s.def);

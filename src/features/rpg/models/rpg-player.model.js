@@ -30,7 +30,8 @@ const ALLOWED_UPDATE_FIELDS = [
 
 class RpgPlayerModel {
   async get(userId, client = sql) {
-    const rows = await client`SELECT * FROM rpg_players WHERE user_id = ${userId}`;
+    const rows =
+      await client`SELECT * FROM rpg_players WHERE user_id = ${userId}`;
     return rows[0] ?? null;
   }
 

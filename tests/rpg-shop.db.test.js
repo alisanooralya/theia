@@ -6,7 +6,10 @@ import { createSchema } from '../src/storage/definitions.js';
 import { rpgPlayerModel } from '../src/features/rpg/models/rpg-player.model.js';
 import { rpgCoinModel } from '../src/features/rpg/models/rpg-coin.model.js';
 import { inventoryService } from '../src/features/rpg/services/inventory-service.js';
-import { shopService, createShopService } from '../src/features/rpg/services/shop-service.js';
+import {
+  shopService,
+  createShopService,
+} from '../src/features/rpg/services/shop-service.js';
 import { getShopItem } from '../src/features/rpg/config/shop-config.js';
 
 let dbAvailable;
@@ -62,7 +65,10 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
       JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
       WHERE tc.table_name = 'rpg_inventory' AND tc.constraint_type = 'UNIQUE'
     `;
-    assert.deepEqual(uniques.map((r) => r.column_name).sort(), ['item_id', 'user_id']);
+    assert.deepEqual(uniques.map((r) => r.column_name).sort(), [
+      'item_id',
+      'user_id',
+    ]);
   });
 
   it('5-8. inventory add/remove with single-row accumulation', async () => {
@@ -71,10 +77,14 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
     await inventoryService.addItem(userId, 'cerelia', 10);
     await inventoryService.addItem(userId, 'cerelia', 5);
     assert.equal(await inventoryService.getItemQuantity(userId, 'cerelia'), 15);
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_inventory WHERE user_id = ${userId}`;
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_inventory WHERE user_id = ${userId}`;
     assert.equal(rows[0].n, 1);
     assert.equal(await inventoryService.removeItem(userId, 'cerelia', 6), 9);
-    await assert.rejects(inventoryService.removeItem(userId, 'cerelia', 10), RangeError);
+    await assert.rejects(
+      inventoryService.removeItem(userId, 'cerelia', 10),
+      RangeError
+    );
     assert.equal(await inventoryService.getItemQuantity(userId, 'cerelia'), 9);
     // Zero cleans the row; reads stay at zero.
     assert.equal(await inventoryService.removeItem(userId, 'cerelia', 9), 0);
@@ -127,7 +137,10 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
       },
     });
     const before = await rpgCoinModel.getBalance(userId);
-    await assert.rejects(broken.buyItem(userId, 'cerelia', 1), /inventory exploded/);
+    await assert.rejects(
+      broken.buyItem(userId, 'cerelia', 1),
+      /inventory exploded/
+    );
     assert.equal(await rpgCoinModel.getBalance(userId), before);
     assert.equal(await inventoryService.getItemQuantity(userId, 'cerelia'), 0);
   });
@@ -135,20 +148,28 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
   it('17. UNIQUE(user_id, item_id) enforced at the database', async () => {
     const userId = await makeUser('uniq');
     await inventoryService.addItem(userId, 'cerelia', 1);
-    await assert.rejects(sql`INSERT INTO rpg_inventory (user_id, item_id, quantity) VALUES (${userId}, 'cerelia', 1)`);
-    await assert.rejects(sql`INSERT INTO rpg_inventory (user_id, item_id, quantity) VALUES (${userId}, '', 1)`);
-    await assert.rejects(sql`UPDATE rpg_inventory SET quantity = -1 WHERE user_id = ${userId}`);
+    await assert.rejects(
+      sql`INSERT INTO rpg_inventory (user_id, item_id, quantity) VALUES (${userId}, 'cerelia', 1)`
+    );
+    await assert.rejects(
+      sql`INSERT INTO rpg_inventory (user_id, item_id, quantity) VALUES (${userId}, '', 1)`
+    );
+    await assert.rejects(
+      sql`UPDATE rpg_inventory SET quantity = -1 WHERE user_id = ${userId}`
+    );
   });
 
   it('18. inventory reads do not mutate state', async () => {
     const userId = await makeUser('read');
     await inventoryService.addItem(userId, 'cerelia', 3);
-    const before = await sql`SELECT * FROM rpg_inventory WHERE user_id = ${userId} ORDER BY item_id`;
+    const before =
+      await sql`SELECT * FROM rpg_inventory WHERE user_id = ${userId} ORDER BY item_id`;
     await inventoryService.getInventory(userId);
     await inventoryService.getItemQuantity(userId, 'cerelia');
     await inventoryService.hasItem(userId, 'cerelia', 2);
     await inventoryService.getItemQuantity(userId, 'ghost_item');
-    const after = await sql`SELECT * FROM rpg_inventory WHERE user_id = ${userId} ORDER BY item_id`;
+    const after =
+      await sql`SELECT * FROM rpg_inventory WHERE user_id = ${userId} ORDER BY item_id`;
     assert.deepEqual(after, before);
   });
 });

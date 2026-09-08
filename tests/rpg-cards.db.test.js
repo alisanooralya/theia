@@ -59,7 +59,14 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
         WHERE table_name = ${table}
       `;
       const map = Object.fromEntries(cols.map((c) => [c.column_name, c]));
-      for (const name of ['user_id', 'card_id', 'level', 'equipped', 'created_at', 'updated_at']) {
+      for (const name of [
+        'user_id',
+        'card_id',
+        'level',
+        'equipped',
+        'created_at',
+        'updated_at',
+      ]) {
         assert.ok(map[name], `${table} missing ${name}`);
         assert.equal(map[name].is_nullable, 'NO');
       }
@@ -68,7 +75,10 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
         JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
         WHERE tc.table_name = ${table} AND tc.constraint_type = 'UNIQUE'
       `;
-      assert.deepEqual(uniques.map((r) => r.column_name).sort(), ['card_id', 'user_id']);
+      assert.deepEqual(uniques.map((r) => r.column_name).sort(), [
+        'card_id',
+        'user_id',
+      ]);
     }
     const indexes = await sql`
       SELECT indexname FROM pg_indexes
@@ -85,7 +95,8 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
     assert.equal(first.card.level, 1);
     const second = await cardService.grantCard(userId, 'girgas');
     assert.equal(second.isNew, false);
-    const count = await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId}`;
+    const count =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId}`;
     assert.equal(count[0].n, 1);
     await assert.rejects(cardService.grantCard(userId, 'nope'), RangeError);
   });
@@ -99,13 +110,19 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
     assert.equal(up.levels, 24);
     assert.deepEqual(
       { coin: up.cost.coin, cerelia: up.cost.cerelia },
-      { coin: bulkLevelCost(1, 24, 100).coin, cerelia: bulkLevelCost(1, 24, 100).cerelia }
+      {
+        coin: bulkLevelCost(1, 24, 100).coin,
+        cerelia: bulkLevelCost(1, 24, 100).cerelia,
+      }
     );
     assert.equal(up.card.skills.active.unlocked, true);
     const maxed = await cardService.bulkLevelUp(userId, 'lena', 100);
     assert.equal(maxed.toLevel, 100);
     assert.equal(maxed.card.skills.passive.upgraded, true);
-    assert.deepEqual(maxed.card.stats, cardStatsAtLevel(getMainCard('lena'), 100));
+    assert.deepEqual(
+      maxed.card.stats,
+      cardStatsAtLevel(getMainCard('lena'), 100)
+    );
     await assert.rejects(cardService.levelUp(userId, 'lena'), RangeError);
     await assert.rejects(cardService.levelUp(userId, 'lena', 500), RangeError);
     await assert.rejects(
@@ -120,7 +137,10 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
     assert.equal(up.toLevel, 50);
     assert.deepEqual(Object.keys(up.card.stats).sort(), ['atk', 'def']);
     assert.ok(up.card.stats.atk > getSignCard('girgas_sign').base.atk);
-    await assert.rejects(cardService.levelUp(userId, 'girgas_sign'), RangeError);
+    await assert.rejects(
+      cardService.levelUp(userId, 'girgas_sign'),
+      RangeError
+    );
     await assert.rejects(
       sql`UPDATE rpg_sign_cards SET level = 51 WHERE user_id = ${userId}`
     );
@@ -131,13 +151,23 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
     await cardService.grantCard(userId, 'girgas');
     await cardService.grantCard(userId, 'daisy');
     await cardService.equipMainCard(userId, 'girgas');
-    assert.equal((await cardService.getEquippedMainCard(userId)).cardId, 'girgas');
+    assert.equal(
+      (await cardService.getEquippedMainCard(userId)).cardId,
+      'girgas'
+    );
     await cardService.equipMainCard(userId, 'daisy');
-    assert.equal((await cardService.getEquippedMainCard(userId)).cardId, 'daisy');
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId} AND equipped = 1`;
+    assert.equal(
+      (await cardService.getEquippedMainCard(userId)).cardId,
+      'daisy'
+    );
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId} AND equipped = 1`;
     assert.equal(rows[0].n, 1);
     await assert.rejects(cardService.equipMainCard(userId, 'lena'), RangeError);
-    await assert.rejects(cardService.equipMainCard(userId, 'girgas_sign'), RangeError);
+    await assert.rejects(
+      cardService.equipMainCard(userId, 'girgas_sign'),
+      RangeError
+    );
   });
 
   it('activates sign passive only on compatible main', async () => {
@@ -163,7 +193,10 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
   it('rejects sign equip without a main and cascades main unequip', async () => {
     const userId = await makeUser('slot');
     await cardService.grantCard(userId, 'lena_sign');
-    await assert.rejects(cardService.equipSignCard(userId, 'lena_sign'), RangeError);
+    await assert.rejects(
+      cardService.equipSignCard(userId, 'lena_sign'),
+      RangeError
+    );
     await cardService.grantCard(userId, 'lena');
     await cardService.equipMainCard(userId, 'lena');
     await cardService.equipSignCard(userId, 'lena_sign');
@@ -185,16 +218,26 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
     const fx = await cardService.getActiveEffects(userId);
     const bySource = Object.fromEntries(fx.map((e) => [e.source, e]));
     assert.equal(bySource['main-active'].upgraded, true);
-    assert.equal(bySource['main-active'].cooldownMs, MAIN_CARDS.ameris.active.cooldownMs);
+    assert.equal(
+      bySource['main-active'].cooldownMs,
+      MAIN_CARDS.ameris.active.cooldownMs
+    );
     assert.equal(bySource['main-passive'].upgraded, true);
     assert.equal(bySource['main-passive'].cooldownMs, null);
     assert.equal(bySource['sign-passive'].cooldownMs, null);
-    assert.deepEqual(bySource['sign-passive'].effects, SIGN_CARDS.ameris_sign.passive.effects);
+    assert.deepEqual(
+      bySource['sign-passive'].effects,
+      SIGN_CARDS.ameris_sign.passive.effects
+    );
   });
 
   it('enforces FK to rpg_players', async () => {
     await assert.rejects(
-      rpgCardModel.grant(`rpgcardtest-ghost-${process.pid}@test.local`, 'girgas', 'main')
+      rpgCardModel.grant(
+        `rpgcardtest-ghost-${process.pid}@test.local`,
+        'girgas',
+        'main'
+      )
     );
   });
 });

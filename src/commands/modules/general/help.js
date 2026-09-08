@@ -33,6 +33,7 @@ const CAT_ICONS = {
   general: '📋',
   group: '👥',
   owner: '👑',
+  rpg: '🎮',
   utility: '🔧',
 };
 

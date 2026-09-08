@@ -10,14 +10,34 @@ import {
 
 describe('level-up costs', () => {
   it('1. Lv1 -> 2 costs 5,000 coin + 5 cerelia', () => {
-    assert.deepEqual(getLevelUpCost('main', 1), { coin: 5000, cerelia: 5, materialId: 'cerelia' });
-    assert.deepEqual(getLevelUpCost('sign', 1), { coin: 5000, cerelia: 5, materialId: 'cerelia' });
+    assert.deepEqual(getLevelUpCost('main', 1), {
+      coin: 5000,
+      cerelia: 5,
+      materialId: 'cerelia',
+    });
+    assert.deepEqual(getLevelUpCost('sign', 1), {
+      coin: 5000,
+      cerelia: 5,
+      materialId: 'cerelia',
+    });
   });
 
   it('2-3. cost rises gradually per the config formula', () => {
-    assert.deepEqual(getLevelUpCost('main', 2), { coin: 5500, cerelia: 6, materialId: 'cerelia' });
-    assert.deepEqual(getLevelUpCost('main', 3), { coin: 6000, cerelia: 7, materialId: 'cerelia' });
-    assert.deepEqual(getLevelUpCost('main', 4), { coin: 6500, cerelia: 8, materialId: 'cerelia' });
+    assert.deepEqual(getLevelUpCost('main', 2), {
+      coin: 5500,
+      cerelia: 6,
+      materialId: 'cerelia',
+    });
+    assert.deepEqual(getLevelUpCost('main', 3), {
+      coin: 6000,
+      cerelia: 7,
+      materialId: 'cerelia',
+    });
+    assert.deepEqual(getLevelUpCost('main', 4), {
+      coin: 6500,
+      cerelia: 8,
+      materialId: 'cerelia',
+    });
     const cfg = CARD_LEVELING;
     for (const lv of [10, 50, 99]) {
       assert.deepEqual(getLevelUpCost('main', lv), {
@@ -29,7 +49,10 @@ describe('level-up costs', () => {
     let prev = getLevelUpCost('main', 1);
     for (let lv = 2; lv <= 99; lv += 1) {
       const cur = getLevelUpCost('main', lv);
-      assert.ok(cur.coin >= prev.coin && cur.cerelia >= prev.cerelia, `Lv.${lv}`);
+      assert.ok(
+        cur.coin >= prev.coin && cur.cerelia >= prev.cerelia,
+        `Lv.${lv}`
+      );
       prev = cur;
     }
   });
@@ -40,7 +63,10 @@ describe('level-up costs', () => {
       { coin: bulk.coin, cerelia: bulk.cerelia },
       { coin: 5000 + 5500 + 6000 + 6500, cerelia: 5 + 6 + 7 + 8 }
     );
-    assert.deepEqual({ levels: bulk.levels, toLevel: bulk.toLevel }, { levels: 4, toLevel: 5 });
+    assert.deepEqual(
+      { levels: bulk.levels, toLevel: bulk.toLevel },
+      { levels: 4, toLevel: 5 }
+    );
     // A naive single-step x count would differ; prove stepwise summation.
     const single = getLevelUpCost('main', 1);
     assert.notDeepEqual(

@@ -11,7 +11,10 @@ import {
   rollItemQuantity,
 } from '../src/features/rpg/config/gacha-config.js';
 import { MAIN_CARDS } from '../src/features/rpg/config/card-config.js';
-import { SHOP_ITEMS, getPurchasableItems } from '../src/features/rpg/config/shop-config.js';
+import {
+  SHOP_ITEMS,
+  getPurchasableItems,
+} from '../src/features/rpg/config/shop-config.js';
 import {
   parseGachaArgs,
   formatGachaResult,
@@ -36,12 +39,30 @@ describe('gacha config', () => {
   });
 
   it('roll boundaries route to the right category', () => {
-    assert.equal(rollPull(() => 0.0), 'main');
-    assert.equal(rollPull(() => 0.009), 'main');
-    assert.equal(rollPull(() => 0.01), 'zonk');
-    assert.equal(rollPull(() => 0.5), 'zonk');
-    assert.equal(rollPull(() => 0.51), 'shopItem');
-    assert.equal(rollPull(() => 0.99), 'shopItem');
+    assert.equal(
+      rollPull(() => 0.0),
+      'main'
+    );
+    assert.equal(
+      rollPull(() => 0.009),
+      'main'
+    );
+    assert.equal(
+      rollPull(() => 0.01),
+      'zonk'
+    );
+    assert.equal(
+      rollPull(() => 0.5),
+      'zonk'
+    );
+    assert.equal(
+      rollPull(() => 0.51),
+      'shopItem'
+    );
+    assert.equal(
+      rollPull(() => 0.99),
+      'shopItem'
+    );
   });
 
   it('11. main pool is exactly the card config', () => {
@@ -54,9 +75,15 @@ describe('gacha config', () => {
 
   it('12-13. shop pool is exactly the purchasable shop config', () => {
     const ids = getPurchasableItems().map((i) => i.id);
-    assert.deepEqual(ids, Object.keys(SHOP_ITEMS).filter((id) => SHOP_ITEMS[id].purchasable));
+    assert.deepEqual(
+      ids,
+      Object.keys(SHOP_ITEMS).filter((id) => SHOP_ITEMS[id].purchasable)
+    );
     assert.ok(ids.includes('cerelia'));
-    assert.equal(rollShopItem(() => 0), ids[0]);
+    assert.equal(
+      rollShopItem(() => 0),
+      ids[0]
+    );
   });
 
   it('item quantity stays in the configured range', () => {
@@ -65,8 +92,14 @@ describe('gacha config', () => {
       const q = rollItemQuantity();
       assert.ok(q >= min && q <= max);
     }
-    assert.equal(rollItemQuantity(() => 0), min);
-    assert.equal(rollItemQuantity(() => 0.999), max);
+    assert.equal(
+      rollItemQuantity(() => 0),
+      min
+    );
+    assert.equal(
+      rollItemQuantity(() => 0.999),
+      max
+    );
   });
 });
 
@@ -112,7 +145,13 @@ describe('gacha command parsing and UI', () => {
       },
       pullFn: async (sender, count) => {
         seen.push([sender, count]);
-        return { requestKey: 'k', count, total: 25000, results: [], duplicate: false };
+        return {
+          requestKey: 'k',
+          count,
+          total: 25000,
+          results: [],
+          duplicate: false,
+        };
       },
     });
     assert.equal(delays, 1);

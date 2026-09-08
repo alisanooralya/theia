@@ -18,7 +18,13 @@ import { rpgPlayerModel } from '../models/rpg-player.model.js';
 import { rpgCoinModel } from '../models/rpg-coin.model.js';
 import { rpgInventoryModel } from '../models/rpg-inventory.model.js';
 
-export function createShopService({ playerModel, coinModel, inventoryModel, db = sql, catalog = null } = {}) {
+export function createShopService({
+  playerModel,
+  coinModel,
+  inventoryModel,
+  db = sql,
+  catalog = null,
+} = {}) {
   const players = playerModel ?? rpgPlayerModel;
   const coins = coinModel ?? rpgCoinModel;
   const inventory = inventoryModel ?? rpgInventoryModel;
@@ -48,7 +54,8 @@ export function createShopService({ playerModel, coinModel, inventoryModel, db =
     async buyItem(userId, itemId, quantity = 1) {
       const item = shop.getShopItem(itemId);
       if (!item) throw new RangeError(`Item tidak ada: ${itemId}`);
-      if (!item.purchasable) throw new RangeError(`Item tidak dijual: ${itemId}`);
+      if (!item.purchasable)
+        throw new RangeError(`Item tidak dijual: ${itemId}`);
       if (!Number.isInteger(quantity) || quantity < 1) {
         throw new RangeError('quantity must be a positive integer');
       }

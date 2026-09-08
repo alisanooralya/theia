@@ -41,7 +41,9 @@ async function resources(userId) {
   return {
     coin: await rpgCoinModel.getBalance(userId),
     cerelia: await rpgInventoryModel.getQuantity(userId, 'cerelia'),
-    level: (await cardService.getCard(userId, 'girgas').catch(() => null))?.level ?? null,
+    level:
+      (await cardService.getCard(userId, 'girgas').catch(() => null))?.level ??
+      null,
   };
 }
 
@@ -69,11 +71,20 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     assert.equal(up.cost.coin, expected.coin);
     assert.equal(up.cost.cerelia, expected.cerelia);
     assert.equal(up.cost.materialId, 'cerelia');
-    assert.equal(await rpgCoinModel.getBalance(userId), 5000000 - expected.coin);
-    assert.equal(await rpgInventoryModel.getQuantity(userId, 'cerelia'), 10000 - expected.cerelia);
+    assert.equal(
+      await rpgCoinModel.getBalance(userId),
+      5000000 - expected.coin
+    );
+    assert.equal(
+      await rpgInventoryModel.getQuantity(userId, 'cerelia'),
+      10000 - expected.cerelia
+    );
     const sign = await cardService.levelUp(userId, 'girgas_sign', 4);
     assert.equal(sign.toLevel, 5);
-    assert.deepEqual(sign.card.stats, cardStatsAtLevel(getSignCard('girgas_sign'), 5));
+    assert.deepEqual(
+      sign.card.stats,
+      cardStatsAtLevel(getSignCard('girgas_sign'), 5)
+    );
   });
 
   it('7-8. max levels enforced per kind', async () => {
@@ -85,14 +96,23 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     assert.equal((await cardService.getCard(userId, 'lena')).level, 100);
     await assert.rejects(cardService.levelUp(userId, 'lena'), RangeError);
     await assert.rejects(cardService.levelUp(userId, 'lena_sign'), RangeError);
-    await assert.rejects(cardService.bulkLevelUp(userId, 'lena', 101), RangeError);
+    await assert.rejects(
+      cardService.bulkLevelUp(userId, 'lena', 101),
+      RangeError
+    );
   });
 
   it('9-10. unowned cards rejected without touching resources', async () => {
     const userId = await makeUser('unowned');
     const before = await resources(userId);
-    await assert.rejects(cardService.bulkLevelUp(userId, 'girgas', 5), RangeError);
-    await assert.rejects(cardService.bulkLevelUp(userId, 'girgas_sign', 5), RangeError);
+    await assert.rejects(
+      cardService.bulkLevelUp(userId, 'girgas', 5),
+      RangeError
+    );
+    await assert.rejects(
+      cardService.bulkLevelUp(userId, 'girgas_sign', 5),
+      RangeError
+    );
     await assert.rejects(cardService.levelUp(userId, 'girgas'), RangeError);
     assert.deepEqual(await resources(userId), before);
     const check = await cardService.canLevelUp(userId, 'girgas');
@@ -103,15 +123,27 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
   it('11-12. insufficient coin or cerelia blocks with nothing spent', async () => {
     const poor = await makeUser('poor', 100, 10000);
     await cardService.grantCard(poor, 'girgas');
-    await assert.rejects(cardService.bulkLevelUp(poor, 'girgas', 5), RangeError);
-    assert.equal((await cardService.canLevelUp(poor, 'girgas', 5)).reason, 'insufficient-coin');
+    await assert.rejects(
+      cardService.bulkLevelUp(poor, 'girgas', 5),
+      RangeError
+    );
+    assert.equal(
+      (await cardService.canLevelUp(poor, 'girgas', 5)).reason,
+      'insufficient-coin'
+    );
     assert.equal(await rpgCoinModel.getBalance(poor), 100);
     assert.equal((await cardService.getCard(poor, 'girgas')).level, 1);
 
     const nocer = await makeUser('nocer', 5000000, 0);
     await cardService.grantCard(nocer, 'girgas');
-    await assert.rejects(cardService.bulkLevelUp(nocer, 'girgas', 2), RangeError);
-    assert.equal((await cardService.canLevelUp(nocer, 'girgas', 2)).reason, 'insufficient-cerelia');
+    await assert.rejects(
+      cardService.bulkLevelUp(nocer, 'girgas', 2),
+      RangeError
+    );
+    assert.equal(
+      (await cardService.canLevelUp(nocer, 'girgas', 2)).reason,
+      'insufficient-cerelia'
+    );
     assert.equal(await rpgCoinModel.getBalance(nocer), 5000000);
   });
 
@@ -119,10 +151,19 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     const userId = await makeUser('target');
     await cardService.grantCard(userId, 'daisy');
     for (const bad of [1, 0, -3, 1.5, 101]) {
-      await assert.rejects(cardService.bulkLevelUp(userId, 'daisy', bad), RangeError);
+      await assert.rejects(
+        cardService.bulkLevelUp(userId, 'daisy', bad),
+        RangeError
+      );
     }
-    assert.equal((await cardService.canLevelUp(userId, 'daisy', 1)).reason, 'invalid-target');
-    assert.equal((await cardService.canLevelUp(userId, 'daisy', 101)).reason, 'exceeds-max');
+    assert.equal(
+      (await cardService.canLevelUp(userId, 'daisy', 1)).reason,
+      'invalid-target'
+    );
+    assert.equal(
+      (await cardService.canLevelUp(userId, 'daisy', 101)).reason,
+      'exceeds-max'
+    );
     await assert.rejects(cardService.levelUp(userId, 'daisy', 0), RangeError);
     assert.equal((await cardService.getCard(userId, 'daisy')).level, 1);
   });
@@ -134,7 +175,10 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     const up = await cardService.bulkLevelUp(userId, 'ameris', 4);
     assert.equal(up.levels, 3);
     assert.equal(await rpgCoinModel.getBalance(userId), 100000 - cost.coin);
-    assert.equal(await rpgInventoryModel.getQuantity(userId, 'cerelia'), 100 - cost.cerelia);
+    assert.equal(
+      await rpgInventoryModel.getQuantity(userId, 'cerelia'),
+      100 - cost.cerelia
+    );
     assert.equal((await cardService.getCard(userId, 'ameris')).level, 4);
   });
 
@@ -144,7 +188,10 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     // Drain cerelia concurrently simulation: remove so spend succeeds but
     // remove fails — here simply no cerelia at all.
     const before = await rpgCoinModel.getBalance(userId);
-    await assert.rejects(cardService.bulkLevelUp(userId, 'girgas', 3), RangeError);
+    await assert.rejects(
+      cardService.bulkLevelUp(userId, 'girgas', 3),
+      RangeError
+    );
     assert.equal(await rpgCoinModel.getBalance(userId), before);
     assert.equal((await cardService.getCard(userId, 'girgas')).level, 1);
   });
@@ -153,16 +200,33 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     const userId = await makeUser('rollback2');
     await cardService.grantCard(userId, 'girgas');
     const brokenCards = {
-      find: (u, id) => cardService.getCard(u, id).then((c) => ({ user_id: u, card_id: id, level: c.level, equipped: 0 })),
-      setLevel: async () => { throw new Error('level exploded'); },
+      find: (u, id) =>
+        cardService
+          .getCard(u, id)
+          .then((c) => ({
+            user_id: u,
+            card_id: id,
+            level: c.level,
+            equipped: 0,
+          })),
+      setLevel: async () => {
+        throw new Error('level exploded');
+      },
     };
-    const { createCardService } = await import('../src/features/rpg/services/card-service.js');
+    const { createCardService } =
+      await import('../src/features/rpg/services/card-service.js');
     const broken = createCardService({ cardModel: brokenCards });
     const coinBefore = await rpgCoinModel.getBalance(userId);
     const cerBefore = await rpgInventoryModel.getQuantity(userId, 'cerelia');
-    await assert.rejects(broken.bulkLevelUp(userId, 'girgas', 3), /level exploded/);
+    await assert.rejects(
+      broken.bulkLevelUp(userId, 'girgas', 3),
+      /level exploded/
+    );
     assert.equal(await rpgCoinModel.getBalance(userId), coinBefore);
-    assert.equal(await rpgInventoryModel.getQuantity(userId, 'cerelia'), cerBefore);
+    assert.equal(
+      await rpgInventoryModel.getQuantity(userId, 'cerelia'),
+      cerBefore
+    );
   });
 
   it('18-19. final stats and milestones follow the new level', async () => {
@@ -173,7 +237,10 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     await cardService.bulkLevelUp(userId, 'daisy', 25);
     const after = await finalStatService.getFinalStats(userId);
     const expected = cardStatsAtLevel(getMainCard('daisy'), 25);
-    assert.equal(after.maxHp, before.maxHp - cardStatsAtLevel(getMainCard('daisy'), 1).hp + expected.hp);
+    assert.equal(
+      after.maxHp,
+      before.maxHp - cardStatsAtLevel(getMainCard('daisy'), 1).hp + expected.hp
+    );
     assert.equal(after.currentHp, before.currentHp);
     const equipped = await cardService.getEquippedMainCard(userId);
     assert.equal(equipped.skills.active.unlocked, true);

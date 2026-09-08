@@ -46,7 +46,8 @@ function assertTrigger(trigger) {
 function snapStats(stats, label) {
   const s = { ...stats };
   for (const key of ['maxHp', 'atk', 'def']) {
-    if (!Number.isFinite(s[key])) throw new RangeError(`${label} needs numeric ${key}`);
+    if (!Number.isFinite(s[key]))
+      throw new RangeError(`${label} needs numeric ${key}`);
   }
   s.critRate = Number.isFinite(s.critRate) ? s.critRate : 0;
   s.critDmg = Number.isFinite(s.critDmg) ? s.critDmg : 2.0;
@@ -67,8 +68,12 @@ function cloneState(state) {
     ...state,
     player: snapSide(state.player, 'player'),
     enemy: snapSide(state.enemy, 'enemy'),
-    playerSkills: state.playerSkills ? JSON.parse(JSON.stringify(state.playerSkills)) : null,
-    enemySkills: state.enemySkills ? JSON.parse(JSON.stringify(state.enemySkills)) : null,
+    playerSkills: state.playerSkills
+      ? JSON.parse(JSON.stringify(state.playerSkills))
+      : null,
+    enemySkills: state.enemySkills
+      ? JSON.parse(JSON.stringify(state.enemySkills))
+      : null,
     log: [...state.log],
   };
 }
@@ -91,12 +96,16 @@ export function createBattle({
   if (!playerStats) throw new RangeError('playerStats is required');
   if (!enemy?.stats) throw new RangeError('enemy with stats is required');
   const playerHp = playerStats.currentHp ?? playerStats.maxHp;
-  if (!(playerHp > 0)) throw new RangeError('battle cannot start with currentHp <= 0');
+  if (!(playerHp > 0))
+    throw new RangeError('battle cannot start with currentHp <= 0');
   const enemyMax = enemy.stats.maxHp;
   if (!(enemyMax > 0)) throw new RangeError('enemy needs maxHp > 0');
 
   battleSeq += 1;
-  for (const p of [...(playerSkills?.passives ?? []), ...(enemySkills?.passives ?? [])]) {
+  for (const p of [
+    ...(playerSkills?.passives ?? []),
+    ...(enemySkills?.passives ?? []),
+  ]) {
     assertTrigger(p.trigger);
   }
   const state = {
@@ -119,7 +128,11 @@ export function createBattle({
     },
     playerSkills: playerSkills?.active ? { ...playerSkills.active } : null,
     enemySkills: enemySkills?.active ? { ...enemySkills.active } : null,
-    enemyMeta: { id: enemy.id ?? null, name: enemy.name ?? 'Enemy', behavior: enemy.behavior ?? 'basic' },
+    enemyMeta: {
+      id: enemy.id ?? null,
+      name: enemy.name ?? 'Enemy',
+      behavior: enemy.behavior ?? 'basic',
+    },
     log: [],
   };
   applyTriggerEffects(state, 'player', 'battle_start');
@@ -224,7 +237,14 @@ function resolveAction(skills, cooldowns, round, wanted) {
       cooldownSec: skills.cooldownSec,
     };
   }
-  return { action: 'basic_attack', name: null, multiplier: 1, flatBonus: 0, defIgnore: 0, cooldownSec: 0 };
+  return {
+    action: 'basic_attack',
+    name: null,
+    multiplier: 1,
+    flatBonus: 0,
+    defIgnore: 0,
+    cooldownSec: 0,
+  };
 }
 
 function takeTurn(state, side, skillsKey, action, roll) {
@@ -268,7 +288,11 @@ function takeTurn(state, side, skillsKey, action, roll) {
 
   applyTriggerEffects(next, side, 'hit');
   if (isCrit) applyTriggerEffects(next, side, 'crit');
-  applyTriggerEffects(next, side === 'player' ? 'enemy' : 'player', 'damage_taken');
+  applyTriggerEffects(
+    next,
+    side === 'player' ? 'enemy' : 'player',
+    'damage_taken'
+  );
   const foeAfter = side === 'player' ? next.enemy : next.player;
   entry.targetHp = foeAfter.hp;
   next.log.push(entry);
@@ -280,7 +304,11 @@ function takeTurn(state, side, skillsKey, action, roll) {
 }
 
 /** Player turn: exactly one action (basic attack or active skill). */
-export function playerTurn(state, action = 'basic_attack', roll = Math.random()) {
+export function playerTurn(
+  state,
+  action = 'basic_attack',
+  roll = Math.random()
+) {
   if (state.status !== 'ONGOING') return cloneState(state);
   return takeTurn(state, 'player', 'playerSkills', action, roll);
 }
@@ -297,8 +325,16 @@ export function enemyTurn(state, roll = Math.random()) {
 }
 
 /** Full round: player acts first, then enemy (only if still alive). */
-export function runRound(state, playerAction = 'basic_attack', roll = Math.random()) {
-  let next = playerTurn(state, playerAction, typeof roll === 'function' ? roll() : roll);
+export function runRound(
+  state,
+  playerAction = 'basic_attack',
+  roll = Math.random()
+) {
+  let next = playerTurn(
+    state,
+    playerAction,
+    typeof roll === 'function' ? roll() : roll
+  );
   if (next.status !== 'ONGOING') return next;
   const enemyRoll = typeof roll === 'function' ? roll() : roll;
   next = enemyTurn(next, enemyRoll);
@@ -311,7 +347,11 @@ export function runRound(state, playerAction = 'basic_attack', roll = Math.rando
 }
 
 /** Run rounds until terminal (WIN/LOSE/DRAW). Caller owns pacing. */
-export function simulateBattle(state, chooseAction = () => 'basic_attack', roll = Math.random()) {
+export function simulateBattle(
+  state,
+  chooseAction = () => 'basic_attack',
+  roll = Math.random()
+) {
   let next = cloneState(state);
   let guard = next.maxRounds + 5;
   while (next.status === 'ONGOING' && guard > 0) {
@@ -347,7 +387,10 @@ export function battleSkillsFromEffects(activeEffects = []) {
         unlocked: true,
         upgraded: !!entry.upgraded,
       };
-    } else if (entry.source === 'main-passive' || entry.source === 'sign-passive') {
+    } else if (
+      entry.source === 'main-passive' ||
+      entry.source === 'sign-passive'
+    ) {
       for (const fx of entry.effects ?? []) {
         passives.push(translateStatEffect(entry, fx));
       }
@@ -357,24 +400,45 @@ export function battleSkillsFromEffects(activeEffects = []) {
 }
 
 function translateStatEffect(entry, fx) {
-  const base = { name: entry.name, source: entry.source, modifiers: {}, effects: [] };
+  const base = {
+    name: entry.name,
+    source: entry.source,
+    modifiers: {},
+    effects: [],
+  };
   switch (fx.stat) {
     case 'critRate':
-      return { ...base, trigger: 'attack', modifiers: { critRateBonus: fx.value } };
+      return {
+        ...base,
+        trigger: 'attack',
+        modifiers: { critRateBonus: fx.value },
+      };
     case 'critDmg':
-      return { ...base, trigger: 'attack', modifiers: { critDmgBonus: fx.value } };
+      return {
+        ...base,
+        trigger: 'attack',
+        modifiers: { critDmgBonus: fx.value },
+      };
     case 'atk':
       return fx.mode === 'pct'
-        ? { ...base, trigger: 'attack', modifiers: { damageMult: 1 + fx.value } }
+        ? {
+            ...base,
+            trigger: 'attack',
+            modifiers: { damageMult: 1 + fx.value },
+          }
         : { ...base, trigger: 'attack', modifiers: { flatBonus: fx.value } };
     case 'def':
     case 'hp':
       return {
         ...base,
         trigger: 'defend',
-        modifiers: { guardMult: fx.mode === 'pct' ? 1 - fx.value : 1 - fx.value / 100 },
+        modifiers: {
+          guardMult: fx.mode === 'pct' ? 1 - fx.value : 1 - fx.value / 100,
+        },
       };
     default:
-      throw new RangeError(`cannot translate skill stat for battle: ${fx.stat}`);
+      throw new RangeError(
+        `cannot translate skill stat for battle: ${fx.stat}`
+      );
   }
 }

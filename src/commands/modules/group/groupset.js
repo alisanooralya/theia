@@ -27,13 +27,9 @@ export default {
 
     if (
       !sub ||
-      ![
-        'mute',
-        'antitoxic',
-        'greeting',
-        'openclose',
-        'welcome',
-      ].includes(sub) ||
+      !['mute', 'antitoxic', 'greeting', 'openclose', 'welcome'].includes(
+        sub
+      ) ||
       !['on', 'off'].includes(value)
     ) {
       const g = await groupModel.find(jid);

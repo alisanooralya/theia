@@ -72,7 +72,10 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
         ON tc.constraint_name = kcu.constraint_name
       WHERE tc.table_name = 'rpg_players' AND tc.constraint_type = 'PRIMARY KEY'
     `;
-    assert.deepEqual(pk.map((r) => r.column_name), ['user_id']);
+    assert.deepEqual(
+      pk.map((r) => r.column_name),
+      ['user_id']
+    );
   });
 
   it('ensure creates the parent users row for fresh senders', async () => {
@@ -107,7 +110,8 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
 
   it('DDL column defaults mirror the stats config', async () => {
     const userId = await makeUser('defaults');
-    const rows = await sql`INSERT INTO rpg_players (user_id) VALUES (${userId}) RETURNING *`;
+    const rows =
+      await sql`INSERT INTO rpg_players (user_id) VALUES (${userId}) RETURNING *`;
     assert.deepEqual(
       {
         level: rows[0].level,
@@ -126,8 +130,12 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
         def: RPG_STATS_CONFIG.startingDef,
       }
     );
-    assert.ok(Math.abs(rows[0].crit_rate - RPG_STATS_CONFIG.startingCritRate) < 1e-9);
-    assert.ok(Math.abs(rows[0].crit_dmg - RPG_STATS_CONFIG.startingCritDmg) < 1e-9);
+    assert.ok(
+      Math.abs(rows[0].crit_rate - RPG_STATS_CONFIG.startingCritRate) < 1e-9
+    );
+    assert.ok(
+      Math.abs(rows[0].crit_dmg - RPG_STATS_CONFIG.startingCritDmg) < 1e-9
+    );
   });
 
   it('ensure does not duplicate players', async () => {
@@ -137,7 +145,8 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
     const second = await rpgPlayerModel.ensure(userId);
     assert.equal(second.atk, 42);
     assert.equal(second.user_id, first.user_id);
-    const count = await sql`SELECT COUNT(*)::int AS n FROM rpg_players WHERE user_id = ${userId}`;
+    const count =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_players WHERE user_id = ${userId}`;
     assert.equal(count[0].n, 1);
   });
 
@@ -166,7 +175,9 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
   it('enforces one player per user (PK)', async () => {
     const userId = await makeUser('e');
     await rpgPlayerModel.ensure(userId);
-    await assert.rejects(sql`INSERT INTO rpg_players (user_id) VALUES (${userId})`);
+    await assert.rejects(
+      sql`INSERT INTO rpg_players (user_id) VALUES (${userId})`
+    );
   });
 
   it('enforces FK to users and NOT NULL / CHECK constraints', async () => {
@@ -179,8 +190,12 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
     // NOT NULL: null user rejected.
     await assert.rejects(sql`INSERT INTO rpg_players (user_id) VALUES (NULL)`);
     // CHECK: negative exp rejected.
-    await assert.rejects(sql`UPDATE rpg_players SET exp = -1 WHERE user_id = ${userId}`);
+    await assert.rejects(
+      sql`UPDATE rpg_players SET exp = -1 WHERE user_id = ${userId}`
+    );
     // CHECK: zero max_hp rejected.
-    await assert.rejects(sql`UPDATE rpg_players SET max_hp = 0 WHERE user_id = ${userId}`);
+    await assert.rejects(
+      sql`UPDATE rpg_players SET max_hp = 0 WHERE user_id = ${userId}`
+    );
   });
 });

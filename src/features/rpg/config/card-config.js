@@ -72,7 +72,15 @@ export const CERELIA_ITEM = Object.freeze({
   stackable: true,
 });
 
-function skill(name, description, unlockLevel, upgradeLevel, effects, upgradedEffects, cooldownMs = null) {
+function skill(
+  name,
+  description,
+  unlockLevel,
+  upgradeLevel,
+  effects,
+  upgradedEffects,
+  cooldownMs = null
+) {
   return Object.freeze({
     name,
     description,
@@ -80,13 +88,17 @@ function skill(name, description, unlockLevel, upgradeLevel, effects, upgradedEf
     upgradeLevel,
     cooldownMs,
     effects: Object.freeze(effects.map((e) => Object.freeze({ ...e }))),
-    upgradedEffects: Object.freeze(upgradedEffects.map((e) => Object.freeze({ ...e }))),
+    upgradedEffects: Object.freeze(
+      upgradedEffects.map((e) => Object.freeze({ ...e }))
+    ),
   });
 }
 
 function mainCard(id, name, role, base, growth, active, passive) {
   if (!Number.isInteger(active.cooldownMs) || active.cooldownMs <= 0) {
-    throw new RangeError(`main card ${id} must configure a positive active cooldownMs`);
+    throw new RangeError(
+      `main card ${id} must configure a positive active cooldownMs`
+    );
   }
   if (passive.cooldownMs !== null) {
     throw new RangeError(`main card ${id} passive must not have a cooldown`);
@@ -113,7 +125,9 @@ function signCard(id, name, compatibleCard, base, growth, passive) {
     growth: Object.freeze({ ...growth }),
     passive: Object.freeze({
       ...passive,
-      effects: Object.freeze(passive.effects.map((e) => Object.freeze({ ...e }))),
+      effects: Object.freeze(
+        passive.effects.map((e) => Object.freeze({ ...e }))
+      ),
     }),
   });
 }
@@ -348,7 +362,10 @@ export function levelStepCost(level, maxLevel) {
  * `maxLevel`. Pure — used by bulk level-up and tests.
  */
 export function bulkLevelCost(fromLevel, count, maxLevel) {
-  const levels = Math.max(0, Math.min(Math.floor(count) || 0, maxLevel - fromLevel));
+  const levels = Math.max(
+    0,
+    Math.min(Math.floor(count) || 0, maxLevel - fromLevel)
+  );
   let coin = 0;
   let cerelia = 0;
   for (let lv = fromLevel; lv < fromLevel + levels; lv += 1) {
@@ -421,7 +438,8 @@ export function affordableLevels(fromLevel, coin, cerelia, maxLevel) {
   let spentCerelia = 0;
   for (let lv = fromLevel; lv < maxLevel; lv += 1) {
     const step = levelStepCost(lv, maxLevel);
-    if (spentCoin + step.coin > coin || spentCerelia + step.cerelia > cerelia) break;
+    if (spentCoin + step.coin > coin || spentCerelia + step.cerelia > cerelia)
+      break;
     spentCoin += step.coin;
     spentCerelia += step.cerelia;
     levels += 1;

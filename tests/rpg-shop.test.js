@@ -88,7 +88,12 @@ describe('inventory service validation (stubbed model)', () => {
   function stub(state = new Map()) {
     return createInventoryService({
       inventoryModel: {
-        getAll: async (u) => [...state.entries()].map(([item_id, quantity]) => ({ user_id: u, item_id, quantity })),
+        getAll: async (u) =>
+          [...state.entries()].map(([item_id, quantity]) => ({
+            user_id: u,
+            item_id,
+            quantity,
+          })),
         getQuantity: async (u, id) => state.get(`${u}:${id}`) ?? 0,
         add: async (u, id, qty) => {
           state.set(`${u}:${id}`, (state.get(`${u}:${id}`) ?? 0) + qty);

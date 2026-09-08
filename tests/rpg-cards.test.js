@@ -82,11 +82,18 @@ describe('stat scaling', () => {
     for (const def of Object.values(MAIN_CARDS)) {
       const max = maxLevelFor('main');
       const l1 = cardStatsAtLevel(def, 1);
-      assert.deepEqual(l1, { hp: def.base.hp, atk: def.base.atk, def: def.base.def });
+      assert.deepEqual(l1, {
+        hp: def.base.hp,
+        atk: def.base.atk,
+        def: def.base.def,
+      });
       let prev = l1;
       for (const lv of [25, 50, 75, 100]) {
         const cur = cardStatsAtLevel(def, lv);
-        assert.ok(cur.hp >= prev.hp && cur.atk >= prev.atk && cur.def >= prev.def, `${def.id}@${lv}`);
+        assert.ok(
+          cur.hp >= prev.hp && cur.atk >= prev.atk && cur.def >= prev.def,
+          `${def.id}@${lv}`
+        );
         prev = cur;
       }
       assert.ok(cardStatsAtLevel(def, max).hp > l1.hp);
@@ -117,7 +124,8 @@ describe('leveling costs', () => {
     const step = levelStepCost(1, MAIN_MAX_LEVEL);
     assert.deepEqual(step, {
       coin: CARD_LEVELING.coinBase + CARD_LEVELING.coinPerLevel * 0,
-      cerelia: CARD_LEVELING.cereliaBase + Math.floor(0 / CARD_LEVELING.cereliaEvery),
+      cerelia:
+        CARD_LEVELING.cereliaBase + Math.floor(0 / CARD_LEVELING.cereliaEvery),
       materialId: 'cerelia',
     });
     assert.equal(levelStepCost(100, MAIN_MAX_LEVEL), null);
@@ -169,11 +177,16 @@ describe('skill engine', () => {
   it('gives every active skill a cooldown, no cooldown on passives', () => {
     for (const def of Object.values(MAIN_CARDS)) {
       const state = mainSkillState(def, 100);
-      assert.ok(Number.isInteger(state.active.cooldownMs) && state.active.cooldownMs > 0);
+      assert.ok(
+        Number.isInteger(state.active.cooldownMs) && state.active.cooldownMs > 0
+      );
       assert.equal(state.passive.cooldownMs, null);
     }
     assert.throws(() => resolveSkillState(null, 10), RangeError);
-    assert.throws(() => mainSkillState(getSignCard('girgas_sign'), 10), RangeError);
+    assert.throws(
+      () => mainSkillState(getSignCard('girgas_sign'), 10),
+      RangeError
+    );
   });
 
   it('gates sign passives on compatibleCard only', () => {
@@ -188,7 +201,10 @@ describe('skill engine', () => {
     const off = signPassiveState(sign, 'daisy');
     assert.equal(off.active, false);
     assert.deepEqual(off.effects, []);
-    assert.throws(() => isSignCompatible(getMainCard('girgas'), 'girgas'), RangeError);
+    assert.throws(
+      () => isSignCompatible(getMainCard('girgas'), 'girgas'),
+      RangeError
+    );
   });
 });
 
@@ -211,15 +227,17 @@ describe('enrichCard', () => {
     assert.deepEqual(sign.stats, cardStatsAtLevel(getSignCard('lena_sign'), 5));
     assert.equal(sign.passive.name, getSignCard('lena_sign').passive.name);
     assert.equal(enrichCard(null, 'main'), null);
-    assert.throws(() => enrichCard({ card_id: 'nope', level: 1 }, 'main'), RangeError);
+    assert.throws(
+      () => enrichCard({ card_id: 'nope', level: 1 }, 'main'),
+      RangeError
+    );
   });
 });
 
 describe('rpg foundation untouched', () => {
   it('keeps base-stat defaults independent from cards', async () => {
-    const { defaultRpgStats } = await import(
-      '../src/features/rpg/config/stats-config.js'
-    );
+    const { defaultRpgStats } =
+      await import('../src/features/rpg/config/stats-config.js');
     assert.deepEqual(Object.keys(defaultRpgStats()).sort(), [
       'atk',
       'crit_dmg',

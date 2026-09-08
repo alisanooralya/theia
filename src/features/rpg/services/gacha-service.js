@@ -61,7 +61,11 @@ export function createGachaService({
      * Run `count` pulls (must be a configured cost key: 1 or 10).
      * Returns { requestKey, count, total, results, duplicate }.
      */
-    async pull(userId, count, { requestKey = null, random = Math.random } = {}) {
+    async pull(
+      userId,
+      count,
+      { requestKey = null, random = Math.random } = {}
+    ) {
       const total = gachaCost(count);
       const key = requestKey ?? makeRequestKey(userId);
       await players.ensure(userId);
@@ -72,7 +76,13 @@ export function createGachaService({
         if (!claimed) {
           const prior = await requests.getResults(key, userId, tx);
           if (!prior) throw new RangeError('Request gacha sudah diproses.');
-          return { requestKey: key, count: prior.length, total, results: prior, duplicate: true };
+          return {
+            requestKey: key,
+            count: prior.length,
+            total,
+            results: prior,
+            duplicate: true,
+          };
         }
 
         await tx`SELECT user_id FROM rpg_players WHERE user_id = ${userId} FOR UPDATE`;

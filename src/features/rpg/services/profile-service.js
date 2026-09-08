@@ -13,7 +13,8 @@ import { finalStatService as defaultFinalStats } from './final-stat-service.js';
 import { cardService as defaultCardService } from './card-service.js';
 
 function skillLine(icon, skill) {
-  if (!skill.unlocked) return `${icon} ${skill.name}: 🔒 Lv.${skill.unlockLevel}`;
+  if (!skill.unlocked)
+    return `${icon} ${skill.name}: 🔒 Lv.${skill.unlockLevel}`;
   if (skill.upgraded) return `${icon} ${skill.name}: ✅ Upgraded`;
   return `${icon} ${skill.name}: ⚡ Unlocked`;
 }

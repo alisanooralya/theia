@@ -99,7 +99,10 @@ describe('toBaseStats', () => {
       crit_dmg: 2.0,
     });
     for (const key of Object.keys(stats)) {
-      assert.match(key, /^(userId|level|exp|maxHp|currentHp|atk|def|critRate|critDmg)$/);
+      assert.match(
+        key,
+        /^(userId|level|exp|maxHp|currentHp|atk|def|critRate|critDmg)$/
+      );
     }
   });
 
@@ -143,10 +146,22 @@ describe('rpgPlayerModel input validation (no DB)', () => {
     const explodingClient = () => {
       throw new Error('must not reach the database');
     };
-    await assert.rejects(rpgPlayerModel.setLevel('u', 0, explodingClient), RangeError);
-    await assert.rejects(rpgPlayerModel.setLevel('u', 1.5, explodingClient), RangeError);
-    await assert.rejects(rpgPlayerModel.setExp('u', -1, explodingClient), RangeError);
-    await assert.rejects(rpgPlayerModel.setCurrentHp('u', 1.5, explodingClient), RangeError);
+    await assert.rejects(
+      rpgPlayerModel.setLevel('u', 0, explodingClient),
+      RangeError
+    );
+    await assert.rejects(
+      rpgPlayerModel.setLevel('u', 1.5, explodingClient),
+      RangeError
+    );
+    await assert.rejects(
+      rpgPlayerModel.setExp('u', -1, explodingClient),
+      RangeError
+    );
+    await assert.rejects(
+      rpgPlayerModel.setCurrentHp('u', 1.5, explodingClient),
+      RangeError
+    );
   });
 
   it('update only allows known RPG columns', async () => {
@@ -157,7 +172,11 @@ describe('rpgPlayerModel input validation (no DB)', () => {
         return [{ user_id: 'u' }];
       },
     };
-    await rpgPlayerModel.update('u', { atk: 99, injected: 1, level: 5 }, stubClient);
+    await rpgPlayerModel.update(
+      'u',
+      { atk: 99, injected: 1, level: 5 },
+      stubClient
+    );
     assert.ok(captured.query.includes('atk = $1'));
     assert.ok(captured.query.includes('level = $2'));
     assert.ok(!captured.query.includes('injected'));
