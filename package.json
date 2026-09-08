@@ -8,7 +8,6 @@
     "start": "node --watch src/index.js",
     "db:migrate": "node src/storage/migration.js",
     "db:seed": "node src/storage/seeds/initial-data.js",
-    "test": "node --test 'tests/*.test.js'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

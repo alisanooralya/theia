@@ -109,13 +109,9 @@ function statusText(overview) {
 
 async function sendStatusPanel(ctx, overview) {
   const text = statusText(overview);
-  const builder = new ButtonV2(ctx.sock).setBody(text);
-
-  try {
-    builder.setThumbnail(await readFile('temp/raid.jpg'));
-  } catch {
-    // Tanpa thumbnail kalau file tidak ada — panel tetap dikirim.
-  }
+  const builder = new ButtonV2(ctx.sock)
+    .setBody(text)
+    .setThumbnail(await readFile('temp/raid.jpg'));
 
   let hasButton = false;
   if (overview.phase === 'active' && overview.entriesLeft > 0) {
@@ -229,7 +225,7 @@ export default {
   aliases: ['raids'],
   category: 'rpg',
   description: 'Raid Boss kooperatif',
-  cooldown: 5_000,
+  cooldown: 0,
   groupOnly: true,
 
   async execute(ctx) {
@@ -238,11 +234,11 @@ export default {
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
 
-      if (sub === 'help' || sub === 'bantuan') {
+      if (sub === 'help') {
         return ctx.reply(helpText());
       }
 
-      if (sub === 'attack' || sub === 'serang' || sub === 'fight') {
+      if (sub === 'attack') {
         const result = await raidService.attack(ctx.sender);
         let text = battleResultText(result);
         let mentions = [];
@@ -260,18 +256,18 @@ export default {
         return ctx.reply(text, { mentions });
       }
 
-      if (sub === 'me' || sub === 'kontribusi' || sub === 'mine') {
+      if (sub === 'me') {
         const stats = await raidService.getMyStats(ctx.sender);
         return ctx.reply(contributionText(stats));
       }
 
-      if (sub === 'top' || sub === 'leaderboard') {
+      if (sub === 'top') {
         const top = await topText(10);
         if (typeof top === 'string') return ctx.reply(top);
         return ctx.reply(top.text, { mentions: top.mentions });
       }
 
-      if (sub === 'bosses' || sub === 'progression' || sub === 'progress') {
+      if (sub === 'bosses') {
         const overview = await raidService.getOverview(ctx.sender);
         if (!overview.periodConfig) return ctx.reply(helpText());
         return ctx.reply(bossesText(overview));
