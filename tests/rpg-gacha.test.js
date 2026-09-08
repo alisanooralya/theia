@@ -130,21 +130,30 @@ describe('gacha command parsing and UI', () => {
     assert.ok(text.includes('• Zonk ×1'));
   });
 
-  it('28. animation delays exactly once even for 10x', async () => {
+  it('28. animation delays once and result edits it in place', async () => {
     let delays = 0;
+    const sent = [];
+    const enqueued = [];
     const replies = [];
-    const seen = [];
+    const fakeKey = { id: 'anim1' };
     const ctx = {
       sender: 'u@test',
+      jid: 'g@test',
       args: ['10'],
+      send: async (msg) => {
+        sent.push(msg);
+        return { key: fakeKey };
+      },
       reply: async (msg) => replies.push(msg),
+      sock: {
+        enqueueSend: async (jid, body) => enqueued.push([jid, body]),
+      },
     };
     await executeGacha(ctx, {
       sleepFn: async () => {
         delays += 1;
       },
       pullFn: async (sender, count) => {
-        seen.push([sender, count]);
         return {
           requestKey: 'k',
           count,
@@ -155,8 +164,40 @@ describe('gacha command parsing and UI', () => {
       },
     });
     assert.equal(delays, 1);
-    assert.deepEqual(seen, [['u@test', 10]]);
-    assert.ok(replies[0].includes('Sedang melakukan gacha'));
-    assert.equal(replies.length, 2);
+    assert.equal(sent.length, 1);
+    assert.ok(sent[0].includes('Sedang melakukan gacha'));
+    assert.equal(enqueued.length, 1);
+    assert.equal(enqueued[0][0], 'g@test');
+    assert.equal(enqueued[0][1].edit, fakeKey);
+    assert.ok(enqueued[0][1].text.includes('GACHA RESULT'));
+    assert.deepEqual(replies, []);
+  });
+
+  it('falls back to reply when edit is unavailable', async () => {
+    const replies = [];
+    const ctx = {
+      sender: 'u@test',
+      jid: 'g@test',
+      args: ['1'],
+      send: async () => null,
+      reply: async (msg) => replies.push(msg),
+      sock: {
+        enqueueSend: async () => {
+          throw new Error('no edit');
+        },
+      },
+    };
+    await executeGacha(ctx, {
+      sleepFn: async () => {},
+      pullFn: async (sender, count) => ({
+        requestKey: 'k',
+        count,
+        total: 2500,
+        results: [],
+        duplicate: false,
+      }),
+    });
+    assert.equal(replies.length, 1);
+    assert.ok(replies[0].includes('GACHA RESULT'));
   });
 });

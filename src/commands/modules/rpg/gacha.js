@@ -54,7 +54,8 @@ export function formatGachaResult(outcome) {
 
 /**
  * Full command flow with injectable delay (tests assert one delay).
- * Animation sent once, single wait, pulls run once, result sent once.
+ * Animation sent once, single wait, pulls run once, result edits the
+ * animation message in place (legacy battle/bounty pattern).
  */
 export async function executeGacha(
   ctx,
@@ -65,16 +66,29 @@ export async function executeGacha(
     await ctx.reply(GACHA_USAGE);
     return;
   }
-  await ctx.reply('🎰 Sedang melakukan gacha...');
+  const animMsg = await ctx.send('🎰 Sedang melakukan gacha...');
+  const msgKey = animMsg?.key;
   await sleepFn(GACHA_CONFIG.animationDelayMs);
   const pull =
     pullFn ?? ((sender, n, opts) => gachaService.pull(sender, n, opts));
   const outcome = await pull(ctx.sender, count, {
     requestKey: makeRequestKey(ctx.sender),
   });
-  await ctx.reply(
-    `${formatGachaResult(outcome)}\n\n💰 Cost: ${F.formatNumber(outcome.total)} Coin`
-  );
+  const text = `${formatGachaResult(outcome)}\n\n💰 Cost: ${F.formatNumber(outcome.total)} Coin`;
+  if (msgKey) {
+    try {
+      await ctx.sock.enqueueSend(
+        ctx.jid,
+        { text, edit: msgKey },
+        {},
+        { bypass: true }
+      );
+      return;
+    } catch {
+      // Fall through to a fresh reply when edit is unsupported.
+    }
+  }
+  await ctx.reply(text);
 }
 
 export default {
