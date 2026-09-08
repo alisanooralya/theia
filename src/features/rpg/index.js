@@ -41,6 +41,11 @@ export {
   createFinalStatService,
 } from './services/final-stat-service.js';
 export {
+  profileService,
+  createProfileService,
+  formatProfile,
+} from './services/profile-service.js';
+export {
   MAX_ROUNDS_DEFAULT,
   ROUND_SECONDS,
   createBattle,
