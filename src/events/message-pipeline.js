@@ -19,8 +19,7 @@ async function isSenderBanned(parsed) {
 
 async function isChatMuted(parsed) {
   if (!parsed.isGroup) return false;
-  let group = await groupModel.find(parsed.jid);
-  if (!group) group = await groupModel.ensure(parsed.jid);
+  const group = await groupModel.find(parsed.jid);
   return Boolean(group?.mute);
 }
 
@@ -52,6 +51,11 @@ export async function onMessagesUpsert({ messages, type }, sock) {
       const parsed = await parseMessage(msg, sock);
       if (!parsed) continue;
       if (parsed.fromMe && !SETTINGS.respondToSelf) continue;
+
+      if (parsed.isGroup) {
+        const existing = await groupModel.find(parsed.jid);
+        if (!existing) await groupModel.ensure(parsed.jid);
+      }
 
       if (SETTINGS.autoread) {
         await sock.readMessages([msg.key]).catch(() => {});
