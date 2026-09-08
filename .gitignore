@@ -4,6 +4,7 @@ session/
 data/
 logs/
 tests/
+src/legacy/
 
 *.db
 *.db-shm
