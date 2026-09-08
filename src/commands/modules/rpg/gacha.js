@@ -8,15 +8,12 @@ import {
 export const GACHA_USAGE =
   '🎰 *GACHA*\n\nPenggunaan:\n`.gacha 1` (2.500 Coin)\n`.gacha 10` (25.000 Coin)';
 
-/** Parse args to a pull count, or null when usage should be shown. */
 export function parseGachaArgs(args) {
   if (!args || args.length === 0) return null;
   const count = Number(args[0]);
-  if (!Number.isInteger(count))
+  if (!Number.isInteger(count) || !(count in GACHA_CONFIG.costs))
     throw new RangeError('Jumlah gacha harus 1 atau 10.');
-  if (!(count in GACHA_CONFIG.costs)) {
-    throw new RangeError('Jumlah gacha harus 1 atau 10.');
-  }
+
   return count;
 }
 
@@ -26,10 +23,10 @@ function resultLine(result) {
     const qty = result.quantity > 1 ? ` ×${result.quantity}` : '';
     return `${result.index}. 🧪 ${result.itemName}${qty}`;
   }
+
   return `${result.index}. ❌ Zonk`;
 }
 
-/** Pure result renderer. No I/O, no services. */
 export function formatGachaResult(outcome) {
   const lines = ['🎰 *GACHA RESULT*', ''];
   for (const result of outcome.results) lines.push(resultLine(result));
@@ -52,43 +49,28 @@ export function formatGachaResult(outcome) {
   return lines.join('\n');
 }
 
-/**
- * Full command flow with injectable delay (tests assert one delay).
- * Animation sent once, single wait, pulls run once, result edits the
- * animation message in place (legacy battle/bounty pattern).
- */
 export async function executeGacha(
   ctx,
   { sleepFn = F.sleep, pullFn = null } = {}
 ) {
   const count = parseGachaArgs(ctx.args);
   if (count === null) {
-    await ctx.reply(GACHA_USAGE);
+    await ctx.fail(GACHA_USAGE);
     return;
   }
-  const animMsg = await ctx.send('🎰 Sedang melakukan gacha...');
+
+  const animMsg = await ctx.reply('🎰 Sedang melakukan gacha...');
   const msgKey = animMsg?.key;
   await sleepFn(GACHA_CONFIG.animationDelayMs);
+
   const pull =
     pullFn ?? ((sender, n, opts) => gachaService.pull(sender, n, opts));
   const outcome = await pull(ctx.sender, count, {
     requestKey: makeRequestKey(ctx.sender),
   });
+
   const text = `${formatGachaResult(outcome)}\n\n💰 Cost: ${F.formatNumber(outcome.total)} Coin`;
-  if (msgKey) {
-    try {
-      await ctx.sock.enqueueSend(
-        ctx.jid,
-        { text, edit: msgKey },
-        {},
-        { bypass: true }
-      );
-      return;
-    } catch {
-      // Fall through to a fresh reply when edit is unsupported.
-    }
-  }
-  await ctx.reply(text);
+  await ctx.sock.sendMessage(ctx.jid, { text, edit: msgKey });
 }
 
 export default {

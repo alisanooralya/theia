@@ -201,14 +201,12 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
     await cardService.grantCard(userId, 'girgas');
     const brokenCards = {
       find: (u, id) =>
-        cardService
-          .getCard(u, id)
-          .then((c) => ({
-            user_id: u,
-            card_id: id,
-            level: c.level,
-            equipped: 0,
-          })),
+        cardService.getCard(u, id).then((c) => ({
+          user_id: u,
+          card_id: id,
+          level: c.level,
+          equipped: 0,
+        })),
       setLevel: async () => {
         throw new Error('level exploded');
       },

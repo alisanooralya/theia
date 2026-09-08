@@ -57,7 +57,9 @@ export async function onMessagesUpsert({ messages, type }, sock) {
         if (!existing) await groupModel.ensure(parsed.jid);
       }
 
-      await userModel.ensure(parsed.sender, { pushName: parsed.pushName ?? '' });
+      await userModel.ensure(parsed.sender, {
+        pushName: parsed.pushName ?? '',
+      });
 
       if (SETTINGS.autoread) {
         await sock.readMessages([msg.key]).catch(() => {});

@@ -174,7 +174,8 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
   });
 
   it('givecoin funds a fresh sender end-to-end', async () => {
-    const { default: givecoin } = await import('../src/commands/modules/owner/givecoin.js');
+    const { default: givecoin } =
+      await import('../src/commands/modules/owner/givecoin.js');
     assert.equal(givecoin.ownerOnly, true);
     const userId = uid('givecoin');
     createdUsers.push(userId);
