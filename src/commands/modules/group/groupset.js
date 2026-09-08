@@ -23,6 +23,8 @@ export default {
       );
     }
 
+    await groupModel.ensure(jid);
+
     if (
       !sub ||
       ![

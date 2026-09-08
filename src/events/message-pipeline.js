@@ -19,7 +19,8 @@ async function isSenderBanned(parsed) {
 
 async function isChatMuted(parsed) {
   if (!parsed.isGroup) return false;
-  const group = await groupModel.find(parsed.jid);
+  let group = await groupModel.find(parsed.jid);
+  if (!group) group = await groupModel.ensure(parsed.jid);
   return Boolean(group?.mute);
 }
 
