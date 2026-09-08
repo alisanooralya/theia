@@ -75,6 +75,37 @@ const STATIC_SCHEMA = [
 
   `CREATE INDEX IF NOT EXISTS idx_cooldowns_expires    ON cooldowns(expires_at)`,
   `CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid)`,
+
+  // RPG 2.0 Card ownership/state. Definitions live in
+  // src/features/rpg/config/card-config.js (config-first); these tables
+  // store per-user state only. One copy per card id per user.
+  // equipped = 1 marks the single active card of that slot per user.
+  `
+  CREATE TABLE IF NOT EXISTS rpg_main_cards (
+    user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    card_id     TEXT    NOT NULL,
+    level       INTEGER NOT NULL DEFAULT 1 CHECK (level BETWEEN 1 AND 100),
+    equipped    INTEGER NOT NULL DEFAULT 0 CHECK (equipped IN (0, 1)),
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    UNIQUE(user_id, card_id)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS rpg_sign_cards (
+    user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    card_id     TEXT    NOT NULL,
+    level       INTEGER NOT NULL DEFAULT 1 CHECK (level BETWEEN 1 AND 50),
+    equipped    INTEGER NOT NULL DEFAULT 0 CHECK (equipped IN (0, 1)),
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    UNIQUE(user_id, card_id)
+  )
+  `,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_main_cards_equipped ON rpg_main_cards(user_id) WHERE equipped = 1`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_sign_cards_equipped ON rpg_sign_cards(user_id) WHERE equipped = 1`,
 ];
 
 export async function createSchema() {
