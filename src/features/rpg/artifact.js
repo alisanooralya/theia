@@ -237,6 +237,68 @@ function randomName(slot) {
   return `${p[Math.floor(Math.random() * p.length)]} ${s[Math.floor(Math.random() * s.length)]}`;
 }
 
+/**
+ * Jumlahkan bonus Artifact terpasang ke base stats. Murni (tanpa DB)
+ * supaya bisa dites langsung.
+ *
+ * Konvensi unit (lihat STAT_FORMAT & MAIN_STAT_SCALING):
+ * - main_stat flat (hp/atk): main_value dipakai apa adanya.
+ * - main_stat persen (hp_percent/atk_percent/def_percent/crit_rate):
+ *   main_value tersimpan per-mille (70 = 7.0%), jadi bonus persen
+ *   dihitung dengan /1000 agar sama dengan yang ditampilkan.
+ * - substats selalu flat (hp/atk/def).
+ */
+export function sumArtifactBonuses(base, artifacts) {
+  const baseHp = base?.hp ?? 1200;
+  const baseAtk = base?.atk ?? 30;
+  const baseDef = base?.def ?? 20;
+  let hp = 0;
+  let atk = 0;
+  let def = 0;
+  let critRate = 0;
+  for (const artifact of artifacts ?? []) {
+    if (!artifact) continue;
+    switch (artifact.main_stat) {
+      case 'hp':
+        hp += artifact.main_value;
+        break;
+      case 'atk':
+        atk += artifact.main_value;
+        break;
+      case 'hp_percent':
+        hp += Math.floor((baseHp * artifact.main_value) / 1000);
+        break;
+      case 'atk_percent':
+        atk += Math.floor((baseAtk * artifact.main_value) / 1000);
+        break;
+      case 'def_percent':
+        def += Math.floor((baseDef * artifact.main_value) / 1000);
+        break;
+      case 'crit_rate':
+        critRate += artifact.main_value / 10;
+        break;
+      default:
+        break;
+    }
+    for (const [stat, value] of Object.entries(artifact.substats ?? {})) {
+      switch (stat) {
+        case 'hp':
+          hp += value;
+          break;
+        case 'atk':
+          atk += value;
+          break;
+        case 'def':
+          def += value;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  return { hp, atk, def, critRate };
+}
+
 class ArtifactService {
   get slots() {
     return SLOTS;
@@ -484,14 +546,13 @@ class ArtifactService {
 
   async getPlayerStats(jid) {
     const base = await statsModel.find(jid);
-    const baseHp = base?.max_hp ?? 1200;
-    const baseAtk = base?.atk ?? 30;
-    const baseDef = base?.def ?? 20;
-    const baseCritRate = base?.crit_rate ?? 5;
-    let artifactHp = 0;
-    let artifactAtk = 0;
-    let artifactDef = 0;
-    let artifactCritRate = 0;
+    const baseStats = {
+      hp: base?.max_hp ?? 1200,
+      atk: base?.atk ?? 30,
+      def: base?.def ?? 20,
+      critRate: base?.crit_rate ?? 5,
+    };
+    const equipped = [];
     const inventory = await artifactModel.getInventory(jid);
     if (inventory) {
       const slots = ['flower', 'feather', 'sands', 'goblet', 'circlet'];
@@ -500,47 +561,16 @@ class ArtifactService {
         if (!artifactId) continue;
         const artifact = await artifactModel.findById(artifactId);
         if (!artifact) continue;
-        switch (artifact.main_stat) {
-          case 'hp':
-            artifactHp += artifact.main_value;
-            break;
-          case 'atk':
-            artifactAtk += artifact.main_value;
-            break;
-          case 'hp_percent':
-            artifactHp += Math.floor((baseHp * artifact.main_value) / 100);
-            break;
-          case 'atk_percent':
-            artifactAtk += Math.floor((baseAtk * artifact.main_value) / 100);
-            break;
-          case 'def_percent':
-            artifactDef += Math.floor((baseDef * artifact.main_value) / 100);
-            break;
-          case 'crit_rate':
-            artifactCritRate += artifact.main_value / 10;
-            break;
-        }
-        for (const [stat, value] of Object.entries(artifact.substats)) {
-          switch (stat) {
-            case 'hp':
-              artifactHp += value;
-              break;
-            case 'atk':
-              artifactAtk += value;
-              break;
-            case 'def':
-              artifactDef += value;
-              break;
-          }
-        }
+        equipped.push(artifact);
       }
     }
+    const bonus = sumArtifactBonuses(baseStats, equipped);
     const card = await cardService.getStatBonus(jid);
     return {
-      hp: baseHp + artifactHp + card.hp,
-      atk: baseAtk + artifactAtk + card.atk,
-      def: baseDef + artifactDef + card.def,
-      critRate: baseCritRate + artifactCritRate,
+      hp: baseStats.hp + bonus.hp + card.hp,
+      atk: baseStats.atk + bonus.atk + card.atk,
+      def: baseStats.def + bonus.def + card.def,
+      critRate: baseStats.critRate + bonus.critRate,
     };
   }
 

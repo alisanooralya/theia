@@ -24,17 +24,22 @@ export const RAID_MAX_SECONDS = 120;
  *   memengaruhi battle yang berjalan. Entry berikutnya mengambil snapshot
  *   terbaru.
  */
-export async function buildRaidSnapshot(jid) {
-  const base = await statsModel.ensure(jid);
-  const [profileStats, cardBattleState] = await Promise.all([
-    artifactService.getPlayerStats(jid),
-    cardService.getBattleState(jid),
-  ]);
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const buffed = base.buff_expire > nowSec;
+/**
+ * Rakit fighter Raid dari data yang sudah di-snapshot. Murni (tanpa DB)
+ * supaya aturan snapshot bisa dites langsung:
+ * - HP awal = Final Max HP Profile (`profileStats.hp`), BUKAN Current HP.
+ * - Buff ATK/DEF aktif ditambahkan seperti Battle/Domain.
+ * - Crit Rate final (persen) dikonversi ke fraksi 0–0.95.
+ */
+export function assembleRaidFighter({
+  jid,
+  base,
+  profileStats,
+  cardBattleState,
+  nowSec = Math.floor(Date.now() / 1000),
+}) {
+  const buffed = (base?.buff_expire ?? 0) > nowSec;
   const maxHp = profileStats.hp;
-
   return {
     jid,
     hp: maxHp,
@@ -44,6 +49,16 @@ export async function buildRaidSnapshot(jid) {
     critRate: Math.max(0, Math.min(0.95, profileStats.critRate / 100)),
     cardBattleState,
   };
+}
+
+export async function buildRaidSnapshot(jid) {
+  const base = await statsModel.ensure(jid);
+  const [profileStats, cardBattleState] = await Promise.all([
+    artifactService.getPlayerStats(jid),
+    cardService.getBattleState(jid),
+  ]);
+
+  return assembleRaidFighter({ jid, base, profileStats, cardBattleState });
 }
 
 /**
