@@ -188,14 +188,12 @@ async function topText(limit = 10) {
   }
 
   const lines = ['🏆 *RAID TOP KONTRIBUSI*', ''];
-  leaderboard.forEach((row, i) => {
-    lines.push(
-      `${i + 1}. @${row.jid.split('@')[0]} — *${F.formatNumber(row.totalDamage)}*`
-    );
-  });
-  return {
-    text: lines.join('\n'),
-  };
+  for (const [i, row] of leaderboard.entries()) {
+    const user = await userModel.findById(row.jid);
+    const name = user?.push_name || row.jid.split('@')[0];
+    lines.push(`${i + 1}. ${name} — *${F.formatNumber(row.totalDamage)}*`);
+  }
+  return lines.join('\n');
 }
 
 function bossesText(overview) {
@@ -264,8 +262,7 @@ export default {
       }
 
       if (sub === 'top') {
-        const top = await topText(10);
-        return ctx.reply(top.text);
+        return ctx.reply(await topText(10));
       }
 
       if (sub === 'bosses') {
