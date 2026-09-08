@@ -7,8 +7,6 @@ const STATIC_SCHEMA = [
     jid         TEXT    PRIMARY KEY,
     pn          TEXT    UNIQUE,
     push_name   TEXT    NOT NULL DEFAULT '',
-    level       INTEGER NOT NULL DEFAULT 1,
-    exp         INTEGER NOT NULL DEFAULT 0,
     banned      INTEGER NOT NULL DEFAULT 0,
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
@@ -45,14 +43,6 @@ const STATIC_SCHEMA = [
   `,
 
   `
-  CREATE TABLE IF NOT EXISTS afk (
-    jid         TEXT    PRIMARY KEY,
-    reason      TEXT    NOT NULL DEFAULT '',
-    started_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
-  )
-  `,
-
-  `
   CREATE TABLE IF NOT EXISTS warns (
     id          BIGSERIAL PRIMARY KEY,
     jid         TEXT    NOT NULL,
@@ -63,28 +53,8 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  `
-  CREATE TABLE IF NOT EXISTS group_activity (
-    jid           TEXT    NOT NULL,
-    user_jid      TEXT    NOT NULL,
-    xp            INTEGER NOT NULL DEFAULT 0,
-    level         INTEGER NOT NULL DEFAULT 1,
-    message_count INTEGER NOT NULL DEFAULT 0,
-    updated_at    INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
-    PRIMARY KEY (jid, user_jid)
-  )
-  `,
-
   `CREATE INDEX IF NOT EXISTS idx_cooldowns_expires    ON cooldowns(expires_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_level          ON users(level DESC)`,
-  `CREATE INDEX IF NOT EXISTS idx_redeem_codes_expiry  ON redeem_codes(expires_at)`,
   `CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid)`,
-  `CREATE INDEX IF NOT EXISTS idx_group_activity_jid  ON group_activity(jid, xp DESC)`,
-  `CREATE INDEX IF NOT EXISTS idx_group_activity_user ON group_activity(user_jid)`,
-  `CREATE INDEX IF NOT EXISTS idx_divergent_runs_status ON divergent_runs(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_meteor_contrib_meteor ON meteor_contributions(meteor_id, damage DESC)`,
-  `CREATE INDEX IF NOT EXISTS idx_raid_contrib_period ON raid_contributions(period_id, damage DESC)`,
-  `CREATE INDEX IF NOT EXISTS idx_raid_contrib_jid ON raid_contributions(jid)`,
 ];
 
 const MIGRATIONS = [

@@ -22,30 +22,6 @@ class UserModel {
     return user;
   }
 
-  async addExp(jid, amount, client = sql) {
-    await client`
-      UPDATE users SET exp = exp + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-    const user = await this.findById(jid, client);
-    const threshold = this.expForLevel(user.level + 1);
-    if (user.exp >= threshold) {
-      const newLevel = user.level + 1;
-      await client`
-        UPDATE users SET level = ${newLevel}, exp = 0, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-      `;
-      return {
-        user: { ...user, level: newLevel, exp: 0 },
-        leveledUp: true,
-        newLevel,
-      };
-    }
-    return { user, leveledUp: false, newLevel: user.level };
-  }
-
-  expForLevel(level) {
-    return level * level * 100;
-  }
-
   async ban(jid, client = sql) {
     bannedCache.del(jid);
     await client`UPDATE users SET banned = 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}`;
