@@ -10,10 +10,9 @@ export function formatMainCards(cards) {
   cards.forEach((card, i) => {
     lines.push(
       '',
-      `#${i + 1} ${card.definition.name}`,
-      `Lv.${card.level}`,
+      `#${i + 1} *${card.definition.name}* - Lv.${card.level}`,
       '',
-      `${card.equipped ? '🟢 Equipped' : '⚪ Not Equipped'}`,
+      `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
       `Active: ${card.skills.active.unlocked ? (card.skills.active.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`,
       `Passive: ${card.skills.passive.unlocked ? (card.skills.passive.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`
     );
@@ -30,10 +29,9 @@ export function formatSignCards(cards) {
   cards.forEach((card, i) => {
     lines.push(
       '',
-      `#${i + 1}. ${card.definition.name}`,
-      `Lv.${card.level}`,
+      `#${i + 1}. *${card.definition.name}* - Lv.${card.level}`,
       '',
-      `${card.equipped ? '🟢 Equipped' : '⚪ Not Equipped'}`,
+      `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
       `Passive: ${card.signCompatible ? 'Active' : 'Inactive'}`
     );
     if (card.equipped && !card.signCompatible) {
@@ -59,11 +57,14 @@ async function showSign(ctx) {
   await ctx.reply(formatSignCards(enriched));
 }
 
-/** Pure level-up result renderer. No I/O, no services. */
 export function formatLevelUp(result) {
   const lines = ['🎴 *CARD LEVEL UP*', '', result.name];
   if (result.maxed) {
-    lines.push(`Lv.${result.level}`, '', '✨ Card sudah mencapai level maksimum.');
+    lines.push(
+      `Lv.${result.level}`,
+      '',
+      '✨ Card sudah mencapai level maksimum.'
+    );
     return lines.join('\n');
   }
   if (!result.leveled) {

@@ -96,7 +96,7 @@ export function formatProfile(data) {
     const liness = ['👤 *RPG PROFILE*', '', '🃏 *Main Card*'];
 
     liness.push(
-      `${data.main.name} - Lv.${data.main.level}`,
+      `*${data.main.name}* - Lv.${data.main.level}`,
       ``,
       skillLine('⚡ Active', data.main.active),
       skillLine('✨ Passive', data.main.passive)
@@ -105,7 +105,7 @@ export function formatProfile(data) {
     liness.push('', '🔰 *Sign Card*');
     if (data.sign) {
       liness.push(
-        `${data.sign.name} - Lv.${data.sign.level}`,
+        `*${data.sign.name}* - Lv.${data.sign.level}`,
         `⚔️ ATK +${data.sign.atk}  🛡️ DEF +${data.sign.def}`,
         ``,
         data.sign.compatible

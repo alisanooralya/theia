@@ -178,11 +178,21 @@ export function createCardService({
         throw new RangeError(`unknown equip slot: ${kind}`);
       }
       const equipped = await cards.equipped(userId, kind);
-      if (!equipped) throw new RangeError(`no equipped ${kind === 'main' ? 'main card' : 'sign card'}`);
+      if (!equipped)
+        throw new RangeError(
+          `no equipped ${kind === 'main' ? 'main card' : 'sign card'}`
+        );
       const max = maxLevelFor(kind);
       if (equipped.level >= max) {
         const def = requireDefinition(equipped.card_id);
-        return { leveled: false, maxed: true, card: enrichCard(equipped, kind), name: def.name, level: equipped.level, max };
+        return {
+          leveled: false,
+          maxed: true,
+          card: enrichCard(equipped, kind),
+          name: def.name,
+          level: equipped.level,
+          max,
+        };
       }
       const costProbe = getLevelUpCost(kind, equipped.level);
       const [coin, cerelia] = await Promise.all([
@@ -192,9 +202,20 @@ export function createCardService({
       const affordable = affordableLevels(equipped.level, coin, cerelia, max);
       if (affordable.levels <= 0) {
         const def = requireDefinition(equipped.card_id);
-        return { leveled: false, maxed: false, card: enrichCard(equipped, kind), name: def.name, level: equipped.level, max };
+        return {
+          leveled: false,
+          maxed: false,
+          card: enrichCard(equipped, kind),
+          name: def.name,
+          level: equipped.level,
+          max,
+        };
       }
-      const done = await bulkLevelUp(userId, equipped.card_id, affordable.toLevel);
+      const done = await bulkLevelUp(
+        userId,
+        equipped.card_id,
+        affordable.toLevel
+      );
       if (done.levels === 0) {
         // Lost a race: someone else finished first. Re-read for accuracy.
         const current = await cards.equipped(userId, kind);
@@ -208,7 +229,12 @@ export function createCardService({
           max,
         };
       }
-      return { ...done, leveled: true, maxed: false, name: done.card.definition.name };
+      return {
+        ...done,
+        leveled: true,
+        maxed: false,
+        name: done.card.definition.name,
+      };
     },
 
     /** Enriched owned card or null. Throws for unknown card ids. */
