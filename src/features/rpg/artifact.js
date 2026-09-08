@@ -46,20 +46,20 @@ const STAT_FORMAT = {
 
 const MAIN_STAT_SCALING = {
   flower: { hp: { 1: 430, 20: 4780 } },
-  feather: { atk: { 1: 28, 20: 232 } },
+  feather: { atk: { 1: 32, 20: 300 } },
   sands: {
     hp_percent: { 1: 70, 20: 466 },
-    atk_percent: { 1: 70, 20: 466 },
+    atk_percent: { 1: 100, 20: 600 },
     def_percent: { 1: 70, 20: 466 },
   },
   goblet: {
     hp_percent: { 1: 87, 20: 583 },
-    atk_percent: { 1: 87, 20: 583 },
+    atk_percent: { 1: 120, 20: 750 },
     def_percent: { 1: 87, 20: 583 },
   },
   circlet: {
     hp_percent: { 1: 58, 20: 388 },
-    atk_percent: { 1: 58, 20: 388 },
+    atk_percent: { 1: 80, 20: 500 },
     def_percent: { 1: 58, 20: 388 },
     crit_rate: { 1: 39, 20: 259 },
   },
@@ -67,7 +67,7 @@ const MAIN_STAT_SCALING = {
 
 const SUBSTAT_VALUES = {
   hp: { min: 80, max: 160 },
-  atk: { min: 5, max: 15 },
+  atk: { min: 8, max: 25 },
   def: { min: 6, max: 16 },
 };
 

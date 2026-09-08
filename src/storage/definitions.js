@@ -274,10 +274,10 @@ const STATIC_SCHEMA = [
   `
   INSERT INTO cards (id, name, type, role, max_level, max_hp, max_atk, max_def, passive)
   VALUES
-    ('girgas', 'Girgas', 'main', 'Attacker', 100, 910, 164, 32, 'Melee Drive'),
-    ('lena', 'Lena', 'main', 'Archer', 100, 760, 167, 38, 'Star Stacks'),
-    ('ameris', 'Ameris', 'main', 'Supporter', 100, 920, 216, 40, 'Choco Support'),
-    ('daisy', 'Daisy', 'main', 'Defender', 100, 960, 143, 22, 'Last Stand'),
+    ('girgas', 'Girgas', 'main', 'Attacker', 100, 910, 195, 32, 'Melee Drive'),
+    ('lena', 'Lena', 'main', 'Archer', 100, 760, 200, 38, 'Star Stacks'),
+    ('ameris', 'Ameris', 'main', 'Supporter', 100, 920, 260, 40, 'Choco Support'),
+    ('daisy', 'Daisy', 'main', 'Defender', 100, 960, 175, 22, 'Last Stand'),
     ('raid_emblem', 'Raid Emblem', 'support', 'Utility', 1, 0, 0, 0, 'Raid Focus'),
     ('treasure_hunter', 'Treasure Hunter', 'support', 'Utility', 1, 0, 0, 0, 'Treasure Hunter'),
     ('iron_will', 'Iron Will', 'support', 'Utility', 1, 0, 0, 0, 'Iron Will'),
