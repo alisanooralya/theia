@@ -30,15 +30,13 @@ export default {
         'antitoxic',
         'greeting',
         'openclose',
-        'raid',
         'welcome',
-        'news',
       ].includes(sub) ||
       !['on', 'off'].includes(value)
     ) {
       const g = await groupModel.find(jid);
       return ctx.reply(
-        `*Pengaturan Grup*\n\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n⚔️ Raid: ${g?.raid ? '✅' : '❌'}\n👋 Welcome: ${g?.welcome ? '✅' : '❌'}\n📰 News: ${g?.news ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset mute <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`
+        `*Pengaturan Grup*\n\n🔇 Mute: ${g?.mute ? '✅' : '❌'}\n🚫 Antitoxic: ${g?.antitoxic ? '✅' : '❌'}\n🌅 Greeting: ${g?.greeting ? '✅' : '❌'}\n🔄 Open/Close: ${g?.openclose ? '✅' : '❌'}\n👋 Welcome: ${g?.welcome ? '✅' : '❌'}\n\nUsage: \`${SETTINGS.prefix}groupset mute <on/off>\`${ctx.isGroup ? '' : ' <id grup>@g.us'}`
       );
     }
 

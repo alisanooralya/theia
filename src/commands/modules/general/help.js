@@ -31,9 +31,6 @@ async function isPrivileged(ctx) {
 
 const CAT_ICONS = {
   general: '📋',
-  economy: '💰',
-  rpg: '⚔️',
-  shop: '🛒',
   group: '👥',
   owner: '👑',
   utility: '🔧',

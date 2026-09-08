@@ -37,15 +37,9 @@ export default {
     try {
       const userRows = await sql`SELECT COUNT(*)::int AS c FROM users`;
       const groupRows = await sql`SELECT COUNT(*)::int AS c FROM groups`;
-      const txRows =
-        await sql`SELECT COUNT(*)::int AS c FROM transactions WHERE created_at > (EXTRACT(EPOCH FROM NOW()))::BIGINT - 86400`;
       const users = userRows[0]?.c ?? 0;
       const groups = groupRows[0]?.c ?? 0;
-      const todayTx = txRows[0]?.c ?? 0;
-      logger.info(
-        { users, groups, todayTransactions: todayTx },
-        '[Scheduler] Daily stats'
-      );
+      logger.info({ users, groups }, '[Scheduler] Daily stats');
     } catch (err) {
       logger.warn({ err: err.message }, '[Scheduler] Daily stats failed');
     }

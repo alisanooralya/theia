@@ -8,8 +8,6 @@ const ALLOWED_FIELDS = [
   'antitoxic',
   'greeting',
   'openclose',
-  'raid',
-  'news',
 ];
 
 class GroupModel {
@@ -20,16 +18,6 @@ class GroupModel {
     const row = rows[0] ?? null;
     if (row) groupCache.set(jid, row);
     return row;
-  }
-
-  async findRaidGroups(client = sql) {
-    const rows = await client`SELECT jid FROM groups WHERE raid = 1`;
-    return rows.map((r) => r.jid);
-  }
-
-  async findNewsGroups(client = sql) {
-    const rows = await client`SELECT jid FROM groups WHERE news = 1`;
-    return rows.map((r) => r.jid);
   }
 
   async ensure(jid, name = '', client = sql) {
@@ -71,10 +59,6 @@ class GroupModel {
 
   getPrefix(_jid) {
     return null;
-  }
-
-  async getRaidGroups(client = sql) {
-    return this.findRaidGroups(client);
   }
 }
 

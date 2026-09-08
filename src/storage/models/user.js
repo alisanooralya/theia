@@ -19,7 +19,6 @@ class UserModel {
       RETURNING *
     `;
     const user = rows[0];
-    await client`INSERT INTO wallets (jid) VALUES (${jid}) ON CONFLICT (jid) DO NOTHING`;
     return user;
   }
 
@@ -47,21 +46,6 @@ class UserModel {
     return level * level * 100;
   }
 
-  async recordDaily(jid, client = sql) {
-    const user = await this.findById(jid, client);
-    const nowSec = Math.floor(Date.now() / 1000);
-    const last = user?.last_daily ?? 0;
-    let streak = 1;
-    if (last > 0) {
-      const gapSec = nowSec - last;
-      if (gapSec < 48 * 3600) streak = (user.daily_streak ?? 0) + 1;
-    }
-    await client`
-      UPDATE users SET daily_streak = ${streak}, last_daily = ${nowSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-    return streak;
-  }
-
   async ban(jid, client = sql) {
     bannedCache.del(jid);
     await client`UPDATE users SET banned = 1, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}`;
@@ -79,28 +63,6 @@ class UserModel {
     const banned = (user?.banned ?? 0) === 1;
     bannedCache.set(jid, banned ? 1 : 0);
     return banned;
-  }
-
-  async setPrisonUntil(jid, epochSec, client = sql) {
-    await client`
-      UPDATE users SET prison_until = ${epochSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-  }
-
-  async leaderboard(limit = 10) {
-    return sql`
-      SELECT u.jid, u.push_name, u.level, u.exp, w.cash + w.bank AS total_balance
-      FROM users u LEFT JOIN wallets w ON w.jid = u.jid
-      ORDER BY u.level DESC, u.exp DESC LIMIT ${limit}
-    `;
-  }
-
-  async recordBounty(jid, client = sql) {
-    const nowSec = Math.floor(Date.now() / 1000);
-    await client`
-      UPDATE users SET last_bounty = ${nowSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
-    `;
-    return nowSec;
   }
 }
 

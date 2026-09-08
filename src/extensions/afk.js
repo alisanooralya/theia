@@ -1,14 +1,10 @@
 import {
   afkModel,
   userModel,
-  walletModel,
   groupModel,
 } from '#storage/models/index.js';
 import { F } from '#helpers/index.js';
 import SETTINGS from '#environment/settings.js';
-
-const COIN_PER_MINUTE = 2;
-const MINUTE_MS = 60_000;
 
 export default {
   name: 'afk',
@@ -28,16 +24,12 @@ export default {
 
     if (existing && !isAfkCmd) {
       const durMs = Date.now() - existing.started_at * 1000;
-      const minutes = Math.floor(durMs / MINUTE_MS);
-      const coins = minutes * COIN_PER_MINUTE;
-      if (coins > 0) await walletModel.reward(jid, coins, 'afk');
       await afkModel.remove(jid);
       await sock
         .sendMessage(parsed.jid, {
           text:
             `👋 @${jid.split('@')[0]} selamat datang kembali!\n` +
-            `⏳ Kamu AFK selama *${F.formatDuration(durMs)}*` +
-            (coins > 0 ? `\n🪙 AFK reward: +${coins} coin` : ''),
+            `⏳ Kamu AFK selama *${F.formatDuration(durMs)}*`,
           mentions: [jid],
         })
         .catch(() => {});
