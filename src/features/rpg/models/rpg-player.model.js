@@ -6,11 +6,15 @@
  *
  * Notes:
  * - One RPG player per user: `user_id` is the PRIMARY KEY.
+ * - `ensure()` also ensures the parent `users` row first: the message
+ *   pipeline does not create one for every sender, and without it the
+ *   `rpg_players` FK rejects the insert (no RPG table would update).
  * - `current_hp` is independent persistent state. It is never derived
  *   from `max_hp` here: changing Max HP does not touch Current HP.
  * - No derived/Final stats are stored. No Card logic.
  */
 import { sql } from '#storage/connection.js';
+import { userModel } from '#storage/models/user.js';
 import { defaultRpgStats } from '../config/stats-config.js';
 
 const ALLOWED_UPDATE_FIELDS = [
@@ -31,6 +35,7 @@ class RpgPlayerModel {
   }
 
   async ensure(userId, client = sql) {
+    await userModel.ensure(userId, {}, client);
     const defaults = defaultRpgStats();
     const rows = await client`
       INSERT INTO rpg_players

@@ -75,6 +75,18 @@ describe('rpg_players table (database)', { skip: !dbAvailable }, () => {
     assert.deepEqual(pk.map((r) => r.column_name), ['user_id']);
   });
 
+  it('ensure creates the parent users row for fresh senders', async () => {
+    // The message pipeline does not create users rows for every sender.
+    // Without this, the rpg_players FK rejects the insert and NO rpg
+    // table ever updates.
+    const userId = uid('fresh');
+    createdUsers.push(userId);
+    const player = await rpgPlayerModel.ensure(userId);
+    assert.ok(player);
+    const parent = await sql`SELECT jid FROM users WHERE jid = ${userId}`;
+    assert.equal(parent.length, 1);
+  });
+
   it('creates a player with config defaults', async () => {
     const userId = await makeUser('a');
     const player = await rpgPlayerModel.ensure(userId);

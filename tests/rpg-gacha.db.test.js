@@ -55,6 +55,31 @@ describe('gacha (database)', { skip: !dbAvailable }, () => {
     await closeDatabase();
   });
 
+  it('fresh sender without any rows can use the full RPG chain', async () => {
+    // Regression: the pipeline creates no users row, so every RPG write
+    // used to die on the FK and no rpg table ever updated.
+    const userId = uid('freshchain');
+    createdUsers.push(userId);
+    await rpgPlayerModel.ensure(userId);
+    await rpgCoinModel.ensure(userId);
+    await rpgCoinModel.addCoin(userId, 100000);
+    const out = await createGachaService().pull(userId, 1, {
+      requestKey: `${userId}:freshchain`,
+      random: seqRandom([ZONK]),
+    });
+    assert.equal(out.results.length, 1);
+    const checks = [
+      ['users', 'jid', userId],
+      ['rpg_players', 'user_id', userId],
+      ['rpg_wallets', 'user_id', userId],
+      ['rpg_gacha_requests', 'request_key', `${userId}:freshchain`],
+    ];
+    for (const [table, col, val] of checks) {
+      const rows = await sql.unsafe(`SELECT * FROM ${table} WHERE ${col} = $1`, [val]);
+      assert.ok(rows.length >= 1, table);
+    }
+  });
+
   it('6. insufficient coin rejects without debit', async () => {
     const userId = await makeUser('poor', 100);
     await assert.rejects(
