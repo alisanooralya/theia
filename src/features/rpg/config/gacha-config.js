@@ -8,7 +8,7 @@
  * No pity, no guarantees — every pull is independent.
  */
 import { MAIN_CARDS } from './card-config.js';
-import { getPurchasableItems } from './shop-config.js';
+import { getInventoryItems } from './shop-config.js';
 
 export const GACHA_CONFIG = Object.freeze({
   costs: Object.freeze({ 1: 2500, 10: 25000 }),
@@ -54,12 +54,11 @@ export function rollMainCard(random = Math.random) {
   return ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
 }
 
-/** Uniform pick over purchasable Shop Config items (auto-follows it). */
+/** Uniform pick over inventory-type shop items (card grants excluded). */
 export function rollShopItem(random = Math.random) {
-  const items = getPurchasableItems();
+  const items = getInventoryItems();
   if (!items.length) throw new RangeError('no purchasable shop items');
-  return items[Math.min(items.length - 1, Math.floor(random() * items.length))]
-    .id;
+  return items[Math.min(items.length - 1, Math.floor(random() * items.length))].id;
 }
 
 /** Item quantity for a shop-item pull, within the configured range. */

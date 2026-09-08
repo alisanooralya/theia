@@ -39,6 +39,12 @@ export default {
         quantity
       );
 
+      if (result.card) {
+        await ctx.reply(
+          `✅ Mendapatkan *${result.card.definition.name}*!\nCek dengan \`.card sign\`.`
+        );
+        return;
+      }
       await ctx.reply(`✅ Membeli *${result.item.name}* × ${result.quantity}`);
     } catch (err) {
       await ctx.fail(err.message);

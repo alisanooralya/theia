@@ -3,9 +3,11 @@
  *
  * Reads items straight from shop-config.js — the ONLY item list. No
  * item-id branches anywhere: a config entry automatically appears in
- * `.shop`, becomes buyable, and lands in inventory.
+ * `.shop` and becomes buyable. Plain entries land in inventory; entries
+ * with `cardId` grant Card ownership instead (e.g. Sign Cards, which
+ * are one-copy-per-user and can only be bought once).
  *
- * Purchase is atomic: coin spend + inventory add run in one transaction,
+ * Purchase is atomic: coin spend + grant/add run in one transaction,
  * so failed purchases never lose coin.
  */
 import { sql } from '#storage/connection.js';
@@ -17,17 +19,20 @@ import {
 import { rpgPlayerModel } from '../models/rpg-player.model.js';
 import { rpgCoinModel } from '../models/rpg-coin.model.js';
 import { rpgInventoryModel } from '../models/rpg-inventory.model.js';
+import { createCardService } from './card-service.js';
 
 export function createShopService({
   playerModel,
   coinModel,
   inventoryModel,
+  cardService,
   db = sql,
   catalog = null,
 } = {}) {
   const players = playerModel ?? rpgPlayerModel;
   const coins = coinModel ?? rpgCoinModel;
   const inventory = inventoryModel ?? rpgInventoryModel;
+  const cards = cardService ?? createCardService();
   const shop = catalog ?? { getShopItems, getShopItem, getPurchasableItems };
 
   return {
@@ -49,7 +54,9 @@ export function createShopService({
     /**
      * Buy `quantity` of `itemId` for `userId`.
      * Validates config -> purchasable -> quantity -> balance, then
-     * spends coin and adds the item atomically.
+     * spends coin and delivers atomically (inventory add, or Card
+     * grant for `cardId` entries). Card entries are one-copy-per-user:
+     * re-buying an owned card throws and rolls the coin back.
      */
     async buyItem(userId, itemId, quantity = 1) {
       const item = shop.getShopItem(itemId);
@@ -62,6 +69,25 @@ export function createShopService({
       const total = item.price * quantity;
       await players.ensure(userId);
       await coins.ensure(userId);
+      if (item.cardId) {
+        const result = await db.begin(async (tx) => {
+          const remaining =
+            total > 0
+              ? await coins.spendCoin(userId, total, tx)
+              : await coins.getBalance(userId, tx);
+          const granted = await cards.grantCard(userId, item.cardId, tx);
+          if (!granted.isNew) throw new RangeError(`Sudah memiliki: ${granted.card.definition.name}`);
+          return { remaining, granted };
+        });
+        return {
+          item,
+          quantity: 1,
+          total,
+          coinRemaining: result.remaining,
+          inventoryQuantity: 0,
+          card: result.granted.card,
+        };
+      }
       const result = await db.begin(async (tx) => {
         const remaining =
           total > 0
@@ -76,6 +102,7 @@ export function createShopService({
         total,
         coinRemaining: result.remaining,
         inventoryQuantity: result.row.quantity,
+        card: null,
       };
     },
   };

@@ -13,7 +13,7 @@
  * the Card system and the Shop never define a second Cerelia — only the
  * shop price/purchasability live here.
  */
-import { CERELIA_ITEM } from './card-config.js';
+import { CERELIA_ITEM, SIGN_CARDS, MAIN_CARDS } from './card-config.js';
 
 function shopItem({
   id,
@@ -23,6 +23,7 @@ function shopItem({
   currency = 'coin',
   category = 'rpg',
   purchasable = true,
+  cardId = null,
 }) {
   if (!id || !name) throw new RangeError('shop item needs id and name');
   if (!Number.isInteger(price) || price < 0) {
@@ -36,7 +37,24 @@ function shopItem({
     currency,
     category,
     purchasable,
+    cardId,
   });
+}
+
+function signShopEntries() {
+  const entries = {};
+  for (const def of Object.values(SIGN_CARDS)) {
+    const mainName = MAIN_CARDS[def.compatibleCard]?.name ?? def.compatibleCard;
+    entries[def.id] = shopItem({
+      id: def.id,
+      name: def.name,
+      description: `Sign Card untuk ${mainName}. ${def.passive.description}`,
+      price: 250000,
+      category: 'sign',
+      cardId: def.id,
+    });
+  }
+  return entries;
 }
 
 export const SHOP_ITEMS = Object.freeze({
@@ -46,6 +64,7 @@ export const SHOP_ITEMS = Object.freeze({
     description: 'Material untuk meningkatkan Card dan Sign Card.',
     price: 5000,
   }),
+  ...signShopEntries(),
 });
 
 /** All shop entries as an array, in definition order. */
@@ -56,6 +75,11 @@ export function getShopItems() {
 /** Only buyable entries (what `.shop` displays). */
 export function getPurchasableItems() {
   return getShopItems().filter((item) => item.purchasable);
+}
+
+/** Buyable entries that land in inventory (excludes card grants). */
+export function getInventoryItems() {
+  return getPurchasableItems().filter((item) => !item.cardId);
 }
 
 /** Entry by id, or null. No branching, no hardcoded ids. */

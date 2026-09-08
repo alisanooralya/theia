@@ -6,6 +6,7 @@ import { createSchema } from '../src/storage/definitions.js';
 import { rpgPlayerModel } from '../src/features/rpg/models/rpg-player.model.js';
 import { rpgCoinModel } from '../src/features/rpg/models/rpg-coin.model.js';
 import { inventoryService } from '../src/features/rpg/services/inventory-service.js';
+import { cardService } from '../src/features/rpg/services/card-service.js';
 import {
   shopService,
   createShopService,
@@ -191,5 +192,20 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
     // Funded user can now buy from the shop with no manual DB edits.
     const result = await shopService.buyItem(userId, 'cerelia', 5);
     assert.equal(result.quantity, 5);
+  });
+
+  it('sign card buys grant ownership once, rebuy refunds coin', async () => {
+    const userId = await makeUser('signbuy', 1000000);
+    const result = await shopService.buyItem(userId, 'girgas_sign', 1);
+    assert.ok(result.card);
+    assert.equal(result.card.cardId, 'girgas_sign');
+    assert.equal(await rpgCoinModel.getBalance(userId), 750000);
+    assert.equal(await cardService.hasCard(userId, 'girgas_sign'), true);
+    // Not an inventory item.
+    assert.equal(await inventoryService.getItemQuantity(userId, 'girgas_sign'), 0);
+    await assert.rejects(shopService.buyItem(userId, 'girgas_sign', 1), /Sudah memiliki/);
+    assert.equal(await rpgCoinModel.getBalance(userId), 750000);
+    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_sign_cards WHERE user_id = ${userId} AND card_id = 'girgas_sign'`;
+    assert.equal(rows[0].n, 1);
   });
 });

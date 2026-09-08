@@ -7,7 +7,7 @@ import {
   getPurchasableItems,
   getShopItem,
 } from '../src/features/rpg/config/shop-config.js';
-import { CERELIA_ITEM } from '../src/features/rpg/config/card-config.js';
+import { CERELIA_ITEM, SIGN_CARDS } from '../src/features/rpg/config/card-config.js';
 import { createInventoryService } from '../src/features/rpg/services/inventory-service.js';
 import { createShopService } from '../src/features/rpg/services/shop-service.js';
 import { formatInventory } from '../src/commands/modules/rpg/inventory.js';
@@ -38,9 +38,22 @@ describe('shop config', () => {
     assert.equal(getShopItem(''), null);
   });
 
+  it('all sign cards sell for 250k with card grants', () => {
+    for (const def of Object.values(SIGN_CARDS)) {
+      const entry = getShopItem(def.id);
+      assert.ok(entry, def.id);
+      assert.equal(entry.price, 250000);
+      assert.equal(entry.currency, 'coin');
+      assert.equal(entry.purchasable, true);
+      assert.equal(entry.cardId, def.id);
+      assert.equal(entry.name, def.name);
+    }
+  });
+
   it('3. every config entry is buyable without per-item logic', async () => {
     // Generic proof: buy works for ALL purchasable entries through the
     // same code path, so a newly added entry needs no service change.
+    // Plain entries land in inventory; cardId entries grant ownership.
     for (const item of getPurchasableItems()) {
       const calls = [];
       const svc = createShopService({
@@ -59,15 +72,57 @@ describe('shop config', () => {
             return { quantity: qty };
           },
         },
+        cardService: {
+          grantCard: async (u, cardId) => {
+            calls.push(['grant', cardId]);
+            return { card: { definition: { name: cardId } }, isNew: true };
+          },
+        },
         db: { begin: (fn) => fn({}) },
       });
       const result = await svc.buyItem('u', item.id, 2);
       assert.equal(result.total, item.price * 2);
-      assert.deepEqual(calls, [
-        ['spend', item.price * 2],
-        ['add', item.id, 2],
-      ]);
+      if (item.cardId) {
+        assert.deepEqual(calls, [
+          ['spend', item.price * 2],
+          ['grant', item.cardId],
+        ]);
+        assert.ok(result.card);
+      } else {
+        assert.deepEqual(calls, [
+          ['spend', item.price * 2],
+          ['add', item.id, 2],
+        ]);
+        assert.equal(result.card, null);
+      }
     }
+  });
+
+  it('card entries reject re-buy while inventory items stack', async () => {
+    const owned = new Set();
+    const svc = createShopService({
+      playerModel: { ensure: async () => null },
+      coinModel: {
+        ensure: async () => null,
+        spendCoin: async () => 0,
+        getBalance: async () => 1000000,
+      },
+      inventoryModel: {
+        add: async (u, id, qty) => ({ quantity: qty }),
+      },
+      cardService: {
+        grantCard: async (u, cardId) => {
+          if (owned.has(cardId)) return { card: { definition: { name: cardId } }, isNew: false };
+          owned.add(cardId);
+          return { card: { definition: { name: cardId } }, isNew: true };
+        },
+      },
+      db: { begin: (fn) => fn({}) },
+    });
+    const signEntry = getPurchasableItems().find((i) => i.cardId);
+    assert.ok(signEntry, 'expected a card entry in shop');
+    await svc.buyItem('u', signEntry.id, 1);
+    await assert.rejects(svc.buyItem('u', signEntry.id, 1), /Sudah memiliki/);
   });
 
   it('service source has no hardcoded item ids', async () => {

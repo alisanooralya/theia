@@ -13,7 +13,7 @@ import {
 import { MAIN_CARDS } from '../src/features/rpg/config/card-config.js';
 import {
   SHOP_ITEMS,
-  getPurchasableItems,
+  getInventoryItems,
 } from '../src/features/rpg/config/shop-config.js';
 import {
   parseGachaArgs,
@@ -73,13 +73,14 @@ describe('gacha config', () => {
     assert.deepEqual([...seen].sort(), ids.sort());
   });
 
-  it('12-13. shop pool is exactly the purchasable shop config', () => {
-    const ids = getPurchasableItems().map((i) => i.id);
+  it('12-13. gacha item pool is the inventory-type shop config', () => {
+    const ids = getInventoryItems().map((i) => i.id);
     assert.deepEqual(
       ids,
-      Object.keys(SHOP_ITEMS).filter((id) => SHOP_ITEMS[id].purchasable)
+      Object.keys(SHOP_ITEMS).filter((id) => SHOP_ITEMS[id].purchasable && !SHOP_ITEMS[id].cardId)
     );
     assert.ok(ids.includes('cerelia'));
+    assert.ok(!ids.some((id) => SHOP_ITEMS[id].cardId));
     assert.equal(
       rollShopItem(() => 0),
       ids[0]

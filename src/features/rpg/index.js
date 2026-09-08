@@ -55,6 +55,7 @@ export {
   SHOP_ITEMS,
   getShopItems,
   getPurchasableItems,
+  getInventoryItems,
   getShopItem,
 } from './config/shop-config.js';
 export { rpgCoinModel } from './models/rpg-coin.model.js';
