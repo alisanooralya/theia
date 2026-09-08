@@ -6,6 +6,11 @@ import {
   formatProfile,
 } from '../src/features/rpg/services/profile-service.js';
 import { expRequiredForLevel } from '../src/features/rpg/config/stats-config.js';
+import {
+  MAIN_CARDS,
+  SIGN_CARDS,
+  cardStatsAtLevel,
+} from '../src/features/rpg/config/card-config.js';
 
 const FINAL = Object.freeze({
   level: 25,
@@ -19,14 +24,11 @@ const FINAL = Object.freeze({
 });
 
 function mainCard(over = {}) {
+  const def = MAIN_CARDS.girgas;
   return {
     cardId: 'girgas',
     level: 25,
-    definition: {
-      name: 'Girgas',
-      active: { name: 'Lollipop Crash', unlockLevel: 25 },
-      passive: { name: 'Sugar Rush', unlockLevel: 50 },
-    },
+    definition: def,
     skills: {
       active: { unlocked: true, upgraded: false },
       passive: { unlocked: false, upgraded: false },
@@ -36,15 +38,12 @@ function mainCard(over = {}) {
 }
 
 function signCard(over = {}) {
+  const def = SIGN_CARDS.girgas_sign;
   return {
     cardId: 'girgas_sign',
     level: 10,
-    definition: {
-      name: 'Girgas Sign',
-      passive: { name: 'Lollipop Drive' },
-      compatibleCard: 'girgas',
-    },
-    stats: { atk: 20, def: 8 },
+    definition: def,
+    stats: cardStatsAtLevel(def, 10),
     signCompatible: true,
     ...over,
   };
@@ -120,13 +119,19 @@ describe('profile formatting', () => {
 
   it('renders card layout with main + compatible sign', async () => {
     const t = await text({ main: mainCard(), sign: signCard() });
-    assert.ok(t.includes('Girgas - Lv.25'));
-    assert.ok(t.includes('Lollipop Crash'));
-    assert.ok(t.includes('Sugar Rush'));
-    assert.ok(t.includes('Girgas Sign - Lv.10'));
-    assert.ok(t.includes('ATK +20'));
-    assert.ok(t.includes('DEF +8'));
-    assert.ok(t.includes('Passive: Active'));
+    assert.ok(t.includes('*Girgas* - Lv.25'));
+    assert.ok(t.includes('⚡ Active Lollipop Crash'));
+    assert.ok(t.includes('🟢 Unlocked'));
+    assert.ok(t.includes(MAIN_CARDS.girgas.active.description));
+    assert.ok(t.includes('⏱️ Cooldown: 8s'));
+    assert.ok(t.includes('✨ Passive Sugar Rush'));
+    assert.ok(t.includes('🔒 Unlocks at Lv.50'));
+    assert.ok(t.includes(MAIN_CARDS.girgas.passive.description));
+    assert.ok(t.includes('*Girgas Sign* - Lv.10'));
+    assert.ok(t.includes('🟢 Passive: Active (Lollipop Drive)'));
+    assert.ok(t.includes(SIGN_CARDS.girgas_sign.passive.description));
+    // Passive blocks carry no cooldown.
+    assert.ok(!t.includes('Cooldown: null'));
   });
 
   it('renders full stats when no main card is equipped', async () => {
@@ -149,8 +154,28 @@ describe('profile formatting', () => {
 
   it('shows main without sign', async () => {
     const t = await text({ main: mainCard() });
-    assert.ok(t.includes('Girgas - Lv.25'));
+    assert.ok(t.includes('*Girgas* - Lv.25'));
     assert.ok(t.includes('Belum ada Main Card'));
+  });
+
+  it('descriptions come from config, not the profile service', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const src = await readFile(
+      new URL('../src/features/rpg/services/profile-service.js', import.meta.url),
+      'utf8'
+    );
+    for (const phrase of [
+      'crushing blow',
+      'Star Fragment',
+      'Lollipop Drive',
+      'Eagle Eye',
+    ]) {
+      assert.ok(!src.includes(phrase), `hardcoded description: ${phrase}`);
+    }
+    const t = await text({ main: mainCard(), sign: signCard() });
+    assert.ok(t.includes(MAIN_CARDS.girgas.active.description));
+    assert.ok(t.includes(MAIN_CARDS.girgas.passive.description));
+    assert.ok(t.includes(SIGN_CARDS.girgas_sign.passive.description));
   });
 
   it('marks incompatible sign passive inactive but keeps bonuses', async () => {
@@ -158,11 +183,12 @@ describe('profile formatting', () => {
       main: mainCard(),
       sign: signCard({ signCompatible: false }),
     });
-    assert.ok(t.includes('ATK +20'));
-    assert.ok(t.includes('DEF +8'));
-    assert.ok(t.includes('Passive: Inactive'));
-    assert.ok(t.includes('butuh girgas'));
-    assert.ok(!t.includes('Passive: Active'));
+    assert.ok(t.includes('ATK +27'));
+    assert.ok(t.includes('DEF +10'));
+    assert.ok(t.includes('🔴 Passive: Inactive'));
+    assert.ok(t.includes(SIGN_CARDS.girgas_sign.passive.description));
+    assert.ok(t.includes('Requires: girgas'));
+    assert.ok(!t.includes('🟢 Passive: Active'));
   });
 
   it('reflects milestone skill states', async () => {

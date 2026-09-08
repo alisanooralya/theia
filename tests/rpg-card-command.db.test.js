@@ -82,8 +82,8 @@ describe('card command (database)', { skip: !dbAvailable }, () => {
     await executeCard(c2);
     assert.ok(r3[0].includes('Girgas'));
     assert.ok(r3[0].includes('Lena'));
-    assert.ok(r3[0].includes('🟢 Equipped'));
-    assert.ok(r3[0].includes('⚪ Not Equipped'));
+    assert.ok(r3[0].includes('Equipped'));
+    assert.ok(r3[0].includes('Not Equipped'));
     assert.ok(r3[0].includes('Active: Unlocked'));
     assert.ok(r3[0].includes('Passive: Locked'));
   });
@@ -142,7 +142,7 @@ describe('card command (database)', { skip: !dbAvailable }, () => {
     s = stubCtx(userId, ['sign']);
     await executeCard(s.ctx);
     assert.ok(s.replies[0].includes('Girgas Sign'));
-    assert.ok(s.replies[0].includes('🟢 Equipped'));
+    assert.ok(s.replies[0].includes('Equipped'));
     s = stubCtx(userId, ['sign', 'unequip']);
     await executeCard(s.ctx);
     assert.equal(await cardService.getEquippedSignCard(userId), null);

@@ -172,7 +172,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 7.0, atk: 1.36, def: 0.22 },
     skill(
       'Lollipop Crash',
-      'A crushing blow fueled by stacked Lollipops.',
+      'A crushing blow that deals increased damage to the enemy.',
       25,
       75,
       [{ stat: 'atk', mode: 'pct', value: 0.1 }],
@@ -205,7 +205,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Star Fragment',
-      'Taking hits gathers fragments that harden body and guard.',
+      'Hardens body and guard, reducing damage taken in battle.',
       50,
       100,
       [{ stat: 'def', mode: 'pct', value: 0.1 }],
@@ -229,7 +229,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Critical Support',
-      'Every third landed hit empowers critical damage for a short time.',
+      'Empowers critical damage in battle.',
       50,
       100,
       [{ stat: 'critDmg', mode: 'add', value: 0.5 }],
@@ -244,7 +244,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 7.07, atk: 1.21, def: 0.14 },
     skill(
       'Guardian Slam',
-      'A shield-first slam that turns defense into offense.',
+      'A shield-first slam that strikes the enemy.',
       25,
       75,
       [{ stat: 'def', mode: 'pct', value: 0.15 }],
@@ -253,7 +253,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Last Stand',
-      'The lower the remaining HP, the harder Daisy fights back.',
+      'Sturdy resolve that reduces damage taken in battle.',
       50,
       100,
       [{ stat: 'hp', mode: 'pct', value: 0.1 }],
@@ -307,7 +307,7 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 0.7, def: 0.4 },
     {
       name: 'Bulwark Heart',
-      description: 'Signature resonance: vitality surges in danger.',
+      description: 'Signature resonance: reduces damage taken.',
       effects: [{ stat: 'hp', mode: 'pct', value: 0.1 }],
     }
   ),

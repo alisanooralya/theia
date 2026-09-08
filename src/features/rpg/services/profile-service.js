@@ -2,11 +2,24 @@ import { expRequiredForLevel } from '../config/stats-config.js';
 import { finalStatService as defaultFinalStats } from './final-stat-service.js';
 import { cardService as defaultCardService } from './card-service.js';
 
-function skillLine(icon, skill) {
-  if (!skill.unlocked)
-    return `${icon} ${skill.name}: 🔒 Lv.${skill.unlockLevel}`;
-  if (skill.upgraded) return `${icon} ${skill.name}: ✅ Upgraded`;
-  return `${icon} ${skill.name}: ⚡ Unlocked`;
+function formatCooldown(ms) {
+  return `${Number((ms / 1000).toFixed(2))}s`;
+}
+
+/**
+ * Skill block lines: name, status, config description, cooldown for
+ * actives. Descriptions always show so players can preview locked skills.
+ */
+function skillLines(icon, label, skill, { cooldownMs = null } = {}) {
+  const lines = [`${icon} ${label} ${skill.name}`];
+  if (!skill.unlocked) {
+    lines.push(`🔒 Unlocks at Lv.${skill.unlockLevel}`);
+  } else {
+    lines.push(`🟢 Unlocked${skill.upgraded ? ' (Upgraded)' : ''}`);
+  }
+  if (skill.description) lines.push(skill.description);
+  if (cooldownMs !== null) lines.push(`⏱️ Cooldown: ${formatCooldown(cooldownMs)}`);
+  return lines;
 }
 
 export function createProfileService({ finalStatsService, cardService } = {}) {
@@ -38,12 +51,15 @@ export function createProfileService({ finalStatsService, cardService } = {}) {
               level: main.level,
               active: {
                 name: main.definition.active.name,
+                description: main.definition.active.description,
+                cooldownMs: main.definition.active.cooldownMs,
                 unlocked: main.skills.active.unlocked,
                 upgraded: main.skills.active.upgraded,
                 unlockLevel: main.definition.active.unlockLevel,
               },
               passive: {
                 name: main.definition.passive.name,
+                description: main.definition.passive.description,
                 unlocked: main.skills.passive.unlocked,
                 upgraded: main.skills.passive.upgraded,
                 unlockLevel: main.definition.passive.unlockLevel,
@@ -57,6 +73,7 @@ export function createProfileService({ finalStatsService, cardService } = {}) {
               atk: sign.stats.atk,
               def: sign.stats.def,
               passiveName: sign.definition.passive.name,
+              passiveDescription: sign.definition.passive.description,
               compatible: sign.signCompatible,
               needsMainCard: sign.definition.compatibleCard,
             }
@@ -97,8 +114,10 @@ export function formatProfile(data) {
 
     liness.push(
       `*${data.main.name}* - Lv.${data.main.level}`,
-      skillLine('⚡ Active', data.main.active),
-      skillLine('✨ Passive', data.main.passive)
+      ...skillLines('⚡', 'Active', data.main.active, {
+        cooldownMs: data.main.active.cooldownMs,
+      }),
+      ...skillLines('✨', 'Passive', data.main.passive)
     );
 
     liness.push('', '🔰 *Sign Card*');
@@ -108,9 +127,13 @@ export function formatProfile(data) {
         `⚔️ ATK +${data.sign.atk}  🛡️ DEF +${data.sign.def}`,
         '',
         data.sign.compatible
-          ? `✅ Passive: Active (${data.sign.passiveName})`
-          : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
+          ? `🟢 Passive: Active (${data.sign.passiveName})`
+          : `🔴 Passive: Inactive (${data.sign.passiveName})`
       );
+      if (data.sign.passiveDescription) liness.push(data.sign.passiveDescription);
+      if (!data.sign.compatible) {
+        liness.push(`Requires: ${data.sign.needsMainCard}`);
+      }
     } else {
       liness.push('Belum ada Main Card');
     }
