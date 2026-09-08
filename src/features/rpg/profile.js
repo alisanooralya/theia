@@ -328,17 +328,6 @@ export async function renderProfileCard(data) {
     `${critRatePct}%`,
     '#ffd15c'
   );
-  statChip(
-    ctx,
-    px + (chipW + gap) * 2,
-    y,
-    chipW,
-    chipH,
-    ICONS.bolt,
-    'CRIT DMG',
-    `${critDmg}x`,
-    '#ffd15c'
-  );
   y += chipH + 14;
 
   // Card slots: main + support
