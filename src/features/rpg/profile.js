@@ -186,10 +186,18 @@ export async function renderProfileCard(data) {
     atk = 0,
     def = 0,
     critRate = 0,
-    mainCard = null,
-    supportCard = null,
+    critDmg = 0,
+    main = null,
+    sign = null,
     artPath = null,
   } = data;
+
+  const mainCard = main
+    ? { name: main.name, level: main.level }
+    : null;
+  const supportCard = sign
+    ? { name: sign.name, level: sign.level }
+    : null;
 
   let artImg = null;
   if (artPath) {
@@ -296,10 +304,11 @@ export async function renderProfileCard(data) {
   ]);
   y += 38;
 
-  // Stat chips: ATK, DEF, CR
+  // Stat chips: ATK, DEF, CRIT RATE
   const chipH = 88;
   const gap = 12;
   const chipW = (contentW - gap * 2) / 3;
+  const critRatePct = Math.round((Number(critRate) || 0) * 100);
   statChip(ctx, px, y, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
   statChip(
     ctx,
@@ -320,7 +329,7 @@ export async function renderProfileCard(data) {
     chipH,
     ICONS.bolt,
     'CRIT RATE',
-    `${critRate.toFixed(0)}%`,
+    `${critRatePct}%`,
     '#ffd15c'
   );
   y += chipH + 14;

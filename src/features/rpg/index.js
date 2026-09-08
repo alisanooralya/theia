@@ -18,6 +18,10 @@ export {
   CERELIA_ITEM,
   MAIN_CARDS,
   SIGN_CARDS,
+  CARD_DIR,
+  CARD_IMAGE_MAP,
+  cardArtFile,
+  cardArtPath,
   maxLevelFor,
   getMainCard,
   getSignCard,
@@ -51,6 +55,7 @@ export {
   createProfileService,
   formatProfile,
 } from './services/profile-service.js';
+export { renderProfileCard } from './profile.js';
 export {
   SHOP_ITEMS,
   getShopItems,

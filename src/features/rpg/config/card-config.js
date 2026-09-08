@@ -1,3 +1,9 @@
+import { existsSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 /**
  * RPG 2.0 — Card config.
  *
@@ -130,6 +136,31 @@ function signCard(id, name, compatibleCard, base, growth, passive) {
       ),
     }),
   });
+}
+
+/** Directory containing card artwork images. */
+export const CARD_DIR = join(__dirname, '..', '..', '..', '..', 'temp', 'card');
+
+/** Main card id -> artwork filename. */
+export const CARD_IMAGE_MAP = Object.freeze({
+  girgas: 'girgas.webp',
+  lena: 'lena.webp',
+  ameris: 'ameris.webp',
+  daisy: 'daisy.webp',
+});
+
+/** Artwork filename for a main card id, or null. */
+export function cardArtFile(cardId) {
+  if (!cardId) return null;
+  return CARD_IMAGE_MAP[cardId] ?? null;
+}
+
+/** Absolute path to the artwork file if it exists on disk, otherwise null. */
+export function cardArtPath(cardId) {
+  const file = cardArtFile(cardId);
+  if (!file) return null;
+  const full = join(CARD_DIR, file);
+  return existsSync(full) ? full : null;
 }
 
 export const MAIN_CARDS = Object.freeze({
