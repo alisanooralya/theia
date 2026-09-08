@@ -15,7 +15,8 @@ import {
   getActivePeriod,
   getLastEndedPeriod,
   getUpcomingPeriod,
-} from '#features/rpg/raid-period-config.js';import { F } from '#helpers/index.js';
+} from '#features/rpg/raid-period-config.js';
+import { F } from '#helpers/index.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 

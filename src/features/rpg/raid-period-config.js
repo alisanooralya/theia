@@ -64,7 +64,7 @@ const RAID_PERIODS = [
     schedule: {
       start: '2026-09-08 08:00',
       end: '2026-09-14 18:00',
-      timeZone: 'Asia/Jakarta',
+      timeZone: DEFAULT_WINDOW_TZ,
     },
     entriesPerDay: RAID_ENTRIES_PER_DAY,
     bosses: [
@@ -178,13 +178,25 @@ function dailyWindowState(window, now) {
   const end = parseClock(window.end);
   const p = zonedParts(now, tz);
 
-  const startAt0 = zonedToMs(p.year, p.month, p.day, start.hour, start.minute, tz);
+  const startAt0 = zonedToMs(
+    p.year,
+    p.month,
+    p.day,
+    start.hour,
+    start.minute,
+    tz
+  );
   const endAt0 = zonedToMs(p.year, p.month, p.day, end.hour, end.minute, tz);
 
   if (endAt0 > startAt0) {
     // Window sehari (mis. 08:00–18:00).
     if (now >= startAt0 && now < endAt0) {
-      return { active: true, startAt: startAt0, endAt: endAt0, lastEndAt: null };
+      return {
+        active: true,
+        startAt: startAt0,
+        endAt: endAt0,
+        lastEndAt: null,
+      };
     }
     if (now < startAt0) {
       const lastEndAt = zonedToMs(
@@ -232,10 +244,20 @@ function dailyWindowState(window, now) {
     tz
   );
   if (now >= startAt0 && now < windowEnd) {
-    return { active: true, startAt: startAt0, endAt: windowEnd, lastEndAt: null };
+    return {
+      active: true,
+      startAt: startAt0,
+      endAt: windowEnd,
+      lastEndAt: null,
+    };
   }
   // Dini hari / siang sebelum buka: window kemarin selesai di endAt0 hari ini.
-  return { active: false, startAt: startAt0, endAt: windowEnd, lastEndAt: endAt0 };
+  return {
+    active: false,
+    startAt: startAt0,
+    endAt: windowEnd,
+    lastEndAt: endAt0,
+  };
 }
 
 /**
