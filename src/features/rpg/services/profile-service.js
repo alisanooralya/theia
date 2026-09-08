@@ -82,7 +82,6 @@ function formatPercent(fraction) {
   return `${Number((fraction * 100).toFixed(2))}%`;
 }
 
-/** Pure text renderer for profile data. No I/O, no services. */
 export function formatProfile(data) {
   const lines = [
     '👤 *RPG PROFILE*',
@@ -95,21 +94,39 @@ export function formatProfile(data) {
     `🛡️ DEF: *${data.def}*`,
     `🎯 Crit Rate: *${formatPercent(data.critRate)}*`,
     `💥 Crit DMG: *${data.critDmg}x*`,
+    '',
+    '🃏 *Main Card*',
+    'Belum ada Main Card',
   ];
 
-  if (data.main) {
+  lines.push('', '🔰 *Sign Card*');
+  if (data.sign) {
     lines.push(
-      '',
-      '🃏 *Main Card*',
+      `${data.sign.name}`,
+      `Lv.${data.sign.level}`,
+      `⚔️ ATK +${data.sign.atk}`,
+      `🛡️ DEF +${data.sign.def}`,
+      data.sign.compatible
+        ? `✅ Passive: Active (${data.sign.passiveName})`
+        : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
+    );
+  } else {
+    lines.push('Belum ada Main Card');
+  }
+
+  if (data.main) {
+    const liness = ['👤 *RPG PROFILE*', '', '🃏 *Main Card*'];
+
+    liness.push(
       `${data.main.name}`,
       `Lv.${data.main.level}`,
       skillLine('⚡ Active', data.main.active),
       skillLine('✨ Passive', data.main.passive)
     );
 
-    lines.push('', '🔰 *Sign Card*');
+    liness.push('', '🔰 *Sign Card*');
     if (data.sign) {
-      lines.push(
+      liness.push(
         `${data.sign.name}`,
         `Lv.${data.sign.level}`,
         `⚔️ ATK +${data.sign.atk}`,
@@ -118,7 +135,11 @@ export function formatProfile(data) {
           ? `✅ Passive: Active (${data.sign.passiveName})`
           : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
       );
+    } else {
+      liness.push('Belum ada Main Card');
     }
+
+    return liness.join('\n');
   }
 
   return lines.join('\n');

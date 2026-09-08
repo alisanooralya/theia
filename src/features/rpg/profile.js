@@ -333,11 +333,13 @@ export async function renderProfileCard(data) {
   ]);
   y += 38;
 
-  // Stat chips: ATK, DEF, CRIT RATE, CRIT DMG
+  // Stat chips: ATK, DEF, CRIT RATE, CRIT DMG (2x2 grid)
   const chipH = 88;
   const gap = 12;
-  const chipW = (contentW - gap * 2) / 3;
+  const chipW = (contentW - gap) / 2;
   const critRatePct = Math.round((Number(critRate) || 0) * 100);
+
+  // Row 1
   statChip(ctx, px, y, chipW, chipH, ICONS.sword, 'ATK', atk, '#ff8a5c');
   statChip(
     ctx,
@@ -350,9 +352,12 @@ export async function renderProfileCard(data) {
     def,
     '#6cc4ff'
   );
+  y += chipH + gap;
+
+  // Row 2
   statChip(
     ctx,
-    px + (chipW + gap) * 2,
+    px,
     y,
     chipW,
     chipH,
@@ -361,14 +366,11 @@ export async function renderProfileCard(data) {
     `${critRatePct}%`,
     '#ffd15c'
   );
-  y += chipH + gap;
-
-  const chipW2 = (contentW - gap) / 2;
   statChip(
     ctx,
-    px,
+    px + chipW + gap,
     y,
-    chipW2,
+    chipW,
     chipH,
     ICONS.critDmg,
     'CRIT DMG',
