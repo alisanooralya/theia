@@ -1,32 +1,25 @@
 import { cardService } from '#features/rpg/services/card-service.js';
 
-/**
- * `.card` — list/equip/unequip owned cards (thin UI over CardService).
- * Subcommands: (none) | equip <id> | unequip |
- *              sign | sign equip <id> | sign unequip
- */
-
-/** Pure Main Card list renderer. */
 export function formatMainCards(cards) {
   const lines = ['🎴 *YOUR CARDS*', '', '*Main Card:*'];
   if (!cards.length) {
-    lines.push('Belum ada Main Card. Dapatkan dari `.gacha 1` / `.gacha 10`.');
+    lines.push('Belum ada Main Card. Dapatkan dari .gacha');
     return lines.join('\n');
   }
   cards.forEach((card, i) => {
     lines.push(
       '',
-      `${i + 1}. ${card.definition.name}`,
-      `   Lv.${card.level}`,
-      `   ${card.equipped ? '🟢 Equipped' : '⚪ Not Equipped'}`,
-      `   Active: ${card.skills.active.unlocked ? (card.skills.active.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`,
-      `   Passive: ${card.skills.passive.unlocked ? (card.skills.passive.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`
+      `#${i + 1} ${card.definition.name}`,
+      `Lv.${card.level}`,
+      '',
+      `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
+      `Active: ${card.skills.active.unlocked ? (card.skills.active.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`,
+      `Passive: ${card.skills.passive.unlocked ? (card.skills.passive.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`
     );
   });
   return lines.join('\n');
 }
 
-/** Pure Sign Card list renderer. */
 export function formatSignCards(cards) {
   const lines = ['✨ *SIGN CARDS*', ''];
   if (!cards.length) {
@@ -36,13 +29,14 @@ export function formatSignCards(cards) {
   cards.forEach((card, i) => {
     lines.push(
       '',
-      `${i + 1}. ${card.definition.name}`,
-      `   Lv.${card.level}`,
-      `   ${card.equipped ? '🟢 Equipped' : '⚪ Not Equipped'}`,
-      `   Passive: ${card.signCompatible ? 'Active' : 'Inactive'}`
+      `#${i + 1}. ${card.definition.name}`,
+      `Lv.${card.level}`,
+      '',
+      `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
+      `Passive: ${card.signCompatible ? 'Active' : 'Inactive'}`
     );
     if (card.equipped && !card.signCompatible) {
-      lines.push('   Reason: Incompatible with equipped Main Card');
+      lines.push('Reason: Incompatible with equipped Main Card');
     }
   });
   return lines.join('\n');
@@ -79,50 +73,56 @@ export async function executeCard(ctx) {
       }
       if (action === 'equip') {
         if (!id) {
-          await ctx.reply('Usage: `.card sign equip <sign_id>`');
+          await ctx.fail('Usage: `.card` sign equip <sign_id>');
           return;
         }
         const card = await cardService.equipSignCard(ctx.sender, id);
         await ctx.reply(
-          `✅ ${card.definition.name} Lv.${card.level} equipped.\n` +
+          `✅ *${card.definition.name}* equipped.\n` +
             (card.signCompatible
               ? '✅ Passive: Active'
-              : '⛔ Passive: Inactive (ATK/DEF tetap aktif)')
+              : '⛔ Passive: Inactive')
         );
         return;
       }
       if (action === 'unequip') {
         const card = await cardService.unequip(ctx.sender, 'sign');
         await ctx.reply(
-          card ? `✅ ${card.definition.name} unequipped.` : 'Tidak ada Sign Card yang equipped.'
+          card
+            ? `✅ *${card.definition.name}* unequipped.`
+            : 'Tidak ada Sign Card yang equipped.'
         );
         return;
       }
-      await ctx.reply('Usage: `.card sign` | `.card sign equip <id>` | `.card sign unequip`');
+      await ctx.fail(
+        'Usage:\n`.card` sign\n`.card` sign equip <id>\n`.card` sign unequip'
+      );
       return;
     }
     if (sub === 'equip') {
       const [id] = rest;
       if (!id) {
-        await ctx.reply('Usage: `.card equip <card_id>`');
+        await ctx.fail('Usage: `.card` equip <card_id>');
         return;
       }
       const card = await cardService.equipMainCard(ctx.sender, id);
-      await ctx.reply(`✅ ${card.definition.name} Lv.${card.level} equipped.`);
+      await ctx.reply(`✅ *${card.definition.name}* equipped.`);
       return;
     }
     if (sub === 'unequip') {
       const card = await cardService.unequip(ctx.sender, 'main');
       await ctx.reply(
-        card ? `✅ ${card.definition.name} unequipped.` : 'Tidak ada Main Card yang equipped.'
+        card
+          ? `✅ *${card.definition.name}* unequipped.`
+          : 'Tidak ada Main Card yang equipped.'
       );
       return;
     }
-    await ctx.reply(
-      'Usage: `.card` | `.card equip <id>` | `.card unequip` | `.card sign` | `.card sign equip <id>` | `.card sign unequip`'
+    await ctx.fail(
+      'Usage:\n`.card`\n`.card` equip <id>\n`.card` unequip\n`.card` sign\n`.card` sign equip <id>\n`.card` sign unequip'
     );
   } catch (err) {
-    await ctx.reply(`Gagal: ${err.message}`);
+    await ctx.fail(err.message);
   }
 }
 
@@ -131,7 +131,7 @@ export default {
   aliases: ['cards', 'kartu'],
   category: 'rpg',
   description: 'Lihat dan equip Main/Sign Card',
-  cooldown: 3_000,
+  cooldown: 10_000,
 
   async execute(ctx) {
     await executeCard(ctx);

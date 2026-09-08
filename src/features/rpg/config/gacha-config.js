@@ -58,7 +58,8 @@ export function rollMainCard(random = Math.random) {
 export function rollShopItem(random = Math.random) {
   const items = getInventoryItems();
   if (!items.length) throw new RangeError('no purchasable shop items');
-  return items[Math.min(items.length - 1, Math.floor(random() * items.length))].id;
+  return items[Math.min(items.length - 1, Math.floor(random() * items.length))]
+    .id;
 }
 
 /** Item quantity for a shop-item pull, within the configured range. */

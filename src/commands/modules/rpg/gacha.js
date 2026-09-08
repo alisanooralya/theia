@@ -84,7 +84,7 @@ export default {
     try {
       await executeGacha(ctx);
     } catch (err) {
-      await ctx.reply(`Gagal: ${err.message}`);
+      await ctx.fail(err.message);
     }
   },
 };

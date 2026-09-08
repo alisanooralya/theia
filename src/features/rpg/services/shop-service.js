@@ -76,7 +76,10 @@ export function createShopService({
               ? await coins.spendCoin(userId, total, tx)
               : await coins.getBalance(userId, tx);
           const granted = await cards.grantCard(userId, item.cardId, tx);
-          if (!granted.isNew) throw new RangeError(`Sudah memiliki: ${granted.card.definition.name}`);
+          if (!granted.isNew)
+            throw new RangeError(
+              `Sudah memiliki: ${granted.card.definition.name}`
+            );
           return { remaining, granted };
         });
         return {

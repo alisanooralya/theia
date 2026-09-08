@@ -77,7 +77,9 @@ describe('gacha config', () => {
     const ids = getInventoryItems().map((i) => i.id);
     assert.deepEqual(
       ids,
-      Object.keys(SHOP_ITEMS).filter((id) => SHOP_ITEMS[id].purchasable && !SHOP_ITEMS[id].cardId)
+      Object.keys(SHOP_ITEMS).filter(
+        (id) => SHOP_ITEMS[id].purchasable && !SHOP_ITEMS[id].cardId
+      )
     );
     assert.ok(ids.includes('cerelia'));
     assert.ok(!ids.some((id) => SHOP_ITEMS[id].cardId));

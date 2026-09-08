@@ -7,7 +7,10 @@ import {
   getPurchasableItems,
   getShopItem,
 } from '../src/features/rpg/config/shop-config.js';
-import { CERELIA_ITEM, SIGN_CARDS } from '../src/features/rpg/config/card-config.js';
+import {
+  CERELIA_ITEM,
+  SIGN_CARDS,
+} from '../src/features/rpg/config/card-config.js';
 import { createInventoryService } from '../src/features/rpg/services/inventory-service.js';
 import { createShopService } from '../src/features/rpg/services/shop-service.js';
 import { formatInventory } from '../src/commands/modules/rpg/inventory.js';
@@ -112,7 +115,8 @@ describe('shop config', () => {
       },
       cardService: {
         grantCard: async (u, cardId) => {
-          if (owned.has(cardId)) return { card: { definition: { name: cardId } }, isNew: false };
+          if (owned.has(cardId))
+            return { card: { definition: { name: cardId } }, isNew: false };
           owned.add(cardId);
           return { card: { definition: { name: cardId } }, isNew: true };
         },

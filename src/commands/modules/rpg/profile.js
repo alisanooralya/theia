@@ -5,17 +5,17 @@ import {
 
 export default {
   name: 'profile',
-  aliases: ['profil', 'rpg', 'char', 'character'],
+  aliases: ['profil'],
   category: 'rpg',
   description: 'Lihat profil RPG kamu',
-  cooldown: 5_000,
+  cooldown: 10_000,
 
   async execute(ctx) {
     try {
       const data = await profileService.getProfileData(ctx.sender);
       await ctx.reply(formatProfile(data));
     } catch (err) {
-      await ctx.reply(`Gagal membuka profile: ${err.message}`);
+      await ctx.fail(err.message);
     }
   },
 };

@@ -87,11 +87,18 @@ describe('card command (database)', { skip: !dbAvailable }, () => {
     let s = stubCtx(userId, ['equip', 'girgas']);
     await executeCard(s.ctx);
     assert.ok(s.replies[0].includes('equipped'));
-    assert.equal((await cardService.getEquippedMainCard(userId)).cardId, 'girgas');
+    assert.equal(
+      (await cardService.getEquippedMainCard(userId)).cardId,
+      'girgas'
+    );
     s = stubCtx(userId, ['equip', 'daisy']);
     await executeCard(s.ctx);
-    assert.equal((await cardService.getEquippedMainCard(userId)).cardId, 'daisy');
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId} AND equipped = 1`;
+    assert.equal(
+      (await cardService.getEquippedMainCard(userId)).cardId,
+      'daisy'
+    );
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId} AND equipped = 1`;
     assert.equal(rows[0].n, 1);
     s = stubCtx(userId, ['unequip']);
     await executeCard(s.ctx);
@@ -168,13 +175,19 @@ describe('card command (database)', { skip: !dbAvailable }, () => {
     await executeCard(s.ctx);
     const after = await finalStatService.getFinalStats(userId);
     assert.deepEqual(after, base);
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId} AND equipped = 1`;
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_main_cards WHERE user_id = ${userId} AND equipped = 1`;
     assert.equal(rows[0].n, 0);
   });
 
   it('16. unknown subcommand and errors never crash', async () => {
     const userId = await makeUser('err');
-    for (const args of [['bogus'], ['sign', 'bogus'], ['equip', 'nope'], ['sign', 'equip', 'nope']]) {
+    for (const args of [
+      ['bogus'],
+      ['sign', 'bogus'],
+      ['equip', 'nope'],
+      ['sign', 'equip', 'nope'],
+    ]) {
       const { ctx, replies } = stubCtx(userId, args);
       await executeCard(ctx);
       assert.equal(replies.length, 1);

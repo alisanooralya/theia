@@ -202,10 +202,17 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
     assert.equal(await rpgCoinModel.getBalance(userId), 750000);
     assert.equal(await cardService.hasCard(userId, 'girgas_sign'), true);
     // Not an inventory item.
-    assert.equal(await inventoryService.getItemQuantity(userId, 'girgas_sign'), 0);
-    await assert.rejects(shopService.buyItem(userId, 'girgas_sign', 1), /Sudah memiliki/);
+    assert.equal(
+      await inventoryService.getItemQuantity(userId, 'girgas_sign'),
+      0
+    );
+    await assert.rejects(
+      shopService.buyItem(userId, 'girgas_sign', 1),
+      /Sudah memiliki/
+    );
     assert.equal(await rpgCoinModel.getBalance(userId), 750000);
-    const rows = await sql`SELECT COUNT(*)::int AS n FROM rpg_sign_cards WHERE user_id = ${userId} AND card_id = 'girgas_sign'`;
+    const rows =
+      await sql`SELECT COUNT(*)::int AS n FROM rpg_sign_cards WHERE user_id = ${userId} AND card_id = 'girgas_sign'`;
     assert.equal(rows[0].n, 1);
   });
 });
