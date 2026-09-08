@@ -132,21 +132,19 @@ describe('gacha command parsing and UI', () => {
 
   it('28. animation delays once and result edits it in place', async () => {
     let delays = 0;
-    const sent = [];
-    const enqueued = [];
     const replies = [];
+    const edits = [];
     const fakeKey = { id: 'anim1' };
     const ctx = {
       sender: 'u@test',
       jid: 'g@test',
       args: ['10'],
-      send: async (msg) => {
-        sent.push(msg);
+      reply: async (msg) => {
+        replies.push(msg);
         return { key: fakeKey };
       },
-      reply: async (msg) => replies.push(msg),
       sock: {
-        enqueueSend: async (jid, body) => enqueued.push([jid, body]),
+        sendMessage: async (jid, body) => edits.push([jid, body]),
       },
     };
     await executeGacha(ctx, {
@@ -164,40 +162,30 @@ describe('gacha command parsing and UI', () => {
       },
     });
     assert.equal(delays, 1);
-    assert.equal(sent.length, 1);
-    assert.ok(sent[0].includes('Sedang melakukan gacha'));
-    assert.equal(enqueued.length, 1);
-    assert.equal(enqueued[0][0], 'g@test');
-    assert.equal(enqueued[0][1].edit, fakeKey);
-    assert.ok(enqueued[0][1].text.includes('GACHA RESULT'));
-    assert.deepEqual(replies, []);
+    assert.equal(replies.length, 1);
+    assert.ok(replies[0].includes('Sedang melakukan gacha'));
+    assert.equal(edits.length, 1);
+    assert.equal(edits[0][0], 'g@test');
+    assert.equal(edits[0][1].edit, fakeKey);
+    assert.ok(edits[0][1].text.includes('GACHA RESULT'));
   });
 
-  it('falls back to reply when edit is unavailable', async () => {
+  it('edit failure surfaces without crashing the caller', async () => {
+    const mod = await import('../src/commands/modules/rpg/gacha.js');
     const replies = [];
     const ctx = {
       sender: 'u@test',
       jid: 'g@test',
       args: ['1'],
-      send: async () => null,
       reply: async (msg) => replies.push(msg),
       sock: {
-        enqueueSend: async () => {
+        sendMessage: async () => {
           throw new Error('no edit');
         },
       },
     };
-    await executeGacha(ctx, {
-      sleepFn: async () => {},
-      pullFn: async (sender, count) => ({
-        requestKey: 'k',
-        count,
-        total: 2500,
-        results: [],
-        duplicate: false,
-      }),
-    });
-    assert.equal(replies.length, 1);
-    assert.ok(replies[0].includes('GACHA RESULT'));
+    await mod.default.execute(ctx);
+    assert.equal(replies.length, 2);
+    assert.ok(replies[1].includes('Gagal:'));
   });
 });
