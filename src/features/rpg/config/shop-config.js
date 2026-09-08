@@ -24,6 +24,7 @@ function shopItem({
   category = 'rpg',
   purchasable = true,
   cardId = null,
+  emoji = '📦',
 }) {
   if (!id || !name) throw new RangeError('shop item needs id and name');
   if (!Number.isInteger(price) || price < 0) {
@@ -38,6 +39,7 @@ function shopItem({
     category,
     purchasable,
     cardId,
+    emoji,
   });
 }
 

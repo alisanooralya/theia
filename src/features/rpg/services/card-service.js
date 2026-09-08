@@ -19,7 +19,9 @@ import { rpgCardModel } from '../models/rpg-card.model.js';
 import { rpgCoinModel } from '../models/rpg-coin.model.js';
 import { rpgInventoryModel } from '../models/rpg-inventory.model.js';
 import {
+  CARD_LEVELING,
   CARD_MIN_LEVEL,
+  affordableLevels,
   cardKind,
   cardStatsAtLevel,
   getBulkLevelUpCost,
@@ -85,18 +87,59 @@ export function createCardService({
     const max = maxLevelFor(def.kind);
     const current = await cards.find(userId, cardId, def.kind);
     if (!current) throw new RangeError(`card not owned: ${cardId}`);
-    const cost = getBulkLevelUpCost(def.kind, current.level, targetLevel);
-    if (current.level >= max) {
-      throw new RangeError(`card is already at max level (${max})`);
+    if (!Number.isInteger(targetLevel)) {
+      throw new RangeError('target level must be an integer');
     }
-    const row = await db.begin(async (tx) => {
+    if (targetLevel > max) {
+      throw new RangeError(`target level exceeds max level (${max})`);
+    }
+    if (targetLevel < current.level) {
+      throw new RangeError('target level must be above current level');
+    }
+    if (targetLevel === current.level) {
+      // Idempotent no-op (safe retries / lost races): nothing to charge.
+      return {
+        card: enrichCard(current, def.kind),
+        fromLevel: current.level,
+        toLevel: current.level,
+        levels: 0,
+        cost: { coin: 0, cerelia: 0, materialId: CARD_LEVELING.materialId },
+        noop: true,
+      };
+    }
+    // Authoritative cost is computed inside the transaction on freshly
+    // locked state, so concurrent callers serialize instead of double
+    // charging: a loser whose target is already reached becomes a no-op.
+    const result = await db.begin(async (tx) => {
+      const fresh = await cards.find(userId, cardId, def.kind, tx, true);
+      if (!fresh) throw new RangeError(`card not owned: ${cardId}`);
+      if (fresh.level >= targetLevel) return { row: fresh, noop: true };
+      const cost = getBulkLevelUpCost(def.kind, fresh.level, targetLevel);
       await coins.spendCoin(userId, cost.coin, tx);
       await inventory.remove(userId, cost.materialId, cost.cerelia, tx);
-      return cards.setLevel(userId, cardId, def.kind, cost.toLevel, tx);
+      const row = await cards.setLevel(
+        userId,
+        cardId,
+        def.kind,
+        cost.toLevel,
+        tx
+      );
+      return { row, fromLevel: fresh.level, cost, noop: false };
     });
+    if (result.noop) {
+      return {
+        card: enrichCard(result.row, def.kind),
+        fromLevel: result.row.level,
+        toLevel: result.row.level,
+        levels: 0,
+        cost: { coin: 0, cerelia: 0, materialId: CARD_LEVELING.materialId },
+        noop: true,
+      };
+    }
+    const { cost } = result;
     return {
-      card: enrichCard(row, def.kind),
-      fromLevel: current.level,
+      card: enrichCard(result.row, def.kind),
+      fromLevel: result.fromLevel,
       toLevel: cost.toLevel,
       levels: cost.levels,
       cost: {
@@ -104,6 +147,7 @@ export function createCardService({
         cerelia: cost.cerelia,
         materialId: cost.materialId,
       },
+      noop: false,
     };
   }
 
@@ -118,6 +162,53 @@ export function createCardService({
         main: mainRows.map((row) => enrichCard(row, 'main')),
         sign: signRows.map((row) => enrichCard(row, 'sign')),
       };
+    },
+
+    /**
+     * Auto-level the equipped card of a slot ('main' | 'sign') as far as
+     * current Coin + Cerelia reach (existing affordableLevels curve).
+     * No level argument by design. Throws when nothing is equipped or
+     * the card is maxed; returns { leveled: false } when resources
+     * cover zero levels — never partial-charges. The actual level-up
+     * revalidates inside its own transaction, so concurrent callers
+     * serialize on fresh state.
+     */
+    async autoLevelUp(userId, kind) {
+      if (kind !== 'main' && kind !== 'sign') {
+        throw new RangeError(`unknown equip slot: ${kind}`);
+      }
+      const equipped = await cards.equipped(userId, kind);
+      if (!equipped) throw new RangeError(`no equipped ${kind === 'main' ? 'main card' : 'sign card'}`);
+      const max = maxLevelFor(kind);
+      if (equipped.level >= max) {
+        const def = requireDefinition(equipped.card_id);
+        return { leveled: false, maxed: true, card: enrichCard(equipped, kind), name: def.name, level: equipped.level, max };
+      }
+      const costProbe = getLevelUpCost(kind, equipped.level);
+      const [coin, cerelia] = await Promise.all([
+        coins.getBalance(userId),
+        inventory.getQuantity(userId, costProbe.materialId),
+      ]);
+      const affordable = affordableLevels(equipped.level, coin, cerelia, max);
+      if (affordable.levels <= 0) {
+        const def = requireDefinition(equipped.card_id);
+        return { leveled: false, maxed: false, card: enrichCard(equipped, kind), name: def.name, level: equipped.level, max };
+      }
+      const done = await bulkLevelUp(userId, equipped.card_id, affordable.toLevel);
+      if (done.levels === 0) {
+        // Lost a race: someone else finished first. Re-read for accuracy.
+        const current = await cards.equipped(userId, kind);
+        const def = requireDefinition(current.card_id);
+        return {
+          leveled: false,
+          maxed: current.level >= max,
+          card: enrichCard(current, kind),
+          name: def.name,
+          level: current.level,
+          max,
+        };
+      }
+      return { ...done, leveled: true, maxed: false, name: done.card.definition.name };
     },
 
     /** Enriched owned card or null. Throws for unknown card ids. */

@@ -1,3 +1,4 @@
+import { F } from '#helpers/index.js';
 import { cardService } from '#features/rpg/services/card-service.js';
 
 export function formatMainCards(cards) {
@@ -12,7 +13,7 @@ export function formatMainCards(cards) {
       `#${i + 1} ${card.definition.name}`,
       `Lv.${card.level}`,
       '',
-      `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
+      `${card.equipped ? '🟢 Equipped' : '⚪ Not Equipped'}`,
       `Active: ${card.skills.active.unlocked ? (card.skills.active.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`,
       `Passive: ${card.skills.passive.unlocked ? (card.skills.passive.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`
     );
@@ -32,7 +33,7 @@ export function formatSignCards(cards) {
       `#${i + 1}. ${card.definition.name}`,
       `Lv.${card.level}`,
       '',
-      `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
+      `${card.equipped ? '🟢 Equipped' : '⚪ Not Equipped'}`,
       `Passive: ${card.signCompatible ? 'Active' : 'Inactive'}`
     );
     if (card.equipped && !card.signCompatible) {
@@ -58,6 +59,37 @@ async function showSign(ctx) {
   await ctx.reply(formatSignCards(enriched));
 }
 
+/** Pure level-up result renderer. No I/O, no services. */
+export function formatLevelUp(result) {
+  const lines = ['🎴 *CARD LEVEL UP*', '', result.name];
+  if (result.maxed) {
+    lines.push(`Lv.${result.level}`, '', '✨ Card sudah mencapai level maksimum.');
+    return lines.join('\n');
+  }
+  if (!result.leveled) {
+    lines.push(
+      `Lv.${result.level} → Lv.${result.level}`,
+      '',
+      '❌ Resource tidak cukup untuk level berikutnya.'
+    );
+    return lines.join('\n');
+  }
+  lines.push(
+    `Lv.${result.fromLevel} → Lv.${result.toLevel}`,
+    '',
+    `💰 Coin: -${F.formatNumber(result.cost.coin)}`,
+    `🔹 Cerelia: -${F.formatNumber(result.cost.cerelia)}`,
+    '',
+    '✨ Level Up berhasil!'
+  );
+  return lines.join('\n');
+}
+
+async function levelUpSlot(ctx, kind) {
+  const result = await cardService.autoLevelUp(ctx.sender, kind);
+  await ctx.reply(formatLevelUp(result));
+}
+
 export async function executeCard(ctx) {
   const [sub, ...rest] = (ctx.args ?? []).map((a) => a.toLowerCase());
   try {
@@ -66,9 +98,17 @@ export async function executeCard(ctx) {
       return;
     }
     if (sub === 'sign') {
-      const [action, id] = rest;
+      const [action, id, ...extra] = rest;
       if (!action) {
         await showSign(ctx);
+        return;
+      }
+      if (action === 'levelup') {
+        if (id ?? extra.length) {
+          await ctx.fail('Usage: `.card` sign levelup');
+          return;
+        }
+        await levelUpSlot(ctx, 'sign');
         return;
       }
       if (action === 'equip') {
@@ -95,8 +135,17 @@ export async function executeCard(ctx) {
         return;
       }
       await ctx.fail(
-        'Usage:\n`.card` sign\n`.card` sign equip <id>\n`.card` sign unequip'
+        'Usage:\n`.card` sign\n`.card` sign equip <id>\n`.card` sign unequip\n`.card` sign levelup'
       );
+      return;
+    }
+    if (sub === 'levelup') {
+      const [extra] = rest;
+      if (extra) {
+        await ctx.fail('Usage: `.card` levelup');
+        return;
+      }
+      await levelUpSlot(ctx, 'main');
       return;
     }
     if (sub === 'equip') {
@@ -119,7 +168,7 @@ export async function executeCard(ctx) {
       return;
     }
     await ctx.fail(
-      'Usage:\n`.card`\n`.card` equip <id>\n`.card` unequip\n`.card` sign\n`.card` sign equip <id>\n`.card` sign unequip'
+      'Usage:\n`.card`\n`.card` equip <id>\n`.card` unequip\n`.card` levelup\n`.card` sign\n`.card` sign equip <id>\n`.card` sign unequip\n`.card` sign levelup'
     );
   } catch (err) {
     await ctx.fail(err.message);

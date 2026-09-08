@@ -174,21 +174,35 @@ describe('gacha command parsing and UI', () => {
   });
 
   it('edit failure surfaces without crashing the caller', async () => {
-    const mod = await import('../src/commands/modules/rpg/gacha.js');
+    const { executeGacha } = await import('../src/commands/modules/rpg/gacha.js');
     const replies = [];
     const ctx = {
       sender: 'u@test',
       jid: 'g@test',
       args: ['1'],
       reply: async (msg) => replies.push(msg),
+      fail: async (msg) => {
+        throw new Error(msg);
+      },
       sock: {
         sendMessage: async () => {
           throw new Error('no edit');
         },
       },
     };
-    await mod.default.execute(ctx);
-    assert.equal(replies.length, 2);
-    assert.ok(replies[1].includes('Gagal:'));
+    await assert.rejects(
+      executeGacha(ctx, {
+        sleepFn: async () => {},
+        pullFn: async () => ({
+          requestKey: 'k',
+          count: 1,
+          total: 2500,
+          results: [],
+          duplicate: false,
+        }),
+      }),
+      /no edit/
+    );
+    assert.equal(replies.length, 1);
   });
 });

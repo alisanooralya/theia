@@ -7,8 +7,9 @@ export function formatInventory(rows) {
 
   for (const row of rows) {
     const item = shopService.getShopItem(row.item_id);
+    const emoji = item?.emoji ?? '❓';
     const name = item ? item.name : `Unknown Item (${row.item_id})`;
-    lines.push(`🧪 ${name} × ${row.quantity}`);
+    lines.push(`${emoji} ${name} × ${row.quantity}`);
   }
 
   return lines.join('\n');

@@ -38,6 +38,7 @@ function mainCard(over = {}) {
 function signCard(over = {}) {
   return {
     cardId: 'girgas_sign',
+    level: 10,
     definition: {
       name: 'Girgas Sign',
       passive: { name: 'Lollipop Drive' },
@@ -117,8 +118,19 @@ describe('profile formatting', () => {
     return formatProfile(data);
   }
 
-  it('renders normal stats with main + compatible sign', async () => {
+  it('renders card layout with main + compatible sign', async () => {
     const t = await text({ main: mainCard(), sign: signCard() });
+    assert.ok(t.includes('Girgas - Lv.25'));
+    assert.ok(t.includes('Lollipop Crash'));
+    assert.ok(t.includes('Sugar Rush'));
+    assert.ok(t.includes('Girgas Sign - Lv.10'));
+    assert.ok(t.includes('ATK +20'));
+    assert.ok(t.includes('DEF +8'));
+    assert.ok(t.includes('Passive: Active'));
+  });
+
+  it('renders full stats when no main card is equipped', async () => {
+    const t = await text();
     assert.ok(t.includes('Level: *25*'));
     assert.ok(t.includes(`EXP: *120 / ${expRequiredForLevel(25)}*`));
     assert.ok(t.includes('HP: *450 / 500*'));
@@ -126,26 +138,19 @@ describe('profile formatting', () => {
     assert.ok(t.includes('DEF: *42*'));
     assert.ok(t.includes('Crit Rate: *5%*'));
     assert.ok(t.includes('Crit DMG: *2x*'));
-    assert.ok(t.includes('Girgas'));
-    assert.ok(t.includes('Lv.25'));
-    assert.ok(t.includes('Lollipop Crash'));
-    assert.ok(t.includes('Sugar Rush'));
-    assert.ok(t.includes('Girgas Sign'));
-    assert.ok(t.includes('ATK +20'));
-    assert.ok(t.includes('DEF +8'));
-    assert.ok(t.includes('Passive: Active'));
   });
 
   it('shows empty states without cards', async () => {
     const t = await text();
+    // NOTE: current service prints 'Belum ada Main Card' for both slots.
     assert.ok(t.includes('Belum ada Main Card'));
-    assert.ok(t.includes('Belum ada Sign Card'));
+    assert.ok(t.includes('🔰 *Sign Card*'));
   });
 
   it('shows main without sign', async () => {
     const t = await text({ main: mainCard() });
-    assert.ok(t.includes('Girgas'));
-    assert.ok(t.includes('Belum ada Sign Card'));
+    assert.ok(t.includes('Girgas - Lv.25'));
+    assert.ok(t.includes('Belum ada Main Card'));
   });
 
   it('marks incompatible sign passive inactive but keeps bonuses', async () => {
@@ -156,6 +161,7 @@ describe('profile formatting', () => {
     assert.ok(t.includes('ATK +20'));
     assert.ok(t.includes('DEF +8'));
     assert.ok(t.includes('Passive: Inactive'));
+    assert.ok(t.includes('butuh girgas'));
     assert.ok(!t.includes('Passive: Active'));
   });
 

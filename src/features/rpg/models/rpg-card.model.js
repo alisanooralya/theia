@@ -32,9 +32,9 @@ class RpgCardModel {
     );
   }
 
-  async find(userId, cardId, kind, client = sql) {
+  async find(userId, cardId, kind, client = sql, forUpdate = false) {
     const rows = await client.unsafe(
-      `SELECT * FROM ${tableFor(kind)} WHERE user_id = $1 AND card_id = $2`,
+      `SELECT * FROM ${tableFor(kind)} WHERE user_id = $1 AND card_id = $2${forUpdate ? ' FOR UPDATE' : ''}`,
       [userId, cardId]
     );
     return rows[0] ?? null;

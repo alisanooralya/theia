@@ -150,12 +150,16 @@ describe('card leveling (database)', { skip: !dbAvailable }, () => {
   it('13-14. invalid and over-max targets rejected', async () => {
     const userId = await makeUser('target');
     await cardService.grantCard(userId, 'daisy');
-    for (const bad of [1, 0, -3, 1.5, 101]) {
+    for (const bad of [0, -3, 1.5, 101]) {
       await assert.rejects(
         cardService.bulkLevelUp(userId, 'daisy', bad),
         RangeError
       );
     }
+    // Same-level target is an idempotent no-op (concurrency-safe), not an error.
+    const noop = await cardService.bulkLevelUp(userId, 'daisy', 1);
+    assert.equal(noop.levels, 0);
+    assert.equal(noop.noop, true);
     assert.equal(
       (await cardService.canLevelUp(userId, 'daisy', 1)).reason,
       'invalid-target'
