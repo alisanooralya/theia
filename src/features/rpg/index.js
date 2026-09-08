@@ -36,3 +36,7 @@ export {
   signPassiveState,
 } from './services/skill-engine.js';
 export { cardService, createCardService, enrichCard } from './services/card-service.js';
+export {
+  finalStatService,
+  createFinalStatService,
+} from './services/final-stat-service.js';
