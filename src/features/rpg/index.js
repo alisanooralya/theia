@@ -40,3 +40,16 @@ export {
   finalStatService,
   createFinalStatService,
 } from './services/final-stat-service.js';
+export {
+  MAX_ROUNDS_DEFAULT,
+  ROUND_SECONDS,
+  createBattle,
+  calculateDamage,
+  cooldownRounds,
+  skillReadyRound,
+  playerTurn,
+  enemyTurn,
+  runRound,
+  simulateBattle,
+  battleSkillsFromEffects,
+} from './services/battle-engine.js';
