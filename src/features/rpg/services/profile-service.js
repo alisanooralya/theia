@@ -19,7 +19,7 @@ function skillLines(icon, label, skill, { cooldownMs = null } = {}) {
   }
   if (skill.description) lines.push(skill.description);
   if (cooldownMs !== null)
-    lines.push(`⏱️ Cooldown: ${formatCooldown(cooldownMs)}`);
+    lines.push(`⏱️ Cooldown: ${formatCooldown(cooldownMs)}`, '');
   return lines;
 }
 
@@ -115,6 +115,7 @@ export function formatProfile(data) {
 
     liness.push(
       `*${data.main.name}* - Lv.${data.main.level}`,
+      '',
       ...skillLines('⚡', 'Active', data.main.active, {
         cooldownMs: data.main.active.cooldownMs,
       }),

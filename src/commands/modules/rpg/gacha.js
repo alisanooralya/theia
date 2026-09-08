@@ -1,12 +1,24 @@
 import { F } from '#helpers/index.js';
-import { GACHA_CONFIG } from '#features/rpg/config/gacha-config.js';
+import { Button } from '#messages/builder.js';
+import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
+import { GACHA_CONFIG, cardArtPath, CARD_IMAGE_MAP } from '#features/rpg/config/gacha-config.js';
 import {
   gachaService,
   makeRequestKey,
 } from '#features/rpg/services/gacha-service.js';
 
-export const GACHA_USAGE =
-  '🎰 *GACHA*\n\nPenggunaan:\n`.gacha 1` (2.500 Coin)\n`.gacha 10` (25.000 Coin)';
+function bannerData() {
+  const testId = Object.keys(CARD_IMAGE_MAP)[1];
+  return {
+    name: 'Lena',
+    subtitle: 'Archer',
+    eraLabel: 'Star Cluster Chief Scrivener',
+    rateUpText: 'NEW CARD RELEASED',
+    description:
+      "Nice to meet you! The captain has told me a lot about you. Apparently, you're an incredibly awesome mate. I have a feeling that we'll experience amazing things together beyond what I've read in books! Looking forward to working with you from now on, f-friend!",
+    artPath: cardArtPath(testId),
+  };
+}
 
 export function parseGachaArgs(args) {
   if (!args || args.length === 0) return null;
@@ -49,14 +61,29 @@ export function formatGachaResult(outcome) {
   return lines.join('\n');
 }
 
+async function sendGachaMenu(ctx) {
+  const text = ['🎰 *GACHA*', '', 'Pilih jumlah pull:'].join('\n');
+  try {
+    const banner = await renderGachaBanner(bannerData());
+    const builder = new Button(ctx.sock)
+      .setBody(text)
+      .setImage(banner)
+      .setFooter('Rate card 1% • item shop 49%')
+      .addReply('🎰 GACHA 1', '.gacha 1')
+      .addReply('🎰 GACHA 10', '.gacha 10');
+    return builder.send(ctx.jid);
+  } catch {
+    return ctx.reply(text);
+  }
+}
+
 export async function executeGacha(
   ctx,
   { sleepFn = F.sleep, pullFn = null } = {}
 ) {
   const count = parseGachaArgs(ctx.args);
   if (count === null) {
-    await ctx.fail(GACHA_USAGE);
-    return;
+    return sendGachaMenu();
   }
 
   const animMsg = await ctx.reply('🎰 Sedang melakukan gacha...');
