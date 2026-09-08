@@ -6,6 +6,7 @@ import makeWASocket, {
 import NodeCache from 'node-cache';
 import { useAuthState } from './authenticator.js';
 import { registerEvents } from '#events/registry.js';
+import { setSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 import SETTINGS from '#environment/settings.js';
 import { GROUP_CACHE_TTL } from '#environment/limits.js';
@@ -107,5 +108,6 @@ export async function createClient() {
     return meta;
   };
 
+  setSocket(sock);
   return sock;
 }
