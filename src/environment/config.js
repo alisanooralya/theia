@@ -15,7 +15,7 @@ export default {
 
   // ─── Supabase (Postgres) ───
   supabaseDbUrl:
-    'postgresql://postgres.mwqgtnptlguvtyibschb:afHLPxpQ9WbNeQ8O@aws-0-us-east-2.pooler.supabase.com:6543/postgres',
+    'postgresql://postgres.ozqtfzftjronghtseosg:zP2hP7w21zlw7U1O@aws-0-us-east-2.pooler.supabase.com:6543/postgres',
 
   // ─── Auth Backend ───
   authBackend: 'sqlite',
@@ -23,7 +23,7 @@ export default {
 
   // ─── Logging ───
   // 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
-  logLevel: 'warn',
+  logLevel: 'info',
 
   // ─── Misc ───
   timezone: 'Asia/Jakarta',
