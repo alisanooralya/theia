@@ -1,3 +1,4 @@
+import { readFile } from 'fs/promises';
 import { raidService } from '#features/rpg/raid.js';
 import { userModel } from '#storage/models/index.js';
 import { ButtonV2 } from '#messages/builder.js';
@@ -109,6 +110,12 @@ function statusText(overview) {
 async function sendStatusPanel(ctx, overview) {
   const text = statusText(overview);
   const builder = new ButtonV2(ctx.sock).setBody(text);
+
+  try {
+    builder.setThumbnail(await readFile('temp/raid.jpg'));
+  } catch {
+    // Tanpa thumbnail kalau file tidak ada — panel tetap dikirim.
+  }
 
   let hasButton = false;
   if (overview.phase === 'active' && overview.entriesLeft > 0) {
