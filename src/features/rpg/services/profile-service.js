@@ -95,32 +95,31 @@ export function formatProfile(data) {
     `🛡️ DEF: *${data.def}*`,
     `🎯 Crit Rate: *${formatPercent(data.critRate)}*`,
     `💥 Crit DMG: *${data.critDmg}x*`,
-    '',
-    '🃏 *Main Card*',
   ];
-  if (!data.main) {
-    lines.push('Belum ada Main Card');
-  } else {
+
+  if (data.main) {
     lines.push(
+      '',
+      '🃏 *Main Card*',
       `${data.main.name}`,
       `Lv.${data.main.level}`,
       skillLine('⚡ Active', data.main.active),
       skillLine('✨ Passive', data.main.passive)
     );
+
+    lines.push('', '🔰 *Sign Card*');
+    if (data.sign) {
+      lines.push(
+        `${data.sign.name}`,
+        `Lv.${data.sign.level}`,
+        `⚔️ ATK +${data.sign.atk}`,
+        `🛡️ DEF +${data.sign.def}`,
+        data.sign.compatible
+          ? `✅ Passive: Active (${data.sign.passiveName})`
+          : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
+      );
+    }
   }
-  lines.push('', '🔰 *Sign Card*');
-  if (!data.sign) {
-    lines.push('Belum ada Sign Card');
-  } else {
-    lines.push(
-      `${data.sign.name}`,
-      `Lv.${data.sign.level}`,
-      `⚔️ ATK +${data.sign.atk}`,
-      `🛡️ DEF +${data.sign.def}`,
-      data.sign.compatible
-        ? `✅ Passive: Active (${data.sign.passiveName})`
-        : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
-    );
-  }
+
   return lines.join('\n');
 }

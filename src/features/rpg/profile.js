@@ -117,6 +117,39 @@ const ICONS = {
     ctx.closePath();
     ctx.fill();
   },
+  critDmg(ctx, cx, cy, s, color) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = color;
+    const u = s / 2;
+
+    // Crosshair ring (crit precision)
+    ctx.beginPath();
+    ctx.arc(0, 0, u * 0.75, 0, Math.PI * 2);
+    ctx.lineWidth = u * 0.12;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+
+    // Crosshair ticks
+    for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * u * 0.5, Math.sin(angle) * u * 0.5);
+      ctx.lineTo(Math.cos(angle) * u * 0.9, Math.sin(angle) * u * 0.9);
+      ctx.lineWidth = u * 0.1;
+      ctx.stroke();
+    }
+
+    // Center diamond burst
+    ctx.beginPath();
+    ctx.moveTo(0, -u * 0.38);
+    ctx.lineTo(u * 0.28, 0);
+    ctx.lineTo(0, u * 0.38);
+    ctx.lineTo(-u * 0.28, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  },
 };
 
 function statChip(ctx, x, y, w, h, iconFn, label, value, accent) {
@@ -300,7 +333,7 @@ export async function renderProfileCard(data) {
   ]);
   y += 38;
 
-  // Stat chips: ATK, DEF, CRIT RATE
+  // Stat chips: ATK, DEF, CRIT RATE, CRIT DMG
   const chipH = 88;
   const gap = 12;
   const chipW = (contentW - gap * 2) / 3;
@@ -328,20 +361,34 @@ export async function renderProfileCard(data) {
     `${critRatePct}%`,
     '#ffd15c'
   );
+  y += chipH + gap;
+
+  const chipW2 = (contentW - gap) / 2;
+  statChip(
+    ctx,
+    px,
+    y,
+    chipW2,
+    chipH,
+    ICONS.critDmg,
+    'CRIT DMG',
+    `${Math.round((Number(critDmg) || 0) * 100)}%`,
+    '#ff6bcb'
+  );
   y += chipH + 14;
 
-  // Card slots: main + support
+  // Card slots: card + sign
   const cardH = 96;
   const cardGap = 12;
   const cardW = (contentW - cardGap) / 2;
-  cardSlot(ctx, px, y, cardW, cardH, 'Main Card', mainCard, '#ff8a5c');
+  cardSlot(ctx, px, y, cardW, cardH, 'Card', mainCard, '#ff8a5c');
   cardSlot(
     ctx,
     px + cardW + cardGap,
     y,
     cardW,
     cardH,
-    'Support Card',
+    'Sign',
     supportCard,
     '#6cc4ff'
   );
