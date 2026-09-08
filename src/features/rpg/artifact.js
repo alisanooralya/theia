@@ -266,13 +266,13 @@ export function sumArtifactBonuses(base, artifacts) {
         atk += artifact.main_value;
         break;
       case 'hp_percent':
-        hp += Math.floor((baseHp * artifact.main_value) / 1000);
+        hp += Math.floor((baseHp * artifact.main_value) / 100);
         break;
       case 'atk_percent':
-        atk += Math.floor((baseAtk * artifact.main_value) / 1000);
+        atk += Math.floor((baseAtk * artifact.main_value) / 100);
         break;
       case 'def_percent':
-        def += Math.floor((baseDef * artifact.main_value) / 1000);
+        def += Math.floor((baseDef * artifact.main_value) / 100);
         break;
       case 'crit_rate':
         critRate += artifact.main_value / 10;
