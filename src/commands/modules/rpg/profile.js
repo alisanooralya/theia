@@ -33,7 +33,7 @@ export default {
     ]);
 
     const [finalStats, equippedCards] = await Promise.all([
-      artifactService.getPlayerStats(jid),
+      artifactService.getDisplayStats(jid),
       cardService.getEquipped(jid),
     ]);
     const expNeeded = await userModel.expForLevel(user.level + 1);

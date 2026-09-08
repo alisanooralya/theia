@@ -584,6 +584,26 @@ class ArtifactService {
     };
   }
 
+  /**
+   * Final stats untuk TAMPILAN (Profile/panel): getPlayerStats + buff
+   * ATK/DEF aktif dari potion/food. Combat JANGAN pakai ini — Battle,
+   * Domain, dan Raid meng-overlay buff sendiri di atas getPlayerStats,
+   * jadi memakai helper ini di combat akan double-count.
+   */
+  async getDisplayStats(jid) {
+    const [base, final] = await Promise.all([
+      statsModel.find(jid),
+      this.getPlayerStats(jid),
+    ]);
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!base || !(base.buff_expire > nowSec)) return final;
+    return {
+      ...final,
+      atk: final.atk + (base.buff_atk || 0),
+      def: final.def + (base.buff_def || 0),
+    };
+  }
+
   formatArtifact(artifact) {
     const mainStatName = STAT_NAMES[artifact.main_stat] || artifact.main_stat;
     const mainFormatted = this.getStatFormat(artifact.main_stat)(

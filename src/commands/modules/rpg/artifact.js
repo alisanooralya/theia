@@ -228,7 +228,7 @@ export default {
 
       const equippedLines = await equippedText(ctx.sender);
       const artifacts = await artifact.getArtifacts(ctx.sender);
-      const stats = await artifact.getPlayerStats(ctx.sender);
+      const stats = await artifact.getDisplayStats(ctx.sender);
 
       const text = [
         '╭──┄  *ARTIFACT*  ┄──',
