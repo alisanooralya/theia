@@ -225,11 +225,12 @@ export default {
   aliases: ['raids'],
   category: 'rpg',
   description: 'Raid Boss kooperatif',
-  cooldown: 0,
+  cooldown: 300_000,
+  manualCooldown: true,
   groupOnly: true,
 
   async execute(ctx) {
-    const sub = ctx.args[0]?.toLowerCase() || 'status';
+    const sub = ctx.args[0]?.toLowerCase() || 'help';
 
     try {
       await userModel.ensure(ctx.sender, { pushName: ctx.pushName });
@@ -253,6 +254,7 @@ export default {
           });
         }
 
+        await ctx.applyCooldown();
         return ctx.reply(text, { mentions });
       }
 
