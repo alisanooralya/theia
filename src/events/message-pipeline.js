@@ -4,6 +4,7 @@ import { logger } from '#helpers/logger.js';
 import { isStatus, getBotJids } from '#helpers/identifier.js';
 import { isOwnerJid } from '#helpers/owner.js';
 import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
+import { processedMsgCache } from '#helpers/cache.js';
 import { userModel, groupModel } from '#storage/models/index.js';
 import SETTINGS from '#environment/settings.js';
 
@@ -22,12 +23,29 @@ async function isChatMuted(parsed) {
   return Boolean(group?.mute);
 }
 
+function dedupKey(msg) {
+  const key = msg.key ?? {};
+  return `${key.remoteJid ?? ''}|${key.participant ?? ''}|${key.id ?? ''}`;
+}
+
+function isDuplicateDelivery(msg) {
+  if (!msg.key?.id) return false;
+  const dkey = dedupKey(msg);
+  if (processedMsgCache.has(dkey)) {
+    logger.debug({ msgId: msg.key.id }, 'Duplicate message delivery skipped');
+    return true;
+  }
+  processedMsgCache.set(dkey, 1);
+  return false;
+}
+
 export async function onMessagesUpsert({ messages, type }, sock) {
   if (type !== 'notify') return;
 
   for (const msg of messages) {
     try {
       if (!msg.message) continue;
+      if (isDuplicateDelivery(msg)) continue;
       if (isStatus(msg.key?.remoteJid)) continue;
 
       const parsed = await parseMessage(msg, sock);
