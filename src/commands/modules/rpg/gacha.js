@@ -75,7 +75,7 @@ export async function executeGacha(
 
 export default {
   name: 'gacha',
-  aliases: ['gach', 'roll'],
+  aliases: ['roll'],
   category: 'rpg',
   description: 'Gacha Main Card dan item',
   cooldown: 10_000,

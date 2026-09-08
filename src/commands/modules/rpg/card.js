@@ -11,8 +11,8 @@ export function formatMainCards(cards) {
     lines.push(
       '',
       `#${i + 1} *${card.definition.name}* - Lv.${card.level}`,
-      '',
       `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
+      '',
       `Active: ${card.skills.active.unlocked ? (card.skills.active.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`,
       `Passive: ${card.skills.passive.unlocked ? (card.skills.passive.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`
     );
@@ -30,7 +30,6 @@ export function formatSignCards(cards) {
     lines.push(
       '',
       `#${i + 1}. *${card.definition.name}* - Lv.${card.level}`,
-      '',
       `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
       `Passive: ${card.signCompatible ? 'Active' : 'Inactive'}`
     );

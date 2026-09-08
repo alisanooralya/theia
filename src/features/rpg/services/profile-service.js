@@ -97,7 +97,6 @@ export function formatProfile(data) {
 
     liness.push(
       `*${data.main.name}* - Lv.${data.main.level}`,
-      ``,
       skillLine('⚡ Active', data.main.active),
       skillLine('✨ Passive', data.main.passive)
     );
@@ -107,7 +106,7 @@ export function formatProfile(data) {
       liness.push(
         `*${data.sign.name}* - Lv.${data.sign.level}`,
         `⚔️ ATK +${data.sign.atk}  🛡️ DEF +${data.sign.def}`,
-        ``,
+        '',
         data.sign.compatible
           ? `✅ Passive: Active (${data.sign.passiveName})`
           : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
