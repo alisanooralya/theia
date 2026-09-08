@@ -1,7 +1,11 @@
 import { F } from '#helpers/index.js';
 import { Button } from '#messages/builder.js';
 import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
-import { GACHA_CONFIG, cardArtPath, CARD_IMAGE_MAP } from '#features/rpg/config/gacha-config.js';
+import { GACHA_CONFIG } from '#features/rpg/config/gacha-config.js';
+import {
+  cardArtPath,
+  CARD_IMAGE_MAP,
+} from '#features/rpg/config/card-config.js';
 import {
   gachaService,
   makeRequestKey,
