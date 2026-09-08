@@ -1,0 +1,84 @@
+import { parseMessage } from '#messages/parser.js';
+import { dispatch } from '#messages/dispatcher.js';
+import { logger } from '#helpers/logger.js';
+import { isStatus, getBotJids } from '#helpers/identifier.js';
+import { isOwnerJid } from '#helpers/owner.js';
+import { orchestrator } from '#extensions/lifecycle/orchestrator.js';
+import { processedMsgCache } from '#helpers/cache.js';
+import { userModel, groupModel } from '#storage/models/index.js';
+import SETTINGS from '#environment/settings.js';
+
+async function isSenderBanned(parsed) {
+  const isOwner =
+    isOwnerJid(parsed.sender) ||
+    (parsed.senderAlt && isOwnerJid(parsed.senderAlt)) ||
+    (parsed.jidAlt && isOwnerJid(parsed.jidAlt));
+  if (isOwner) return false;
+  return userModel.isBanned(parsed.sender);
+}
+
+async function isChatMuted(parsed) {
+  if (!parsed.isGroup) return false;
+  const group = await groupModel.find(parsed.jid);
+  return Boolean(group?.mute);
+}
+
+function dedupKey(msg) {
+  const key = msg.key ?? {};
+  return `${key.remoteJid ?? ''}|${key.participant ?? ''}|${key.id ?? ''}`;
+}
+
+function isDuplicateDelivery(msg) {
+  if (!msg.key?.id) return false;
+  const dkey = dedupKey(msg);
+  if (processedMsgCache.has(dkey)) {
+    logger.debug({ msgId: msg.key.id }, 'Duplicate message delivery skipped');
+    return true;
+  }
+  processedMsgCache.set(dkey, 1);
+  return false;
+}
+
+export async function onMessagesUpsert({ messages, type }, sock) {
+  if (type !== 'notify') return;
+
+  for (const msg of messages) {
+    try {
+      if (!msg.message) continue;
+      if (isDuplicateDelivery(msg)) continue;
+      if (isStatus(msg.key?.remoteJid)) continue;
+
+      const parsed = await parseMessage(msg, sock);
+      if (!parsed) continue;
+      if (parsed.fromMe && !SETTINGS.respondToSelf) continue;
+
+      if (SETTINGS.autoread) {
+        await sock.readMessages([msg.key]).catch(() => {});
+      }
+
+      const proceed = await orchestrator.runProcessors(parsed, sock);
+      if (!proceed) continue;
+
+      const botJids = getBotJids(sock);
+      const isMentioned = parsed.mentions?.some((jid) => botJids.includes(jid));
+      const isCommand = parsed.text?.startsWith(SETTINGS.prefix) ?? false;
+
+      if (parsed.text && isMentioned && !isCommand) {
+        if (await isSenderBanned(parsed)) continue;
+        if (await isChatMuted(parsed)) continue;
+        await sock.sendMessage(
+          parsed.jid,
+          {
+            text: `Halo! Ketik ${SETTINGS.prefix}help untuk lihat command.`,
+          },
+          { quoted: msg }
+        );
+        continue;
+      }
+
+      await dispatch(parsed, sock);
+    } catch (err) {
+      logger.error({ err, msgId: msg.key?.id }, 'Message handler error');
+    }
+  }
+}

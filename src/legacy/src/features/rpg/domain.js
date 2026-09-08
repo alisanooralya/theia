@@ -1,0 +1,221 @@
+import { statsModel, walletModel, userModel } from '#storage/models/index.js';
+import { artifactService } from '#features/rpg/artifact.js';
+import {
+  applyIncomingCardDamage,
+  applyOutgoingCardDamage,
+  cardService,
+  cardTurnStats,
+  getCardCdm,
+  getCardCritRate,
+} from '#features/rpg/card.js';
+
+const MAX_ROUNDS = 30;
+
+const DIFFICULTY = {
+  easy: {
+    name: 'Easy',
+    boss: { name: 'Slime', hp: 500, atk: 50, def: 20 },
+    coin: [100, 250],
+    exp: [20, 40],
+    artifactChance: 1.0,
+    artifactCount: 1,
+  },
+  medium: {
+    name: 'Medium',
+    boss: { name: 'Golem', hp: 1500, atk: 100, def: 400 },
+    coin: [350, 500],
+    exp: [50, 80],
+    artifactChance: 1.0,
+    artifactCount: 2,
+    secondArtifactChance: 0.25,
+  },
+  hard: {
+    name: 'Hard',
+    boss: { name: 'Dragon', hp: 4000, atk: 200, def: 500 },
+    coin: [800, 1000],
+    exp: [100, 150],
+    artifactChance: 1.0,
+    artifactCount: 2,
+    secondArtifactChance: 0.4,
+  },
+};
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Formula damage inti Domain — juga dipakai Raid 2.0 (raid-battle.js)
+// supaya damage, crit, dan modifier Card konsisten antar mode.
+export function calcDamage(attacker, defender, now = Date.now()) {
+  const attackerStats = cardTurnStats(attacker, now);
+  const defenderStats = cardTurnStats(defender, now);
+  const base = Math.max(
+    1,
+    attackerStats.atk - Math.floor(defenderStats.def / 2)
+  );
+  const vary = Math.floor(base * 0.2);
+  let dmg = base + Math.floor(Math.random() * vary * 2) - vary;
+  const critRate = getCardCritRate(attacker, now);
+  const cdm = getCardCdm(attacker, now);
+  const crit = Math.random() < critRate;
+  if (crit) dmg = Math.floor(dmg * cdm);
+  dmg = applyOutgoingCardDamage(dmg, attacker, now);
+  dmg = applyIncomingCardDamage(dmg, defender, now);
+  return { dmg, crit };
+}
+
+class DomainService {
+  get difficulty() {
+    return DIFFICULTY;
+  }
+
+  getDifficultyConfig(difficulty) {
+    return DIFFICULTY[difficulty] || null;
+  }
+
+  async simulateBattle(jid, difficulty) {
+    const config = DIFFICULTY[difficulty];
+    if (!config) throw new Error('Difficulty tidak valid.');
+
+    return this.simulateBattleAgainst(jid, config.boss);
+  }
+
+  async simulateBattleAgainst(jid, enemy) {
+    if (!enemy) throw new Error('Musuh tidak valid.');
+
+    const base = await statsModel.ensure(jid);
+    if (base.hp <= 0)
+      throw new Error('HP kamu 0! Heal dulu sebelum masuk Domain.');
+
+    const [pStats, cardBattleState] = await Promise.all([
+      artifactService.getPlayerStats(jid),
+      cardService.getBattleState(jid),
+    ]);
+    const now = Math.floor(Date.now() / 1000);
+    const effAtk =
+      base.buff_expire > now ? pStats.atk + (base.buff_atk || 0) : pStats.atk;
+    const effDef =
+      base.buff_expire > now ? pStats.def + (base.buff_def || 0) : pStats.def;
+
+    const player = {
+      hp: base.hp,
+      max_hp: pStats.hp,
+      atk: effAtk,
+      def: effDef,
+      critRate: pStats.critRate / 100,
+      cardBattleState,
+    };
+
+    const boss = {
+      hp: enemy.hp,
+      max_hp: enemy.hp,
+      atk: enemy.atk,
+      def: enemy.def,
+      critRate: enemy.critRate ?? 0.05,
+    };
+
+    const rounds = [];
+    const startTime = Date.now();
+    for (let i = 0; i < MAX_ROUNDS && player.hp > 0 && boss.hp > 0; i++) {
+      const turnNow = startTime + i * 1000;
+      const r = {
+        round: i + 1,
+        playerHp: player.hp,
+        bossHp: boss.hp,
+        events: [],
+      };
+
+      const pDmg = calcDamage(player, boss, turnNow);
+      boss.hp = Math.max(0, boss.hp - pDmg.dmg);
+      r.events.push({ type: 'player_attack', dmg: pDmg.dmg, crit: pDmg.crit });
+      r.bossHp = boss.hp;
+      if (pDmg.dmg > 0) {
+        player.cardBattleState?.onHitDealt(turnNow);
+      }
+
+      if (boss.hp <= 0) {
+        r.playerHp = player.hp;
+        rounds.push(r);
+        break;
+      }
+
+      const bDmg = calcDamage(boss, player, turnNow);
+      player.hp = Math.max(0, player.hp - bDmg.dmg);
+      r.events.push({ type: 'boss_attack', dmg: bDmg.dmg, crit: bDmg.crit });
+      r.playerHp = player.hp;
+      if (bDmg.dmg > 0) {
+        player.cardBattleState?.onHitReceived(turnNow);
+      }
+
+      rounds.push(r);
+    }
+
+    player.cardBattleState?.reset();
+
+    const won = boss.hp <= 0;
+    await statsModel.setHp(jid, player.hp);
+    return { won, rounds, playerFinalHp: player.hp, bossFinalHp: boss.hp };
+  }
+
+  async grantRewards(jid, difficulty) {
+    const config = DIFFICULTY[difficulty];
+    if (!config) throw new Error('Difficulty tidak valid.');
+
+    const coinReward = await cardService.coinRewardTotal(
+      jid,
+      randInt(config.coin[0], config.coin[1])
+    );
+    const expReward = randInt(config.exp[0], config.exp[1]);
+
+    const artifacts = [];
+    if (Math.random() < config.artifactChance) {
+      const first = await artifactService.generateArtifact(jid);
+      artifacts.push(first);
+
+      if (
+        config.secondArtifactChance &&
+        Math.random() < config.secondArtifactChance
+      ) {
+        const second = await artifactService.generateArtifact(jid);
+        artifacts.push(second);
+      }
+    }
+
+    await walletModel.reward(jid, coinReward, `domain ${difficulty}`);
+    await userModel.addExp(jid, expReward);
+
+    return { coin: coinReward, exp: expReward, artifacts };
+  }
+
+  formatVictory(config, rewards, rounds) {
+    const lines = [
+      '🏰 DOMAIN CLEAR',
+      '',
+      `👹 ${config.boss.name} defeated!`,
+      `⚔️ ${rounds} round${rounds > 1 ? 's' : ''}`,
+      '',
+      '🎁 Rewards',
+      `🪙 +${rewards.coin} Coin`,
+      `⭐ +${rewards.exp} EXP`,
+    ];
+
+    for (const art of rewards.artifacts) {
+      lines.push(`🧿 Artifact #${art.user_id}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  formatDefeat(config, rounds) {
+    return [
+      '🏰 DOMAIN FAILED',
+      '',
+      '💀 You were defeated.',
+      `⚔️ Survived ${rounds} round${rounds > 1 ? 's' : ''}`,
+      '',
+      'Tidak ada reward.',
+    ].join('\n');
+  }
+}
+
+export const domainService = new DomainService();
