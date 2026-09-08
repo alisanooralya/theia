@@ -6,7 +6,6 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node --watch src/index.js",
-    "db:migrate": "node src/storage/migration.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
