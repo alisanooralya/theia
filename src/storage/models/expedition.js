@@ -15,11 +15,6 @@ class ExpeditionModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Upsert bersyarat: baris hanya boleh ditimpa kalau expedition sebelumnya
-   * sudah tidak aktif, jadi satu user maksimal punya 1 expedition jalan.
-   * Mengembalikan null kalau masih ada expedition aktif.
-   */
   async start(
     jid,
     { type, duration, durationSec, rewardCoin = 0, rewardExp = 0 },
@@ -51,11 +46,6 @@ class ExpeditionModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Menutup expedition dalam satu statement: hanya menang kalau statusnya
-   * masih active DAN waktunya sudah lewat, sehingga reward tidak bisa
-   * diklaim dua kali walau perintahnya dikirim beruntun.
-   */
   async claim(jid, client = sql) {
     const now = nowSec();
     const rows = await client`

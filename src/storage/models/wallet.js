@@ -1,12 +1,10 @@
 import { sql } from '#storage/connection.js';
 
 const INTEREST_RATE = 0.008;
-// Batas aman catch-up (mencegah eksponen absurd kalau timestamp korup).
 const MAX_INTEREST_DAYS = 365;
 const WIB_OFFSET_MS = 7 * 3_600_000;
 const DAY_MS = 86_400_000;
 
-// Nomor hari kalender WIB — dipakai agar bunga reset jam 00:00 WIB.
 function wibDayNumber(tsSec) {
   return Math.floor((tsSec * 1000 + WIB_OFFSET_MS) / DAY_MS);
 }
@@ -29,12 +27,7 @@ class WalletModel {
     return INTEREST_RATE;
   }
 
-  /**
-   * Pertumbuhan saldo bank 0.8% per hari (compound), maksimal 1x per hari WIB.
-   * Aman terhadap command spam & restart: patokannya kolom last_interest_at.
-   */
   async accrueBankInterest(jid) {
-    // Fast path: tanpa transaksi kalau belum lewat hari WIB berikutnya.
     const current = await this.find(jid);
     if (!current) return this._idleResult(0);
     const lastSeen = Number(current.last_interest_at) || 0;
@@ -54,13 +47,11 @@ class WalletModel {
       const nowSec = Math.floor(Date.now() / 1000);
       const idle = this._idleResult(bank);
 
-      // Wallet lama/baru tanpa patokan: set baseline dulu, belum dapat bunga.
       if (last <= 0) {
         await this._stampInterest(jid, nowSec, t);
         return idle;
       }
 
-      // Dicek ulang di dalam lock supaya request paralel tidak dobel bunga.
       const missed = this._missedDays(last);
       if (missed <= 0) return idle;
 

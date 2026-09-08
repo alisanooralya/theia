@@ -51,13 +51,6 @@ class MeteorModel {
     return mapMeteor(rows[0] ?? null);
   }
 
-  /**
-   * Membuat Meteor untuk `dayKey`. Dua lapis pengaman ditegakkan oleh Postgres:
-   * - UNIQUE(day_key) → maksimal satu Meteor dibuat per hari kalender.
-   * - idx_meteors_single_active → maksimal satu Meteor aktif secara global,
-   *   sehingga Meteor yang belum selesai memblokir pembuatan Meteor baru.
-   * Mengembalikan null kalau salah satu pengaman menolak (request bersamaan).
-   */
   async create(dayKey, hp, client = sql) {
     const rows = await client`
       INSERT INTO meteors (day_key, hp, max_hp, status)
@@ -68,10 +61,6 @@ class MeteorModel {
     return mapMeteor(rows[0] ?? null);
   }
 
-  /**
-   * Ambil Meteor aktif dengan row lock. Semua mining melewati lock ini supaya
-   * damage, contribution, dan penutupan Meteor aman dari request bersamaan.
-   */
   async lockActive(client = sql) {
     const rows = await client`
       SELECT * FROM meteors WHERE status = 'active' ORDER BY id DESC LIMIT 1
@@ -90,10 +79,6 @@ class MeteorModel {
     return mapMeteor(rows[0] ?? null);
   }
 
-  /**
-   * Menutup Meteor. Hanya menang kalau statusnya masih 'active' DAN HP sudah 0,
-   * sehingga distribusi reward mustahil terjadi dua kali.
-   */
   async markCleared(meteorId, client = sql) {
     const now = Math.floor(Date.now() / 1000);
     const rows = await client`
@@ -152,10 +137,6 @@ class MeteorModel {
     `;
   }
 
-  /**
-   * Ambil sisa Mining Point hari ini. Baris dengan `day_key` lama otomatis
-   * dianggap 0 terpakai, jadi reset harian tidak butuh scheduler.
-   */
   async getPoints(jid, dayKey, client = sql) {
     const rows = await client`
       SELECT day_key, used FROM mining_points WHERE jid = ${jid}
@@ -165,11 +146,6 @@ class MeteorModel {
     return Number(row.used);
   }
 
-  /**
-   * Konsumsi 1 Mining Point secara atomik. Klausa WHERE menolak update kalau
-   * kuota hari ini sudah habis, jadi request bersamaan tidak bisa over-spend.
-   * Mengembalikan jumlah point terpakai setelah update, atau null kalau gagal.
-   */
   async consumePoint(jid, dayKey, maxPoints, client = sql) {
     const rows = await client`
       INSERT INTO mining_points (jid, day_key, used)

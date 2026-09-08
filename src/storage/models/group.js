@@ -27,7 +27,6 @@ class GroupModel {
     return rows.map((r) => r.jid);
   }
 
-  /** Hanya grup yang eksplisit mengaktifkan Market News (news = 1). */
   async findNewsGroups(client = sql) {
     const rows = await client`SELECT jid FROM groups WHERE news = 1`;
     return rows.map((r) => r.jid);

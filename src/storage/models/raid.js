@@ -58,10 +58,6 @@ function mapContribution(row) {
 }
 
 class RaidModel {
-  // -----------------------------------------------------------------
-  // Raid Coin (dipakai Raid Shop / card.js) — dipertahankan dari Raid 1.0
-  // -----------------------------------------------------------------
-
   async addRaidCoin(jid, amount, client = sql) {
     await client`
       UPDATE users SET raid_coin = raid_coin + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
@@ -85,15 +81,6 @@ class RaidModel {
     return rows[0].raid_coin;
   }
 
-  // -----------------------------------------------------------------
-  // Raid 2.0 — period & boss state
-  // -----------------------------------------------------------------
-
-  /**
-   * Pastikan row period + semua row boss dari config ada.
-   * Idempotent: ON CONFLICT DO NOTHING, jadi state period yang sudah
-   * berjalan tidak direset (aman untuk restart bot).
-   */
   async ensurePeriod(periodConfig, client = sql) {
     const { id, name, startAt, endAt, bosses } = periodConfig;
     await client`
@@ -110,11 +97,6 @@ class RaidModel {
     }
   }
 
-  /**
-   * Ambil row period DENGAN row lock (FOR UPDATE). Semua attack/progression
-   * melewati lock ini supaya boss HP, progression, dan completion aman dari
-   * request bersamaan.
-   */
   async lockPeriod(periodId, client = sql) {
     const rows =
       await client`SELECT * FROM raid_periods WHERE period_id = ${periodId} FOR UPDATE`;
@@ -161,10 +143,6 @@ class RaidModel {
     `;
   }
 
-  /**
-   * Tandai boss kalah. Hanya menang kalau boss belum pernah dikalahkan
-   * (defeated_at = 0) DAN HP sudah 0, sehingga boss mustahil mati dua kali.
-   */
   async markBossDefeated(periodId, bossIndex, client = sql) {
     const now = Math.floor(Date.now() / 1000);
     const rows = await client`
@@ -177,11 +155,6 @@ class RaidModel {
     return mapBoss(rows[0] ?? null);
   }
 
-  /**
-   * Majukan progression ke boss berikutnya. Guard current_boss memastikan
-   * progression tidak maju dua kali untuk boss yang sama. Jika boss terakhir
-   * yang kalah, period berstatus completed.
-   */
   async advanceProgression(periodId, fromBossIndex, client = sql) {
     const now = Math.floor(Date.now() / 1000);
     const rows = await client`
@@ -196,15 +169,6 @@ class RaidModel {
     return mapPeriod(rows[0] ?? null);
   }
 
-  // -----------------------------------------------------------------
-  // Raid 2.0 — daily entry (pattern mining_points)
-  // -----------------------------------------------------------------
-
-  /**
-   * Sisa Raid Entry hari ini. Row dengan day_key lama otomatis dianggap
-   * 0 terpakai, jadi reset harian tidak butuh scheduler dan restart bot
-   * tidak menghapus/menambah entry.
-   */
   async getRaidEntries(jid, dayKey, client = sql) {
     const rows = await client`
       SELECT day_key, used FROM raid_entries WHERE jid = ${jid}
@@ -214,11 +178,6 @@ class RaidModel {
     return Number(row.used);
   }
 
-  /**
-   * Konsumsi 1 Raid Entry secara atomik. Klausa WHERE menolak update kalau
-   * kuota hari ini sudah habis, jadi request bersamaan tidak bisa over-spend.
-   * Mengembalikan jumlah entry terpakai setelah update, atau null kalau gagal.
-   */
   async consumeRaidEntry(jid, dayKey, maxEntries, client = sql) {
     const rows = await client`
       INSERT INTO raid_entries (jid, day_key, used)
@@ -237,10 +196,6 @@ class RaidModel {
     if (!rows[0]) return null;
     return Number(rows[0].used);
   }
-
-  // -----------------------------------------------------------------
-  // Raid 2.0 — contribution
-  // -----------------------------------------------------------------
 
   async addContribution(periodId, bossIndex, jid, damage, client = sql) {
     if (!(damage > 0)) return null;
@@ -304,10 +259,6 @@ class RaidModel {
     }));
   }
 
-  /**
-   * Tandai reward boss sudah diklaim. Hanya menang sekali per
-   * (period, boss, player) — klaim ulang/concurrent return null.
-   */
   async claimBossReward(periodId, bossIndex, jid, client = sql) {
     const rows = await client`
       UPDATE raid_contributions

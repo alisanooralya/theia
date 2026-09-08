@@ -15,11 +15,6 @@ class WorkModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Upsert bersyarat: baris hanya bisa ditimpa kalau pekerjaan sebelumnya
-   * sudah tidak aktif, jadi satu user maksimal punya 1 pekerjaan jalan.
-   * Mengembalikan null kalau masih ada pekerjaan aktif.
-   */
   async start(jid, { job, durationSec }, client = sql) {
     const started = nowSec();
     const rows = await client`
@@ -46,11 +41,6 @@ class WorkModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Reward final ditulis saat claim dalam satu statement bersyarat: hanya
-   * menang kalau status masih active DAN waktunya sudah lewat, sehingga
-   * reward tidak bisa cair dua kali.
-   */
   async claim(jid, { rewardCoin = 0, rewardExp = 0 } = {}, client = sql) {
     const now = nowSec();
     const rows = await client`

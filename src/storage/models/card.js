@@ -64,8 +64,6 @@ class CardModel {
       RETURNING id
     `;
     if (rows[0]) return this.findOwned(jid, Number(rows[0].id), client);
-    // Baris sudah dimiliki (retry idempoten, concurrent grant, atau beli ulang):
-    // kembalikan card yang sudah ada, jangan buat duplikat.
     const existing = await client`
       SELECT id FROM user_cards WHERE owner_jid = ${jid} AND card_id = ${cardId}
     `;

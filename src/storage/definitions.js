@@ -360,8 +360,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // ---- Raid 2.0 (period-based cooperative raid) ----
-
   `
   CREATE TABLE IF NOT EXISTS raid_periods (
     period_id    TEXT    PRIMARY KEY,
@@ -560,7 +558,6 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_raid_contrib_jid ON raid_contributions(jid)`,
 ];
 
-// Migration statements, applied on every startup (idempotent).
 const MIGRATIONS = [
   `ALTER TABLE stats ADD COLUMN IF NOT EXISTS win_streak INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE stats ADD COLUMN IF NOT EXISTS buff_atk INTEGER NOT NULL DEFAULT 0`,
@@ -600,15 +597,11 @@ const MIGRATIONS = [
   `SELECT setval(pg_get_serial_sequence('market_trades', 'id'), COALESCE(MAX(id), 1)) FROM market_trades`,
   `SELECT setval(pg_get_serial_sequence('market_news', 'id'), COALESCE(MAX(id), 1)) FROM market_news`,
   `UPDATE stats SET hp = 1200, max_hp = 1200, atk = 30, def = 20 WHERE max_hp = 200 AND atk = 30 AND def = 10`,
-  // Unique card ownership: satu user hanya boleh memiliki satu row per card_id.
-  // 1) Arahkan equipped yang menunjuk row duplikat ke row yang dipertahankan (id terkecil).
   `UPDATE equipped_cards ec SET user_card_id = keep.id
    FROM (SELECT owner_jid, card_id, MIN(id) AS id FROM user_cards GROUP BY owner_jid, card_id HAVING COUNT(*) > 1) keep
    WHERE ec.user_card_id IN (SELECT uc.id FROM user_cards uc WHERE uc.owner_jid = keep.owner_jid AND uc.card_id = keep.card_id AND uc.id <> keep.id)`,
-  // 2) Hapus row duplikat, sisakan id terkecil per (owner_jid, card_id).
   `DELETE FROM user_cards uc USING (SELECT owner_jid, card_id, MIN(id) AS keep_id FROM user_cards GROUP BY owner_jid, card_id HAVING COUNT(*) > 1) d
    WHERE uc.owner_jid = d.owner_jid AND uc.card_id = d.card_id AND uc.id <> d.keep_id`,
-  // 3) Tegakkan unique ownership untuk install lama (install baru via CREATE TABLE).
   `ALTER TABLE user_cards ADD CONSTRAINT uq_user_cards_owner_card UNIQUE (owner_jid, card_id)`,
 ];
 
@@ -620,7 +613,7 @@ export async function createSchema() {
     try {
       await sql.unsafe(stmt);
     } catch {
-      // ignore
+      void 0;
     }
   }
   await sql.unsafe(
@@ -628,8 +621,6 @@ export async function createSchema() {
      ON divergent_runs(chat_jid)
      WHERE status = 'active' AND chat_jid IS NOT NULL`
   );
-  // Kunci global: maksimal satu Meteor berstatus 'active' di seluruh tabel,
-  // ditegakkan oleh Postgres supaya dua request bersamaan tidak bisa membuat dua Meteor.
   await sql.unsafe(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_meteors_single_active
      ON meteors((status))
