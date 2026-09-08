@@ -5,6 +5,8 @@ import { sql, closeDatabase } from '../src/storage/connection.js';
 import { createSchema } from '../src/storage/definitions.js';
 import { rpgPlayerModel } from '../src/features/rpg/models/rpg-player.model.js';
 import { rpgCardModel } from '../src/features/rpg/models/rpg-card.model.js';
+import { rpgCoinModel } from '../src/features/rpg/models/rpg-coin.model.js';
+import { rpgInventoryModel } from '../src/features/rpg/models/rpg-inventory.model.js';
 import { cardService } from '../src/features/rpg/services/card-service.js';
 import {
   MAIN_CARDS,
@@ -30,6 +32,9 @@ async function makeUser(n) {
   const userId = uid(n);
   await sql`INSERT INTO users (jid) VALUES (${userId}) ON CONFLICT (jid) DO NOTHING`;
   await rpgPlayerModel.ensure(userId);
+  await rpgCoinModel.ensure(userId);
+  await rpgCoinModel.addCoin(userId, 5000000);
+  await rpgInventoryModel.add(userId, 'cerelia', 10000);
   createdUsers.push(userId);
   return userId;
 }
@@ -97,11 +102,12 @@ describe('rpg card tables (database)', { skip: !dbAvailable }, () => {
       { coin: bulkLevelCost(1, 24, 100).coin, cerelia: bulkLevelCost(1, 24, 100).cerelia }
     );
     assert.equal(up.card.skills.active.unlocked, true);
-    const maxed = await cardService.levelUp(userId, 'lena', 500);
+    const maxed = await cardService.bulkLevelUp(userId, 'lena', 100);
     assert.equal(maxed.toLevel, 100);
     assert.equal(maxed.card.skills.passive.upgraded, true);
     assert.deepEqual(maxed.card.stats, cardStatsAtLevel(getMainCard('lena'), 100));
     await assert.rejects(cardService.levelUp(userId, 'lena'), RangeError);
+    await assert.rejects(cardService.levelUp(userId, 'lena', 500), RangeError);
     await assert.rejects(
       sql`UPDATE rpg_main_cards SET level = 101 WHERE user_id = ${userId}`
     );

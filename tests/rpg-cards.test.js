@@ -116,8 +116,8 @@ describe('leveling costs', () => {
   it('charges coin + cerelia per step, none at max', () => {
     const step = levelStepCost(1, MAIN_MAX_LEVEL);
     assert.deepEqual(step, {
-      coin: CARD_LEVELING.coinBase + CARD_LEVELING.coinPerLevel * 1,
-      cerelia: CARD_LEVELING.cereliaBase + Math.floor(1 / CARD_LEVELING.cereliaEvery),
+      coin: CARD_LEVELING.coinBase + CARD_LEVELING.coinPerLevel * 0,
+      cerelia: CARD_LEVELING.cereliaBase + Math.floor(0 / CARD_LEVELING.cereliaEvery),
       materialId: 'cerelia',
     });
     assert.equal(levelStepCost(100, MAIN_MAX_LEVEL), null);

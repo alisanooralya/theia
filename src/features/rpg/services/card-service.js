@@ -1,27 +1,30 @@
 /**
  * RPG 2.0 — Card service (business logic; no SQL here).
  *
- * Owns Main + Sign Card rules: ownership, leveling, equipment slots,
- * milestone-gated skills, sign compatibility, and the Card stat-bonus
- * layer that the future StatService will consume:
+ * Owns Main + Sign Card rules: ownership, atomic leveling (coin +
+ * Cerelia spent in one transaction), equipment slots, milestone-gated
+ * skills, sign compatibility, and the Card stat-bonus layer:
  *   Base Stats -> Main Card bonuses -> Sign Card bonuses -> Final Stats.
  *
  * Notes:
- * - Database work stays in rpg-card.model.js; config in card-config.js.
- * - `levelUp` persists the new level and returns its cost. There is no
- *   wallet/inventory system yet, so spending coin/Cerelia is the caller's
- *   job (future Shop); the returned `cost` is what must be charged.
+ * - Database work stays in the model files; config in card-config.js.
+ * - Leveling charges coin + Cerelia from the RPG wallet/inventory inside
+ *   a transaction: any failure rolls everything back.
  * - No combat integration. No support cards. No legacy `src/legacy`
  *   dependencies.
  */
+import { sql } from '#storage/connection.js';
 import { rpgPlayerModel } from '../models/rpg-player.model.js';
 import { rpgCardModel } from '../models/rpg-card.model.js';
+import { rpgCoinModel } from '../models/rpg-coin.model.js';
+import { rpgInventoryModel } from '../models/rpg-inventory.model.js';
 import {
   CARD_MIN_LEVEL,
-  bulkLevelCost,
   cardKind,
   cardStatsAtLevel,
+  getBulkLevelUpCost,
   getCardDefinition,
+  getLevelUpCost,
   maxLevelFor,
 } from '../config/card-config.js';
 import {
@@ -58,15 +61,40 @@ export function enrichCard(row, kind) {
   return enriched;
 }
 
-export function createCardService({ playerModel, cardModel } = {}) {
+export function createCardService({ playerModel, cardModel, coinModel, inventoryModel, db = sql } = {}) {
   const players = playerModel ?? rpgPlayerModel;
   const cards = cardModel ?? rpgCardModel;
+  const coins = coinModel ?? rpgCoinModel;
+  const inventory = inventoryModel ?? rpgInventoryModel;
 
   async function owned(userId, cardId) {
     const kind = cardKind(cardId);
     if (!kind) throw new RangeError(`unknown card id: ${cardId}`);
     const row = await cards.find(userId, cardId, kind);
     return enrichCard(row, kind);
+  }
+
+  async function bulkLevelUp(userId, cardId, targetLevel) {
+    const def = requireDefinition(cardId);
+    const max = maxLevelFor(def.kind);
+    const current = await cards.find(userId, cardId, def.kind);
+    if (!current) throw new RangeError(`card not owned: ${cardId}`);
+    const cost = getBulkLevelUpCost(def.kind, current.level, targetLevel);
+    if (current.level >= max) {
+      throw new RangeError(`card is already at max level (${max})`);
+    }
+    const row = await db.begin(async (tx) => {
+      await coins.spendCoin(userId, cost.coin, tx);
+      await inventory.remove(userId, cost.materialId, cost.cerelia, tx);
+      return cards.setLevel(userId, cardId, def.kind, cost.toLevel, tx);
+    });
+    return {
+      card: enrichCard(row, def.kind),
+      fromLevel: current.level,
+      toLevel: cost.toLevel,
+      levels: cost.levels,
+      cost: { coin: cost.coin, cerelia: cost.cerelia, materialId: cost.materialId },
+    };
   }
 
   return {
@@ -104,28 +132,72 @@ export function createCardService({ playerModel, cardModel } = {}) {
     },
 
     /**
-     * Level a card up by `levels` steps (default 1), capped at the kind
-     * max (main 100, sign 50). Persists the new level and returns the
-     * coin/Cerelia cost for the caller (future Shop) to charge.
+     * Single-step cost for a kind at a level. Thin wrapper over config.
      */
-    async levelUp(userId, cardId, levels = 1) {
+    getLevelUpCost(kind, currentLevel) {
+      return getLevelUpCost(kind, currentLevel);
+    },
+
+    /**
+     * Bulk cost from current to target by summing every step.
+     * Thin wrapper over config.
+     */
+    getBulkLevelUpCost(kind, currentLevel, targetLevel) {
+      return getBulkLevelUpCost(kind, currentLevel, targetLevel);
+    },
+
+    /**
+     * Dry-run check: can this card reach `targetLevel` (default +1)?
+     * Returns { can, reason, cost, fromLevel, toLevel }. Never mutates.
+     */
+    async canLevelUp(userId, cardId, targetLevel = null) {
       const def = requireDefinition(cardId);
       const max = maxLevelFor(def.kind);
       const current = await cards.find(userId, cardId, def.kind);
-      if (!current) throw new RangeError(`card not owned: ${cardId}`);
-      const cost = bulkLevelCost(current.level, levels, max);
-      if (cost.levels <= 0) {
-        throw new RangeError(`card is already at max level (${max})`);
+      if (!current) return { can: false, reason: 'not-owned', cost: null, fromLevel: null, toLevel: null };
+      const toLevel = targetLevel ?? current.level + 1;
+      if (!Number.isInteger(toLevel) || toLevel <= current.level) {
+        return { can: false, reason: 'invalid-target', cost: null, fromLevel: current.level, toLevel };
       }
-      const row = await cards.setLevel(userId, cardId, def.kind, cost.toLevel);
-      return {
-        card: enrichCard(row, def.kind),
-        fromLevel: current.level,
-        toLevel: cost.toLevel,
-        levels: cost.levels,
-        cost: { coin: cost.coin, cerelia: cost.cerelia, materialId: cost.materialId },
-      };
+      if (toLevel > max) {
+        return { can: false, reason: 'exceeds-max', cost: null, fromLevel: current.level, toLevel };
+      }
+      const cost = getBulkLevelUpCost(def.kind, current.level, toLevel);
+      const [coin, cerelia] = await Promise.all([
+        coins.getBalance(userId),
+        inventory.getQuantity(userId, cost.materialId),
+      ]);
+      if (coin < cost.coin) {
+        return { can: false, reason: 'insufficient-coin', cost, fromLevel: current.level, toLevel };
+      }
+      if (cerelia < cost.cerelia) {
+        return { can: false, reason: 'insufficient-cerelia', cost, fromLevel: current.level, toLevel };
+      }
+      return { can: true, reason: null, cost, fromLevel: current.level, toLevel };
     },
+
+    /**
+     * Level a card up by `levels` steps (default 1). The target must not
+     * exceed the kind max — overshooting is rejected, never silently
+     * capped. Coin + Cerelia are spent and the level persisted inside
+     * one transaction: any failure rolls everything back.
+     */
+    async levelUp(userId, cardId, levels = 1) {
+      const def = requireDefinition(cardId);
+      const current = await cards.find(userId, cardId, def.kind);
+      if (!current) throw new RangeError(`card not owned: ${cardId}`);
+      if (!Number.isInteger(levels) || levels < 1) {
+        throw new RangeError('levels must be a positive integer');
+      }
+      return bulkLevelUp(userId, cardId, current.level + levels);
+    },
+
+    /**
+     * Level a card to an exact `targetLevel`. Same atomic guarantees as
+     * levelUp: validate -> spend coin -> remove Cerelia -> set level ->
+     * commit, with full rollback on any failure.
+     */
+    bulkLevelUp,
 
     /**
      * Equip a Main Card, replacing the current one. Returns the enriched

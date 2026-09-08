@@ -47,16 +47,16 @@ export const MAIN_MILESTONES = Object.freeze([
 /**
  * Leveling economy. One shared curve for Main and Sign cards.
  * Cost of stepping from level L to L+1:
- *   coin    = coinBase + coinPerLevel * L
- *   cerelia = cereliaBase + floor(L / cereliaEvery)
+ *   coin    = coinBase + coinPerLevel * (L - 1)
+ *   cerelia = cereliaBase + floor((L - 1) / cereliaEvery)
  * `materialId` points at the CERELIA_ITEM below.
  */
 export const CARD_LEVELING = Object.freeze({
   materialId: 'cerelia',
-  coinBase: 500,
-  coinPerLevel: 50,
-  cereliaBase: 1,
-  cereliaEvery: 20,
+  coinBase: 5000,
+  coinPerLevel: 500,
+  cereliaBase: 5,
+  cereliaEvery: 1,
 });
 
 /**
@@ -337,8 +337,8 @@ export function levelStepCost(level, maxLevel) {
   if (level >= maxLevel) return null;
   const cfg = CARD_LEVELING;
   return {
-    coin: cfg.coinBase + cfg.coinPerLevel * level,
-    cerelia: cfg.cereliaBase + Math.floor(level / cfg.cereliaEvery),
+    coin: cfg.coinBase + cfg.coinPerLevel * (level - 1),
+    cerelia: cfg.cereliaBase + Math.floor((level - 1) / cfg.cereliaEvery),
     materialId: cfg.materialId,
   };
 }
@@ -362,6 +362,52 @@ export function bulkLevelCost(fromLevel, count, maxLevel) {
     cerelia,
     materialId: CARD_LEVELING.materialId,
     toLevel: fromLevel + levels,
+  };
+}
+
+/**
+ * Cost of stepping from `currentLevel` to `currentLevel + 1` for a card
+ * kind ('main' | 'sign'). Returns { coin, cerelia, materialId }, or null
+ * when already at max. Pure — single source of truth for level-up cost.
+ */
+export function getLevelUpCost(kind, currentLevel) {
+  const max = maxLevelFor(kind);
+  return levelStepCost(currentLevel, max);
+}
+
+/**
+ * Total cost of leveling from `currentLevel` to `targetLevel` by summing
+ * every step (never single-step x count). Returns
+ * { coin, cerelia, materialId, levels, toLevel }. Throws when the target
+ * is not above current or exceeds the kind max.
+ */
+export function getBulkLevelUpCost(kind, currentLevel, targetLevel) {
+  const max = maxLevelFor(kind);
+  if (!Number.isInteger(currentLevel) || !Number.isInteger(targetLevel)) {
+    throw new RangeError('levels must be integers');
+  }
+  if (targetLevel <= currentLevel) {
+    throw new RangeError('target level must be above current level');
+  }
+  if (targetLevel > max) {
+    throw new RangeError(`target level exceeds max level (${max})`);
+  }
+  if (currentLevel < CARD_MIN_LEVEL) {
+    throw new RangeError('current level below minimum');
+  }
+  let coin = 0;
+  let cerelia = 0;
+  for (let lv = currentLevel; lv < targetLevel; lv += 1) {
+    const step = levelStepCost(lv, max);
+    coin += step.coin;
+    cerelia += step.cerelia;
+  }
+  return {
+    coin,
+    cerelia,
+    materialId: CARD_LEVELING.materialId,
+    levels: targetLevel - currentLevel,
+    toLevel: targetLevel,
   };
 }
 

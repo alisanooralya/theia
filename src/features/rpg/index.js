@@ -26,6 +26,8 @@ export {
   cardStatsAtLevel,
   levelStepCost,
   bulkLevelCost,
+  getLevelUpCost,
+  getBulkLevelUpCost,
   affordableLevels,
 } from './config/card-config.js';
 export { rpgCardModel } from './models/rpg-card.model.js';

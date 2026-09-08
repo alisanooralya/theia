@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { sql, closeDatabase } from '../src/storage/connection.js';
 import { createSchema } from '../src/storage/definitions.js';
 import { rpgPlayerModel } from '../src/features/rpg/models/rpg-player.model.js';
+import { rpgCoinModel } from '../src/features/rpg/models/rpg-coin.model.js';
+import { rpgInventoryModel } from '../src/features/rpg/models/rpg-inventory.model.js';
 import { cardService } from '../src/features/rpg/services/card-service.js';
 import { finalStatService } from '../src/features/rpg/services/final-stat-service.js';
 import {
@@ -27,6 +29,9 @@ async function makeUser(n) {
   const userId = uid(n);
   await sql`INSERT INTO users (jid) VALUES (${userId}) ON CONFLICT (jid) DO NOTHING`;
   await rpgPlayerModel.ensure(userId);
+  await rpgCoinModel.ensure(userId);
+  await rpgCoinModel.addCoin(userId, 5000000);
+  await rpgInventoryModel.add(userId, 'cerelia', 10000);
   createdUsers.push(userId);
   return userId;
 }
