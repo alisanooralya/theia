@@ -192,12 +192,8 @@ export async function renderProfileCard(data) {
     artPath = null,
   } = data;
 
-  const mainCard = main
-    ? { name: main.name, level: main.level }
-    : null;
-  const supportCard = sign
-    ? { name: sign.name, level: sign.level }
-    : null;
+  const mainCard = main ? { name: main.name, level: main.level } : null;
+  const supportCard = sign ? { name: sign.name, level: sign.level } : null;
 
   let artImg = null;
   if (artPath) {
@@ -330,6 +326,17 @@ export async function renderProfileCard(data) {
     ICONS.bolt,
     'CRIT RATE',
     `${critRatePct}%`,
+    '#ffd15c'
+  );
+  statChip(
+    ctx,
+    px + (chipW + gap) * 2,
+    y,
+    chipW,
+    chipH,
+    ICONS.bolt,
+    'CRIT DMG',
+    `${critDmg}x`,
     '#ffd15c'
   );
   y += chipH + 14;

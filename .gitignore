@@ -3,6 +3,7 @@ sessions/
 session/
 data/
 logs/
+tests/
 
 *.db
 *.db-shm
