@@ -106,6 +106,29 @@ const STATIC_SCHEMA = [
 
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_main_cards_equipped ON rpg_main_cards(user_id) WHERE equipped = 1`,
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_sign_cards_equipped ON rpg_sign_cards(user_id) WHERE equipped = 1`,
+
+  // RPG 2.0 Shop + Inventory foundation. No coin system existed outside
+  // legacy reference, so this is the minimal RPG-scoped coin store
+  // (same currency: coin). Generic item rows: one per (user, item).
+  `
+  CREATE TABLE IF NOT EXISTS rpg_wallets (
+    user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    coin        INTEGER NOT NULL DEFAULT 0 CHECK (coin >= 0),
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS rpg_inventory (
+    user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    item_id     TEXT    NOT NULL CHECK (item_id <> ''),
+    quantity    INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    UNIQUE(user_id, item_id)
+  )
+  `,
 ];
 
 export async function createSchema() {

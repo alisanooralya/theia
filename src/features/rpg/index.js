@@ -46,6 +46,16 @@ export {
   formatProfile,
 } from './services/profile-service.js';
 export {
+  SHOP_ITEMS,
+  getShopItems,
+  getPurchasableItems,
+  getShopItem,
+} from './config/shop-config.js';
+export { rpgCoinModel } from './models/rpg-coin.model.js';
+export { rpgInventoryModel } from './models/rpg-inventory.model.js';
+export { inventoryService, createInventoryService } from './services/inventory-service.js';
+export { shopService, createShopService } from './services/shop-service.js';
+export {
   MAX_ROUNDS_DEFAULT,
   ROUND_SECONDS,
   createBattle,

@@ -61,9 +61,8 @@ export const CARD_LEVELING = Object.freeze({
 
 /**
  * Cerelia — Card leveling material (replaces the legacy Card Core idea).
- * There is no Shop system in the codebase right now, so this entry is the
- * canonical item definition including its future Shop price. When Shop
- * lands it should consume this entry instead of redefining Cerelia.
+ * Identity only (id/name/description). Shop pricing/purchasability lives
+ * in shop-config.js, which reuses this entry — never define Cerelia twice.
  */
 export const CERELIA_ITEM = Object.freeze({
   id: 'cerelia',
@@ -71,7 +70,6 @@ export const CERELIA_ITEM = Object.freeze({
   description: 'Signature material used to level up Main and Sign Cards.',
   category: 'material',
   stackable: true,
-  price: Object.freeze({ coin: 1000 }),
 });
 
 function skill(name, description, unlockLevel, upgradeLevel, effects, upgradedEffects, cooldownMs = null) {

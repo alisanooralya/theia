@@ -74,7 +74,6 @@ describe('card config structure', () => {
   it('defines Cerelia with a future shop price and no shop tables', () => {
     assert.equal(CERELIA_ITEM.id, 'cerelia');
     assert.equal(CARD_LEVELING.materialId, 'cerelia');
-    assert.ok(CERELIA_ITEM.price.coin > 0);
   });
 });
 
