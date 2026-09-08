@@ -18,7 +18,8 @@ function skillLines(icon, label, skill, { cooldownMs = null } = {}) {
     lines.push(`🟢 Unlocked${skill.upgraded ? ' (Upgraded)' : ''}`);
   }
   if (skill.description) lines.push(skill.description);
-  if (cooldownMs !== null) lines.push(`⏱️ Cooldown: ${formatCooldown(cooldownMs)}`);
+  if (cooldownMs !== null)
+    lines.push(`⏱️ Cooldown: ${formatCooldown(cooldownMs)}`);
   return lines;
 }
 
@@ -130,12 +131,13 @@ export function formatProfile(data) {
           ? `🟢 Passive: Active (${data.sign.passiveName})`
           : `🔴 Passive: Inactive (${data.sign.passiveName})`
       );
-      if (data.sign.passiveDescription) liness.push(data.sign.passiveDescription);
+      if (data.sign.passiveDescription)
+        liness.push(data.sign.passiveDescription);
       if (!data.sign.compatible) {
         liness.push(`Requires: ${data.sign.needsMainCard}`);
       }
     } else {
-      liness.push('Belum ada Main Card');
+      liness.push('Belum ada Sign Card');
     }
 
     return liness.join('\n');

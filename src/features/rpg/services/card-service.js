@@ -211,24 +211,29 @@ export function createCardService({
           max,
         };
       }
-      const done = await bulkLevelUp(userId, equipped.card_id, affordable.toLevel).catch(
-        async (err) => {
-          // Stale target after a concurrent level-up advanced past it:
-          // re-read and report current state instead of failing.
-          if (err instanceof RangeError && /above current level/.test(err.message)) {
-            const current = await cards.equipped(userId, kind);
-            return {
-              card: enrichCard(current, kind),
-              fromLevel: current.level,
-              toLevel: current.level,
-              levels: 0,
-              cost: { coin: 0, cerelia: 0, materialId: CARD_LEVELING.materialId },
-              noop: true,
-            };
-          }
-          throw err;
+      const done = await bulkLevelUp(
+        userId,
+        equipped.card_id,
+        affordable.toLevel
+      ).catch(async (err) => {
+        // Stale target after a concurrent level-up advanced past it:
+        // re-read and report current state instead of failing.
+        if (
+          err instanceof RangeError &&
+          /above current level/.test(err.message)
+        ) {
+          const current = await cards.equipped(userId, kind);
+          return {
+            card: enrichCard(current, kind),
+            fromLevel: current.level,
+            toLevel: current.level,
+            levels: 0,
+            cost: { coin: 0, cerelia: 0, materialId: CARD_LEVELING.materialId },
+            noop: true,
+          };
         }
-      );
+        throw err;
+      });
       if (done.levels === 0) {
         // Lost a race: someone else finished first. Re-read for accuracy.
         const current = await cards.equipped(userId, kind);
