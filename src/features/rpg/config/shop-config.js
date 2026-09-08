@@ -48,7 +48,8 @@ function signShopEntries() {
     entries[def.id] = shopItem({
       id: def.id,
       name: def.name,
-      description: `Sign Card untuk ${mainName}. ${def.passive.description}`,
+      emoji: '🔰',
+      description: `Sign Card untuk ${mainName}.`,
       price: 250000,
       category: 'sign',
       cardId: def.id,
@@ -61,6 +62,7 @@ export const SHOP_ITEMS = Object.freeze({
   [CERELIA_ITEM.id]: shopItem({
     id: CERELIA_ITEM.id,
     name: CERELIA_ITEM.name,
+    emoji: '🧪',
     description: 'Material untuk meningkatkan Card dan Sign Card.',
     price: 5000,
   }),

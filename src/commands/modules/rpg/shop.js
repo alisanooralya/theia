@@ -7,7 +7,7 @@ function formatShopList() {
 
   for (const item of items) {
     lines.push(
-      `*${item.name}* (\`${item.id}\`)`,
+      `${item.emoji} *${item.name}* (\`${item.id}\`)`,
       item.description,
       `Harga: ${F.formatNumber(item.price)} Coin`,
       ''

@@ -1,13 +1,3 @@
-/**
- * RPG 2.0 — Profile service (read-only presentation layer).
- *
- * Assembles everything the `.profile` command shows, exclusively from
- * existing systems: Final Stats (single source of truth for combat
- * numbers), Card Service (equipped cards + milestone skill states), and
- * the EXP curve in stats-config. No stat math, no database writes, no
- * new systems. Rendering is the pure `formatProfile()` below so tests
- * and future UIs can reuse it.
- */
 import { expRequiredForLevel } from '../config/stats-config.js';
 import { finalStatService as defaultFinalStats } from './final-stat-service.js';
 import { cardService as defaultCardService } from './card-service.js';
@@ -97,29 +87,17 @@ export function formatProfile(data) {
     '',
     '🃏 *Main Card*',
     'Belum ada Main Card',
+    '',
+    '🔰 *Sign Card*',
+    'Belum ada Main Card',
   ];
-
-  lines.push('', '🔰 *Sign Card*');
-  if (data.sign) {
-    lines.push(
-      `${data.sign.name}`,
-      `Lv.${data.sign.level}`,
-      `⚔️ ATK +${data.sign.atk}`,
-      `🛡️ DEF +${data.sign.def}`,
-      data.sign.compatible
-        ? `✅ Passive: Active (${data.sign.passiveName})`
-        : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
-    );
-  } else {
-    lines.push('Belum ada Main Card');
-  }
 
   if (data.main) {
     const liness = ['👤 *RPG PROFILE*', '', '🃏 *Main Card*'];
 
     liness.push(
-      `${data.main.name}`,
-      `Lv.${data.main.level}`,
+      `${data.main.name} - Lv.${data.main.level}`,
+      ``,
       skillLine('⚡ Active', data.main.active),
       skillLine('✨ Passive', data.main.passive)
     );
@@ -127,10 +105,9 @@ export function formatProfile(data) {
     liness.push('', '🔰 *Sign Card*');
     if (data.sign) {
       liness.push(
-        `${data.sign.name}`,
-        `Lv.${data.sign.level}`,
-        `⚔️ ATK +${data.sign.atk}`,
-        `🛡️ DEF +${data.sign.def}`,
+        `${data.sign.name} - Lv.${data.sign.level}`,
+        `⚔️ ATK +${data.sign.atk}  🛡️ DEF +${data.sign.def}`,
+        ``,
         data.sign.compatible
           ? `✅ Passive: Active (${data.sign.passiveName})`
           : `⛔ Passive: Inactive (butuh ${data.sign.needsMainCard})`
