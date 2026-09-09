@@ -305,6 +305,38 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  // RPG 2.0 PvP sessions + streaks on players. One row per challenge;
+  // the partial unique indexes enforce "a player has at most one active
+  // battle as challenger or target" at the database level.
+  `
+  CREATE TABLE IF NOT EXISTS rpg_pvp_sessions (
+    id            TEXT    PRIMARY KEY,
+    challenger    TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    target        TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    status        TEXT    NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','accepted','running','finished','cancelled','expired')),
+    confirm_msg_id TEXT   UNIQUE,
+    result        TEXT    NOT NULL DEFAULT '{}',
+    expires_at    INTEGER NOT NULL DEFAULT 0,
+    started_at    INTEGER NOT NULL DEFAULT 0,
+    created_at    INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at    INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_pvp_pending_challenger ON rpg_pvp_sessions(challenger) WHERE status IN ('pending','accepted','running')`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_pvp_pending_target ON rpg_pvp_sessions(target) WHERE status IN ('pending','accepted','running')`,
+
+  // Idempotent fix for tables created with the older NOT NULL DEFAULT ''
+  // confirm_msg_id (UNIQUE '' collided when two challenges had no message yet).
+  `ALTER TABLE rpg_pvp_sessions ALTER COLUMN confirm_msg_id DROP DEFAULT`,
+  `ALTER TABLE rpg_pvp_sessions ALTER COLUMN confirm_msg_id DROP NOT NULL`,
+
+  // PvP streak state on players (legacy kept win/loss/win_streak on stats).
+  `ALTER TABLE rpg_players ADD COLUMN IF NOT EXISTS pvp_wins INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE rpg_players ADD COLUMN IF NOT EXISTS pvp_losses INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE rpg_players ADD COLUMN IF NOT EXISTS pvp_win_streak INTEGER NOT NULL DEFAULT 0`,
+
   // Economy 2.0 Redeem codes (migrated from legacy, same schema).
   `
   CREATE TABLE IF NOT EXISTS redeem_codes (
