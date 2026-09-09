@@ -163,6 +163,74 @@ const STATIC_SCHEMA = [
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
   `,
+  // Economy 2.0 Market tables (migrated from legacy, same schema).
+  // Price engine state, hourly-tick bookkeeping, bounded price history,
+  // per-user holdings (quantity + average-cost basis), and trade ledger.
+  // market_portfolio.jid references users(jid): holdings die with the user.
+  `
+  CREATE TABLE IF NOT EXISTS market_commodities (
+    id            TEXT    PRIMARY KEY,
+    price         BIGINT  NOT NULL DEFAULT 0,
+    prev_price    BIGINT  NOT NULL DEFAULT 0,
+    phase         TEXT    NOT NULL DEFAULT 'normal',
+    phase_ticks   INTEGER NOT NULL DEFAULT 0,
+    momentum      REAL    NOT NULL DEFAULT 0,
+    event_id      TEXT    NOT NULL DEFAULT '',
+    event_ticks   INTEGER NOT NULL DEFAULT 0,
+    updated_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_state (
+    id            SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    tick          BIGINT  NOT NULL DEFAULT 0,
+    bucket        BIGINT  NOT NULL DEFAULT 0,
+    last_tick_at  BIGINT  NOT NULL DEFAULT 0
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_history (
+    id            BIGSERIAL PRIMARY KEY,
+    commodity_id  TEXT    NOT NULL REFERENCES market_commodities(id) ON DELETE CASCADE,
+    price         BIGINT  NOT NULL,
+    tick          BIGINT  NOT NULL DEFAULT 0,
+    created_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_portfolio (
+    jid           TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    commodity_id  TEXT    NOT NULL REFERENCES market_commodities(id) ON DELETE CASCADE,
+    quantity      BIGINT  NOT NULL DEFAULT 0,
+    total_cost    BIGINT  NOT NULL DEFAULT 0,
+    realized_pl   BIGINT  NOT NULL DEFAULT 0,
+    updated_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    PRIMARY KEY (jid, commodity_id),
+    CONSTRAINT market_portfolio_qty_positive CHECK (quantity >= 0),
+    CONSTRAINT market_portfolio_cost_positive CHECK (total_cost >= 0)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS market_trades (
+    id            BIGSERIAL PRIMARY KEY,
+    jid           TEXT    NOT NULL,
+    commodity_id  TEXT    NOT NULL,
+    side          TEXT    NOT NULL,
+    quantity      BIGINT  NOT NULL,
+    unit_price    BIGINT  NOT NULL,
+    total         BIGINT  NOT NULL,
+    profit        BIGINT  NOT NULL DEFAULT 0,
+    created_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `CREATE INDEX IF NOT EXISTS idx_market_history_commodity ON market_history(commodity_id, id DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_portfolio_jid ON market_portfolio(jid)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_trades_jid ON market_trades(jid, id DESC)`,
 ];
 
 export async function createSchema() {
