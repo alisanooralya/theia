@@ -267,6 +267,40 @@ const STATIC_SCHEMA = [
   // Group opt-in flag for automatic Market News delivery (default off).
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS news INTEGER NOT NULL DEFAULT 0`,
 
+  // Economy 2.0 Work sessions + RPG 2.0 Expeditions (migrated from legacy,
+  // same schemas). One row per user; claiming flips active -> claimed only
+  // after the duration elapsed, so retries grant once.
+  `
+  CREATE TABLE IF NOT EXISTS work_sessions (
+    jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+    job         TEXT    NOT NULL,
+    status      TEXT    NOT NULL DEFAULT 'active',
+    reward_coin INTEGER NOT NULL DEFAULT 0,
+    reward_exp  INTEGER NOT NULL DEFAULT 0,
+    started_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    ends_at     INTEGER NOT NULL DEFAULT 0,
+    claimed_at  INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS expeditions (
+    jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
+    type        TEXT    NOT NULL,
+    duration    TEXT    NOT NULL,
+    status      TEXT    NOT NULL DEFAULT 'active',
+    reward_coin INTEGER NOT NULL DEFAULT 0,
+    reward_exp  INTEGER NOT NULL DEFAULT 0,
+    started_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    ends_at     INTEGER NOT NULL DEFAULT 0,
+    claimed_at  INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
   // Economy 2.0 Redeem codes (migrated from legacy, same schema).
   `
   CREATE TABLE IF NOT EXISTS redeem_codes (
