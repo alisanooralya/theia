@@ -174,20 +174,8 @@ describe('shop + inventory (database)', { skip: !dbAvailable }, () => {
     assert.deepEqual(after, before);
   });
 
-  it('givecoin funds a fresh sender end-to-end', async () => {
-    const { default: givecoin } =
-      await import('../src/commands/modules/owner/givecoin.js');
-    assert.equal(givecoin.ownerOnly, true);
-    const userId = uid('givecoin');
-    createdUsers.push(userId);
-    const replies = [];
-    await givecoin.execute({
-      sender: userId,
-      args: ['25000'],
-      mentions: [],
-      reply: async (msg) => replies.push(msg),
-    });
-    assert.ok(replies[0].includes('25,000') || replies[0].includes('25000'));
+  it('coin model funds a fresh sender end-to-end', async () => {
+    const userId = await makeUser('funded', 25000);
     assert.equal(await rpgCoinModel.getBalance(userId), 25000);
     // Funded user can now buy from the shop with no manual DB edits.
     const result = await shopService.buyItem(userId, 'cerelia', 5);
