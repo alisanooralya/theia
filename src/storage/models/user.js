@@ -68,6 +68,21 @@ class UserModel {
       UPDATE users SET prison_until = ${epochSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
     `;
   }
+
+  /**
+   * Atomic daily bounty claim: a conditional UPDATE on the user row locks
+   * it, so concurrent/retry attempts cannot claim the same WIB day twice.
+   * Returns true only for the winner.
+   */
+  async claimBountyDay(jid, dayStartSec, nowSec, client = sql) {
+    const rows = await client`
+      UPDATE users
+      SET last_bounty = ${nowSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE jid = ${jid} AND (last_bounty = 0 OR last_bounty < ${dayStartSec})
+      RETURNING jid
+    `;
+    return rows.length === 1;
+  }
 }
 
 export const userModel = new UserModel();
