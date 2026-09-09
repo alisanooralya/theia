@@ -3,6 +3,7 @@ import {
   formatProfile,
 } from '#features/rpg/services/profile-service.js';
 import { renderProfileCard, cardArtPath } from '#features/rpg/index.js';
+import { Button } from '#messages/builder.js';
 
 export default {
   name: 'profile',
@@ -28,7 +29,11 @@ export default {
         artPath,
       });
 
-      await ctx.reply({ image, caption: formatProfile(data) });
+      const builder = new Button(ctx.sock)
+        .setBody(formatProfile(data))
+        .setImage(image);
+
+      builder.send(ctx.jid);
     } catch (err) {
       await ctx.fail(err.message);
     }

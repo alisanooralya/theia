@@ -7,7 +7,6 @@ import {
 
 export const DOMAIN_USAGE = '🏰 *RPG DOMAIN*\n\nChoose Difficulty:';
 
-/** Pure difficulty list renderer. */
 export function formatDomainList() {
   const lines = [DOMAIN_USAGE, ''];
   for (const domain of getDomains()) {
@@ -23,7 +22,6 @@ export function formatDomainList() {
   return lines.join('\n');
 }
 
-/** Pure result renderer. No I/O, no services. */
 export function formatDomainResult(outcome) {
   if (outcome.status === 'WIN') {
     const lines = [
@@ -41,9 +39,21 @@ export function formatDomainResult(outcome) {
     return lines.join('\n');
   }
   if (outcome.status === 'LOSE') {
-    return ['💀 *DOMAIN FAILED*', '', `${outcome.bossName} defeated you.`, '', 'No rewards received.'].join('\n');
+    return [
+      '💀 *DOMAIN FAILED*',
+      '',
+      `${outcome.bossName} defeated you.`,
+      '',
+      'No rewards received.',
+    ].join('\n');
   }
-  return ['🤝 *DOMAIN DRAW*', '', `${outcome.bossName} stands its ground.`, '', 'No rewards received.'].join('\n');
+  return [
+    '🤝 *DOMAIN DRAW*',
+    '',
+    `${outcome.bossName} stands its ground.`,
+    '',
+    'No rewards received.',
+  ].join('\n');
 }
 
 export async function executeDomain(ctx) {
@@ -55,14 +65,23 @@ export async function executeDomain(ctx) {
     }
     const domain = getDomain(difficulty);
     if (!domain) {
-      await ctx.fail(`Unknown difficulty: ${difficulty}. Choose: easy, medium, hard.`);
+      await ctx.fail(
+        `Unknown difficulty: ${difficulty}. Choose: easy, medium, hard.`
+      );
       return;
     }
-    await ctx.reply(`🏰 *DOMAIN — ${domain.name.toUpperCase()}*\n\n👹 Boss: *${domain.boss.name}*\n❤️ HP: *${domain.boss.stats.maxHp}*\n\n⚔️ Battle started...`);
+
+    const msg = await ctx.reply(
+      `🏰 *DOMAIN — ${domain.name.toUpperCase()}*\n\n👹 Boss: *${domain.boss.name}*\n❤️ HP: *${domain.boss.stats.maxHp}*\n\n⚔️ Battle started...`
+    );
     const outcome = await domainService.runDomain(ctx.sender, domain.id, {
       requestKey: makeDomainKey(ctx.sender, domain.id),
     });
-    await ctx.reply(formatDomainResult(outcome));
+
+    await ctx.sock.sendMessage(ctx.jid, {
+      text: formatDomainResult(outcome),
+      edit: msg.key,
+    });
   } catch (err) {
     await ctx.fail(err.message);
   }
@@ -73,7 +92,7 @@ export default {
   aliases: ['dungeon', 'dg'],
   category: 'rpg',
   description: 'Lawan boss Domain (.domain easy/medium/hard)',
-  cooldown: 10_000,
+  cooldown: 60 * 60 * 1_000,
 
   async execute(ctx) {
     await executeDomain(ctx);

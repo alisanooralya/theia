@@ -86,7 +86,11 @@ export function createDomainService({
      * { requestKey, difficulty, bossName, status, rounds, rewards,
      *   leveledUp, duplicate }. Rewards present only on WIN.
      */
-    async runDomain(userId, difficulty, { requestKey = null, random = Math.random, maxRounds = null } = {}) {
+    async runDomain(
+      userId,
+      difficulty,
+      { requestKey = null, random = Math.random, maxRounds = null } = {}
+    ) {
       const domain = getDomain(difficulty);
       if (!domain) throw new RangeError(`Unknown difficulty: ${difficulty}`);
       const key = requestKey ?? makeDomainKey(userId, domain.id);

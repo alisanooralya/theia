@@ -9,7 +9,17 @@
  * bonuses. Easy is clearable nearly naked; medium wants a leveled card;
  * hard wants a strong equipped Main Card + Sign.
  */
-function boss({ id, name, maxHp, atk, def, critRate = 0.05, critDmg = 1.5, behavior = 'basic', skills = null }) {
+function boss({
+  id,
+  name,
+  maxHp,
+  atk,
+  def,
+  critRate = 0.05,
+  critDmg = 1.5,
+  behavior = 'basic',
+  skills = null,
+}) {
   if (!id || !name) throw new RangeError('boss needs id and name');
   for (const [key, value] of Object.entries({ maxHp, atk, def })) {
     if (!Number.isFinite(value) || value < 0) {
@@ -28,7 +38,12 @@ function boss({ id, name, maxHp, atk, def, critRate = 0.05, critDmg = 1.5, behav
 
 function domain({ id, name, emoji, description, boss: bossDef, rewards }) {
   for (const [key, range] of Object.entries(rewards)) {
-    if (!Number.isInteger(range?.min) || !Number.isInteger(range?.max) || range.min < 0 || range.max < range.min) {
+    if (
+      !Number.isInteger(range?.min) ||
+      !Number.isInteger(range?.max) ||
+      range.min < 0 ||
+      range.max < range.min
+    ) {
       throw new RangeError(`domain ${id} has invalid ${key} reward range`);
     }
   }
@@ -52,7 +67,13 @@ export const DOMAINS = Object.freeze({
     name: 'Easy',
     emoji: '🟢',
     description: 'A calm frontier for fresh fighters.',
-    boss: boss({ id: 'slime_king', name: 'Slime King', maxHp: 80, atk: 8, def: 2 }),
+    boss: boss({
+      id: 'slime_king',
+      name: 'Slime King',
+      maxHp: 80,
+      atk: 8,
+      def: 2,
+    }),
     rewards: {
       exp: { min: 100, max: 150 },
       coin: { min: 5000, max: 10000 },
@@ -64,7 +85,13 @@ export const DOMAINS = Object.freeze({
     name: 'Medium',
     emoji: '🟡',
     description: 'Rougher wilds for trained fighters.',
-    boss: boss({ id: 'stone_golem', name: 'Stone Golem', maxHp: 300, atk: 25, def: 10 }),
+    boss: boss({
+      id: 'stone_golem',
+      name: 'Stone Golem',
+      maxHp: 300,
+      atk: 25,
+      def: 10,
+    }),
     rewards: {
       exp: { min: 250, max: 400 },
       coin: { min: 15000, max: 25000 },
@@ -84,7 +111,15 @@ export const DOMAINS = Object.freeze({
       def: 25,
       behavior: 'skill_based',
       skills: {
-        active: { name: 'Abyss Breath', multiplier: 1.5, flatBonus: 0, defIgnore: 0, cooldownSec: 6, unlocked: true, upgraded: false },
+        active: {
+          name: 'Abyss Breath',
+          multiplier: 1.5,
+          flatBonus: 0,
+          defIgnore: 0,
+          cooldownSec: 6,
+          unlocked: true,
+          upgraded: false,
+        },
         passives: [],
       },
     }),

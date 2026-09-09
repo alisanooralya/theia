@@ -87,11 +87,12 @@ export async function executeGacha(
 ) {
   const count = parseGachaArgs(ctx.args);
   if (count === null) {
-    return sendGachaMenu();
+    return sendGachaMenu(ctx);
   }
 
   const animMsg = await ctx.reply('🎰 Sedang melakukan gacha...');
   const msgKey = animMsg?.key;
+  await ctx.applyCooldown();
   await sleepFn(GACHA_CONFIG.animationDelayMs);
 
   const pull =
@@ -110,6 +111,7 @@ export default {
   category: 'rpg',
   description: 'Gacha Main Card dan item',
   cooldown: 10_000,
+  manualCooldown: true,
 
   async execute(ctx) {
     try {
