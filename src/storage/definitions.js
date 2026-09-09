@@ -114,14 +114,20 @@ const STATIC_SCHEMA = [
   // RPG 2.0 Shop + Inventory foundation. No coin system existed outside
   // legacy reference, so this is the minimal RPG-scoped coin store
   // (same currency: coin). Generic item rows: one per (user, item).
+  // `bank` is the Economy 2.0 Bank balance (same row as coin, so every
+  // deposit/withdraw is a single conditional UPDATE: coin+bank total is
+  // conserved by construction and can never go negative). Storage only:
+  // no interest, fee, limit, or ledger columns.
   `
   CREATE TABLE IF NOT EXISTS rpg_wallets (
     user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
     coin        INTEGER NOT NULL DEFAULT 0 CHECK (coin >= 0),
+    bank        INTEGER NOT NULL DEFAULT 0 CHECK (bank >= 0),
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
   `,
+  `ALTER TABLE rpg_wallets ADD COLUMN IF NOT EXISTS bank INTEGER NOT NULL DEFAULT 0`,
 
   `
   CREATE TABLE IF NOT EXISTS rpg_inventory (
