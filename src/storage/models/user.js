@@ -55,6 +55,18 @@ class UserModel {
       UPDATE users SET daily_streak = ${streak}, last_daily = ${lastDaily}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
     `;
   }
+
+  /** Jail state for Economy Crime (epoch seconds; 0 = free). */
+  async getPrisonUntil(jid, client = sql) {
+    const rows = await client`SELECT prison_until FROM users WHERE jid = ${jid}`;
+    return Number(rows[0]?.prison_until ?? 0);
+  }
+
+  async setPrisonUntil(jid, epochSec, client = sql) {
+    await client`
+      UPDATE users SET prison_until = ${epochSec}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
+  }
 }
 
 export const userModel = new UserModel();

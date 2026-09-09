@@ -111,6 +111,10 @@ const STATIC_SCHEMA = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily INTEGER NOT NULL DEFAULT 0`,
 
+  // Economy Crime jail state (same field as legacy). Idempotent.
+  // Epoch seconds; 0 = free. Restriction-only: no income math reads it.
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS prison_until INTEGER NOT NULL DEFAULT 0`,
+
   // RPG 2.0 Shop + Inventory foundation. No coin system existed outside
   // legacy reference, so this is the minimal RPG-scoped coin store
   // (same currency: coin). Generic item rows: one per (user, item).

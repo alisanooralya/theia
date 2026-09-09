@@ -202,10 +202,15 @@ describe('economy market news (database)', { skip: !dbAvailable }, () => {
   });
 
   it('news failure cannot roll back a valid price tick', async () => {
-    const before = await marketModel.getState();
     const computeNext = (states, tick) => marketService.computeNext(states, tick);
-    const advanced = await marketModel.advance(computeNext, (before.bucket + 1) * 3600000 + 1000);
-    assert.equal(advanced.applied, 1);
+    let advanced = null;
+    // Retry: a parallel suite file may consume the target bucket first.
+    for (let attempt = 0; attempt < 3 && !advanced; attempt++) {
+      const before = await marketModel.getState();
+      const out = await marketModel.advance(computeNext, (before.bucket + 1) * 3600000 + 1000);
+      if (out.applied === 1) advanced = { before, out };
+    }
+    assert.ok(advanced, 'tick applied');
     const broken = createMarketNewsService({
       news: {
         activeForUpdate: async () => {
@@ -213,9 +218,9 @@ describe('economy market news (database)', { skip: !dbAvailable }, () => {
         },
       },
     });
-    await assert.rejects(broken.maintain(advanced.tick), /exploded/);
+    await assert.rejects(broken.maintain(advanced.out.tick), /exploded/);
     const after = await marketModel.getState();
-    assert.equal(after.tick, before.tick + 1);
+    assert.equal(after.tick, advanced.before.tick + 1);
   });
 
   it('.market news shows feed; .market list stays news-free', async () => {

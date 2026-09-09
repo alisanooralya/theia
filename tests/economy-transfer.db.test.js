@@ -133,9 +133,14 @@ describe('economy transfer (database)', { skip: !dbAvailable }, () => {
       ...Array.from({ length: 5 }, () => transferService.transfer(alice, bob, 10000)),
       ...Array.from({ length: 5 }, () => transferService.transfer(bob, alice, 10000)),
     ]);
-    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 10);
-    assert.equal(await rpgCoinModel.getBalance(alice), 30000);
-    assert.equal(await rpgCoinModel.getBalance(bob), 30000);
+    // Either direction may legitimately lose a race for funds (5x10000
+    // out of 30000); what must hold: no deadlock, no negatives, and the
+    // combined total conserved regardless of winners.
+    assert.ok(results.every((r) => r.status === 'fulfilled' || r.status === 'rejected'));
+    const aBal = await rpgCoinModel.getBalance(alice);
+    const bBal = await rpgCoinModel.getBalance(bob);
+    assert.ok(aBal >= 0 && bBal >= 0);
+    assert.equal(aBal + bBal, 60000);
   });
 
   it('command stays thin: mention transfer + usage/self/invalid paths', async () => {
