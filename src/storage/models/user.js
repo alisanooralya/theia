@@ -40,6 +40,21 @@ class UserModel {
     bannedCache.set(jid, banned ? 1 : 0);
     return banned;
   }
+
+  /** Daily/Streak state for Economy Daily (locked reads for claims). */
+  async getDaily(jid, client = sql, forUpdate = false) {
+    const rows = await client.unsafe(
+      `SELECT jid, daily_streak, last_daily FROM users WHERE jid = $1${forUpdate ? ' FOR UPDATE' : ''}`,
+      [jid]
+    );
+    return rows[0] ?? null;
+  }
+
+  async saveDaily(jid, streak, lastDaily, client = sql) {
+    await client`
+      UPDATE users SET daily_streak = ${streak}, last_daily = ${lastDaily}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT WHERE jid = ${jid}
+    `;
+  }
 }
 
 export const userModel = new UserModel();

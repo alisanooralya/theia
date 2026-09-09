@@ -107,6 +107,10 @@ const STATIC_SCHEMA = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_main_cards_equipped ON rpg_main_cards(user_id) WHERE equipped = 1`,
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_sign_cards_equipped ON rpg_sign_cards(user_id) WHERE equipped = 1`,
 
+  // Economy Daily state on users (same fields as legacy). Idempotent.
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily INTEGER NOT NULL DEFAULT 0`,
+
   // RPG 2.0 Shop + Inventory foundation. No coin system existed outside
   // legacy reference, so this is the minimal RPG-scoped coin store
   // (same currency: coin). Generic item rows: one per (user, item).
