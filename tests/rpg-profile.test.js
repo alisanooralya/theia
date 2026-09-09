@@ -155,7 +155,7 @@ describe('profile formatting', () => {
   it('shows main without sign', async () => {
     const t = await text({ main: mainCard() });
     assert.ok(t.includes('*Girgas* - Lv.25'));
-    assert.ok(t.includes('Belum ada Main Card'));
+    assert.ok(t.includes('Belum ada Sign Card'));
   });
 
   it('descriptions come from config, not the profile service', async () => {

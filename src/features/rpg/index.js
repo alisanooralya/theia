@@ -86,6 +86,17 @@ export {
   makeRequestKey,
 } from './services/gacha-service.js';
 export {
+  DOMAINS,
+  getDomain,
+  getDomains,
+  rollReward,
+} from './config/domain-config.js';
+export {
+  domainService,
+  createDomainService,
+  makeDomainKey,
+} from './services/domain-service.js';
+export {
   MAX_ROUNDS_DEFAULT,
   ROUND_SECONDS,
   createBattle,

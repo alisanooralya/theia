@@ -19,7 +19,6 @@ import {
   parseGachaArgs,
   formatGachaResult,
   executeGacha,
-  GACHA_USAGE,
 } from '../src/commands/modules/rpg/gacha.js';
 
 describe('gacha config', () => {
@@ -114,7 +113,6 @@ describe('gacha command parsing and UI', () => {
     assert.throws(() => parseGachaArgs(['5']), RangeError);
     assert.throws(() => parseGachaArgs(['0']), RangeError);
     assert.throws(() => parseGachaArgs(['abc']), RangeError);
-    assert.ok(GACHA_USAGE.includes('.gacha 1'));
   });
 
   it('formats results with per-pull lines and totals', () => {

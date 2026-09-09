@@ -140,6 +140,19 @@ const STATIC_SCHEMA = [
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
   `,
+
+  // RPG 2.0 Domain run ledger. One row per execution key: retries read
+  // back the stored outcome instead of granting rewards twice.
+  `
+  CREATE TABLE IF NOT EXISTS rpg_domain_runs (
+    request_key TEXT    PRIMARY KEY,
+    user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    difficulty  TEXT    NOT NULL,
+    status      TEXT    NOT NULL DEFAULT 'RUNNING',
+    rewards     TEXT    NOT NULL DEFAULT '{}',
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
 ];
 
 export async function createSchema() {
