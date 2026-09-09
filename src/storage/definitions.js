@@ -262,6 +262,29 @@ const STATIC_SCHEMA = [
 
   // Group opt-in flag for automatic Market News delivery (default off).
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS news INTEGER NOT NULL DEFAULT 0`,
+
+  // Economy 2.0 Redeem codes (migrated from legacy, same schema).
+  `
+  CREATE TABLE IF NOT EXISTS redeem_codes (
+    code        TEXT    PRIMARY KEY,
+    amount      INTEGER NOT NULL CHECK (amount > 0),
+    expires_at  BIGINT  NOT NULL,
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
+  CREATE TABLE IF NOT EXISTS redeem_code_users (
+    id        BIGSERIAL PRIMARY KEY,
+    code      TEXT    NOT NULL REFERENCES redeem_codes(code) ON DELETE CASCADE,
+    jid       TEXT    NOT NULL,
+    used_at   INTEGER NOT NULL,
+    UNIQUE(code, jid)
+  )
+  `,
+
+  `CREATE INDEX IF NOT EXISTS idx_redeem_code_users_code ON redeem_code_users(code)`,
+  `CREATE INDEX IF NOT EXISTS idx_redeem_code_users_jid ON redeem_code_users(jid)`,
 ];
 
 export async function createSchema() {

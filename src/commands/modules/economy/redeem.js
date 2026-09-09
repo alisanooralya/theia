@@ -1,0 +1,24 @@
+import { redeemCodeModel } from '#storage/models/index.js';
+import { F } from '#helpers/index.js';
+
+export default {
+  name: 'redeem',
+  aliases: ['tukar', 'redeemcodeclaim'],
+  category: 'economy',
+  description: 'Tukar redeem code menjadi coin',
+  cooldown: 3000,
+
+  async execute(ctx) {
+    const code = ctx.args[0]?.trim().toUpperCase();
+    if (!code) return ctx.fail('Usage: `.redeem <kode>`');
+
+    try {
+      const reward = await redeemCodeModel.redeem(code, ctx.sender);
+      await ctx.reply(
+        `✅ Redeem berhasil! Kamu mendapatkan ${F.formatNumber(reward.amount)} coin.`
+      );
+    } catch (err) {
+      return ctx.fail(`❌ ${err.message}`);
+    }
+  },
+};
