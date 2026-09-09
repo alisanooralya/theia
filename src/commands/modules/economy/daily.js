@@ -5,7 +5,7 @@ export default {
   name: 'daily',
   aliases: ['claim', 'harian'],
   category: 'economy',
-  description: 'Klaim reward harian (reset jam 00:00 WIB)',
+  description: 'Klaim reward harian',
   cooldown: 0,
 
   async execute(ctx) {

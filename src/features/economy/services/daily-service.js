@@ -31,7 +31,14 @@ export function createDailyService({ users, players, coins, db = sql } = {}) {
      * { status: 'already', coin: 0, streak }.
      * `nowSec`/`random` injectable for tests.
      */
-    async claimDaily(userId, { nowSec = Math.floor(Date.now() / 1000), random = Math.random, pushName = '' } = {}) {
+    async claimDaily(
+      userId,
+      {
+        nowSec = Math.floor(Date.now() / 1000),
+        random = Math.random,
+        pushName = '',
+      } = {}
+    ) {
       await userRepo.ensure(userId, { pushName });
       await playerRepo.ensure(userId);
       await coinRepo.ensure(userId);
@@ -40,7 +47,11 @@ export function createDailyService({ users, players, coins, db = sql } = {}) {
         const state = await userRepo.getDaily(userId, tx, true);
         const last = state?.last_daily ?? 0;
         if (last && wibDayKey(last) === wibDayKey(nowSec)) {
-          return { status: 'already', coin: 0, streak: state?.daily_streak ?? 0 };
+          return {
+            status: 'already',
+            coin: 0,
+            streak: state?.daily_streak ?? 0,
+          };
         }
         const streak = computeStreak({
           lastDaily: last,

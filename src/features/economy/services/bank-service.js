@@ -15,11 +15,7 @@ import { rpgPlayerModel } from '../../rpg/models/rpg-player.model.js';
 import { rpgCoinModel } from '../../rpg/models/rpg-coin.model.js';
 import { BANK_CONFIG, parseBankAmount } from '../config/bank-config.js';
 
-export function createBankService({
-  users,
-  players,
-  coins,
-} = {}) {
+export function createBankService({ users, players, coins } = {}) {
   const userRepo = users ?? userModel;
   const playerRepo = players ?? rpgPlayerModel;
   const coinRepo = coins ?? rpgCoinModel;
@@ -48,16 +44,24 @@ export function createBankService({
 
     /** Move `rawAmount` coin -> bank. Returns the new balances. */
     async deposit(userId, rawAmount, { pushName = '' } = {}) {
-      const amount = parseBankAmount(rawAmount, { min: BANK_CONFIG.minDeposit });
+      const amount = parseBankAmount(rawAmount, {
+        min: BANK_CONFIG.minDeposit,
+      });
       await ensureAll(userId, pushName);
-      return withTotal(await coinRepo.depositToBank(userId, amount), { amount });
+      return withTotal(await coinRepo.depositToBank(userId, amount), {
+        amount,
+      });
     },
 
     /** Move `rawAmount` bank -> coin. Returns the new balances. */
     async withdraw(userId, rawAmount, { pushName = '' } = {}) {
-      const amount = parseBankAmount(rawAmount, { min: BANK_CONFIG.minWithdraw });
+      const amount = parseBankAmount(rawAmount, {
+        min: BANK_CONFIG.minWithdraw,
+      });
       await ensureAll(userId, pushName);
-      return withTotal(await coinRepo.withdrawFromBank(userId, amount), { amount });
+      return withTotal(await coinRepo.withdrawFromBank(userId, amount), {
+        amount,
+      });
     },
   };
 }

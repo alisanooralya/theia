@@ -6,11 +6,6 @@ function formatCooldown(ms) {
   return `${Number((ms / 1000).toFixed(2))}s`;
 }
 
-/**
- * Skill block lines: name (+ cooldown for actives), config description,
- * then unlock status. Descriptions always show so players can preview
- * locked skills.
- */
 function skillLines(icon, label, skill, { cooldownMs = null } = {}) {
   const cd = cooldownMs !== null ? ` (cd: ${formatCooldown(cooldownMs)})` : '';
   const lines = [`${icon} ${label} ${skill.name}${cd}`];
@@ -21,10 +16,6 @@ function skillLines(icon, label, skill, { cooldownMs = null } = {}) {
         ? '(*upgrade*)'
         : '(*unlocked*)';
     lines.push(`${skill.description} ${status}`);
-  } else if (!skill.unlocked) {
-    lines.push(`🔒 Unlocks at Lv.${skill.unlockLevel}`);
-  } else {
-    lines.push(`🟢 Unlocked${skill.upgraded ? ' (Upgraded)' : ''}`);
   }
   return lines;
 }
@@ -34,7 +25,6 @@ export function createProfileService({ finalStatsService, cardService } = {}) {
   const cards = cardService ?? defaultCardService;
 
   return {
-    /** Read-only snapshot for rendering. Never writes. */
     async getProfileData(userId) {
       const [final, main, sign] = await Promise.all([
         finals.getFinalStats(userId),
@@ -125,6 +115,7 @@ export function formatProfile(data) {
       ...skillLines('⚡', 'Active', data.main.active, {
         cooldownMs: data.main.active.cooldownMs,
       }),
+      '',
       ...skillLines('✨', 'Passive', data.main.passive)
     );
 

@@ -60,7 +60,7 @@ export async function executeDomain(ctx) {
   const [difficulty] = (ctx.args ?? []).map((a) => a.toLowerCase());
   try {
     if (!difficulty) {
-      await ctx.reply(formatDomainList());
+      await ctx.fail(formatDomainList());
       return;
     }
     const domain = getDomain(difficulty);
@@ -91,7 +91,7 @@ export default {
   name: 'domain',
   aliases: ['dungeon', 'dg'],
   category: 'rpg',
-  description: 'Lawan boss Domain (.domain easy/medium/hard)',
+  description: 'Lawan boss Domain',
   cooldown: 60 * 60 * 1_000,
 
   async execute(ctx) {
