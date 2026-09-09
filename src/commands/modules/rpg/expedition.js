@@ -1,5 +1,9 @@
 import { expeditionService as expedition } from '#features/rpg/services/expedition-service.js';
-import { EXPEDITIONS, EXPEDITION_COOLDOWN_MS, optionLine } from '#features/rpg/config/expedition-config.js';
+import {
+  EXPEDITIONS,
+  EXPEDITION_COOLDOWN_MS,
+  optionLine,
+} from '#features/rpg/config/expedition-config.js';
 import { Button } from '#messages/builder.js';
 import { F } from '#helpers/index.js';
 
@@ -51,7 +55,9 @@ export default {
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
     const durationKey = ctx.args[1]?.toLowerCase();
-    const state = await expedition.getState(ctx.sender, { pushName: ctx.pushName });
+    const state = await expedition.getState(ctx.sender, {
+      pushName: ctx.pushName,
+    });
 
     if (sub === 'claim') {
       if (!state.active)

@@ -110,7 +110,7 @@ export default {
   aliases: ['roll'],
   category: 'rpg',
   description: 'Gacha Main Card dan item',
-  cooldown: 10_000,
+  cooldown: 5_000,
   manualCooldown: true,
 
   async execute(ctx) {

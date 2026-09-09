@@ -54,7 +54,12 @@ export function createWorkService({
       await ensureAll(userId, pushName);
       const row = await workRepo.find(userId);
       if (!row || row.status !== 'active') {
-        return { row: row ?? null, active: false, finished: false, remainingMs: 0 };
+        return {
+          row: row ?? null,
+          active: false,
+          finished: false,
+          remainingMs: 0,
+        };
       }
       const endsAtMs = Number(row.ends_at) * 1000;
       const remainingMs = endsAtMs - Date.now();
@@ -142,7 +147,10 @@ export function createWorkService({
         `⭐ +${F.formatNumber(exp)} EXP`,
       ];
       if (level?.leveledUp)
-        lines.push('', `🎉 *LEVEL UP!* Kamu sekarang level *${level.newLevel}*!`);
+        lines.push(
+          '',
+          `🎉 *LEVEL UP!* Kamu sekarang level *${level.newLevel}*!`
+        );
       return lines.join('\n');
     },
   };

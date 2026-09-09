@@ -68,7 +68,12 @@ export function createExpeditionService({
       await ensureAll(userId, pushName);
       const row = await expeditionRepo.find(userId);
       if (!row || row.status !== 'active') {
-        return { row: row ?? null, active: false, finished: false, remainingMs: 0 };
+        return {
+          row: row ?? null,
+          active: false,
+          finished: false,
+          remainingMs: 0,
+        };
       }
       const endsAtMs = Number(row.ends_at) * 1000;
       const remainingMs = endsAtMs - Date.now();
@@ -84,7 +89,12 @@ export function createExpeditionService({
       };
     },
 
-    async start(userId, type, duration, { random = Math.random, pushName = '' } = {}) {
+    async start(
+      userId,
+      type,
+      duration,
+      { random = Math.random, pushName = '' } = {}
+    ) {
       const category = getCategory(type);
       const option = getOption(type, duration);
       if (!category || !option)
@@ -167,7 +177,10 @@ export function createExpeditionService({
       if (coin > 0) lines.push(`🪙 +${F.formatNumber(coin)} Coin`);
       if (exp > 0) lines.push(`⭐ +${F.formatNumber(exp)} EXP`);
       if (level.leveledUp)
-        lines.push('', `🎉 *LEVEL UP!* Kamu sekarang level *${level.newLevel}*!`);
+        lines.push(
+          '',
+          `🎉 *LEVEL UP!* Kamu sekarang level *${level.newLevel}*!`
+        );
       return lines.join('\n');
     },
   };

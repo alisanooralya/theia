@@ -20,7 +20,7 @@ export default {
   aliases: ['tas'],
   category: 'rpg',
   description: 'Lihat inventory RPG kamu',
-  cooldown: 10_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     try {

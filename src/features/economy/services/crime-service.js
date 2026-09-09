@@ -48,7 +48,10 @@ export function createCrimeService({
 
   return {
     /** Remaining jail seconds (0 = free). Row-creating read. */
-    async jailRemaining(userId, { nowSec = Math.floor(Date.now() / 1000), pushName = '' } = {}) {
+    async jailRemaining(
+      userId,
+      { nowSec = Math.floor(Date.now() / 1000), pushName = '' } = {}
+    ) {
       await ensureAll(userId, pushName);
       const until = await userRepo.getPrisonUntil(userId);
       return Math.max(0, until - nowSec);
@@ -62,10 +65,17 @@ export function createCrimeService({
     async commitCrime(
       userId,
       crimeId,
-      { nowSec = Math.floor(Date.now() / 1000), random = Math.random, pushName = '' } = {}
+      {
+        nowSec = Math.floor(Date.now() / 1000),
+        random = Math.random,
+        pushName = '',
+      } = {}
     ) {
       await ensureAll(userId, pushName);
-      const remaining = Math.max(0, (await userRepo.getPrisonUntil(userId)) - nowSec);
+      const remaining = Math.max(
+        0,
+        (await userRepo.getPrisonUntil(userId)) - nowSec
+      );
       if (remaining > 0) {
         const err = new RangeError('jailed');
         err.remaining = remaining;
@@ -78,7 +88,8 @@ export function createCrimeService({
       const outcome = rollOutcome(crime, random);
 
       if (outcome === 'success' || outcome === 'jackpot') {
-        const range = outcome === 'jackpot' ? crime.jackpotReward : crime.reward;
+        const range =
+          outcome === 'jackpot' ? crime.jackpotReward : crime.reward;
         const reward = randInt(range[0], range[1], random);
         await coinRepo.addCoin(userId, reward);
         return { outcome, crime, reward };

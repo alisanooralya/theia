@@ -10,7 +10,7 @@ export default {
   aliases: ['profil'],
   category: 'rpg',
   description: 'Lihat profil RPG kamu',
-  cooldown: 10_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     try {

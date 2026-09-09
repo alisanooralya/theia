@@ -22,7 +22,7 @@ export default {
   aliases: ['toko'],
   category: 'rpg',
   description: 'Lihat dan beli item RPG Shop',
-  cooldown: 10_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     try {

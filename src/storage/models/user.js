@@ -58,7 +58,8 @@ class UserModel {
 
   /** Jail state for Economy Crime (epoch seconds; 0 = free). */
   async getPrisonUntil(jid, client = sql) {
-    const rows = await client`SELECT prison_until FROM users WHERE jid = ${jid}`;
+    const rows =
+      await client`SELECT prison_until FROM users WHERE jid = ${jid}`;
     return Number(rows[0]?.prison_until ?? 0);
   }
 

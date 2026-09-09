@@ -1,7 +1,11 @@
 import { F } from '#helpers/index.js';
 import { Button } from '#messages/builder.js';
 import { workService as work } from '#features/economy/services/work-service.js';
-import { JOBS, WORK_COOLDOWN_MS, jobLine } from '#features/economy/config/work-config.js';
+import {
+  JOBS,
+  WORK_COOLDOWN_MS,
+  jobLine,
+} from '#features/economy/config/work-config.js';
 
 function workMenu(ctx) {
   const builder = new Button(ctx.sock)
@@ -83,7 +87,9 @@ export default {
         ].join('\n')
       );
 
-    const row = await work.start(ctx.sender, job.id, { pushName: ctx.pushName });
+    const row = await work.start(ctx.sender, job.id, {
+      pushName: ctx.pushName,
+    });
     return ctx.reply(work.formatStarted(row));
   },
 };

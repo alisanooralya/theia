@@ -200,7 +200,7 @@ export default {
   aliases: ['cards', 'kartu'],
   category: 'rpg',
   description: 'Lihat dan equip Main/Sign Card',
-  cooldown: 10_000,
+  cooldown: 5_000,
 
   async execute(ctx) {
     await executeCard(ctx);
