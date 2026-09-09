@@ -77,6 +77,53 @@ class RpgCoinModel {
     return { coin: rows[0].coin, bank: rows[0].bank };
   }
 
+  /**
+   * Atomic coin transfer between two users. Both wallet rows are locked
+   * FOR UPDATE in sorted-id order inside one transaction, so concurrent
+   * transfers (even opposite-direction pairs) serialize without
+   * deadlock; the balance check runs after locking, so the sender can
+   * never overdraw. Full amount moves, no fee: sender -X, receiver +X.
+   * Throws when funds are short or sender tries to pay themselves
+   * (nothing is written). Both rows must exist (service ensures them).
+   */
+  async transferCoin(fromId, toId, amount) {
+    if (!Number.isInteger(amount) || amount < 1) {
+      throw new RangeError('amount must be a positive integer');
+    }
+    if (fromId === toId) {
+      throw new RangeError('Tidak bisa transfer ke diri sendiri.');
+    }
+    return sql.begin(async (tx) => {
+      const [first, second] = fromId < toId ? [fromId, toId] : [toId, fromId];
+      const locked = await tx`
+        SELECT user_id, coin FROM rpg_wallets WHERE user_id = ${first} FOR UPDATE
+      `;
+      const locked2 = await tx`
+        SELECT user_id, coin FROM rpg_wallets WHERE user_id = ${second} FOR UPDATE
+      `;
+      const balances = new Map(
+        [...locked, ...locked2].map((r) => [r.user_id, r.coin])
+      );
+      if (!balances.has(fromId) || !balances.has(toId)) {
+        throw new RangeError('Wallet tidak ditemukan');
+      }
+      if (balances.get(fromId) < amount) throw new RangeError('Coin tidak cukup');
+      const senderRows = await tx`
+        UPDATE rpg_wallets
+        SET coin = coin - ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+        WHERE user_id = ${fromId}
+        RETURNING coin
+      `;
+      const receiverRows = await tx`
+        UPDATE rpg_wallets
+        SET coin = coin + ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+        WHERE user_id = ${toId}
+        RETURNING coin
+      `;
+      return { senderCoin: senderRows[0].coin, receiverCoin: receiverRows[0].coin };
+    });
+  }
+
   async addCoin(userId, amount, client = sql) {
     if (!Number.isInteger(amount) || amount < 1) {
       throw new RangeError('amount must be a positive integer');
