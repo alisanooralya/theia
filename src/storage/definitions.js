@@ -231,6 +231,37 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_market_history_commodity ON market_history(commodity_id, id DESC)`,
   `CREATE INDEX IF NOT EXISTS idx_market_portfolio_jid ON market_portfolio(jid)`,
   `CREATE INDEX IF NOT EXISTS idx_market_trades_jid ON market_trades(jid, id DESC)`,
+
+  // Economy 2.0 Market News table (migrated from legacy, same schema).
+  // Optional layer over Market: spawned per tick, announced once to
+  // news-enabled groups, pressure applied through the price engine.
+  `
+  CREATE TABLE IF NOT EXISTS market_news (
+    id            BIGSERIAL PRIMARY KEY,
+    news_key      TEXT    NOT NULL UNIQUE,
+    type          TEXT    NOT NULL,
+    template_id   TEXT    NOT NULL DEFAULT '',
+    title         TEXT    NOT NULL DEFAULT '',
+    message       TEXT    NOT NULL,
+    affected_commodities TEXT NOT NULL DEFAULT '',
+    hidden_outcome TEXT   NOT NULL,
+    hidden_impact TEXT    NOT NULL DEFAULT '{}',
+    status        TEXT    NOT NULL DEFAULT 'ACTIVE',
+    announce_status TEXT  NOT NULL DEFAULT 'PENDING',
+    start_tick    BIGINT  NOT NULL DEFAULT 0,
+    expire_tick   BIGINT  NOT NULL DEFAULT 0,
+    announced_at  BIGINT  NOT NULL DEFAULT 0,
+    created_at    BIGINT  NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    expires_at    BIGINT  NOT NULL DEFAULT 0
+  )
+  `,
+
+  `CREATE INDEX IF NOT EXISTS idx_market_news_status ON market_news(status, id DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_news_announce ON market_news(announce_status, id)`,
+  `CREATE INDEX IF NOT EXISTS idx_market_news_type_tick ON market_news(type, start_tick DESC)`,
+
+  // Group opt-in flag for automatic Market News delivery (default off).
+  `ALTER TABLE groups ADD COLUMN IF NOT EXISTS news INTEGER NOT NULL DEFAULT 0`,
 ];
 
 export async function createSchema() {

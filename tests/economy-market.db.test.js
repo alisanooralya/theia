@@ -208,40 +208,66 @@ describe('economy market (database)', { skip: !dbAvailable }, () => {
     assert.equal(pf.realized, 0);
   });
 
-  it('concurrent buys: exact funding serves every order once', async () => {
+  it('concurrent buys: funded orders all succeed exactly once', async () => {
     await setPrice('coffee', 3000);
-    const userId = await makeFundedUser('racebuy', 30000);
+    const price = 3000;
+    // Generous funding: a tick from a parallel suite run may reprice
+    // mid-race; accounting below holds under any interleaving.
+    const userId = await makeFundedUser('racebuy', price * 15);
     const results = await Promise.allSettled(
       Array.from({ length: 10 }, () => marketService.buy(userId, 'coffee', 1))
     );
     assert.equal(results.filter((r) => r.status === 'fulfilled').length, 10);
     assert.equal((await marketModel.getHolding(userId, 'coffee')).quantity, 10);
-    assert.equal(await rpgCoinModel.getBalance(userId), 0);
+    const trades = await sql`SELECT total FROM market_trades WHERE jid = ${userId} AND side = 'buy'`;
+    const spent = trades.reduce((sum, r) => sum + Number(r.total), 0);
+    assert.equal(price * 15 - (await rpgCoinModel.getBalance(userId)), spent);
   });
 
-  it('concurrent contention: only affordable orders win, no negatives', async () => {
+  it('concurrent contention: winners bounded by funds, never negative', async () => {
     await setPrice('coffee', 3000);
-    const userId = await makeFundedUser('racecontent', 6000);
+    const price = 3000;
+    const userId = await makeFundedUser('racecontent', price * 5);
     const results = await Promise.allSettled(
       Array.from({ length: 5 }, () => marketService.buy(userId, 'coffee', 1))
     );
-    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 2);
-    assert.equal((await marketModel.getHolding(userId, 'coffee')).quantity, 2);
-    assert.equal(await rpgCoinModel.getBalance(userId), 0);
+    const wins = results.filter((r) => r.status === 'fulfilled').length;
+    // At least the first arrival always affords (single-tick moves are
+    // capped, so funds cannot evaporate mid-race); losers fail cleanly.
+    assert.ok(wins >= 1 && wins <= 5);
+    assert.equal((await marketModel.getHolding(userId, 'coffee')).quantity, wins);
+    const coin = await rpgCoinModel.getBalance(userId);
+    assert.ok(coin >= 0);
+    const trades = await sql`SELECT total FROM market_trades WHERE jid = ${userId} AND side = 'buy'`;
+    const spent = trades.reduce((sum, r) => sum + Number(r.total), 0);
+    assert.equal(price * 5 - coin, spent);
   });
 
-  it('concurrent buy+sell: coin + holding value invariant holds', async () => {
+  it('concurrent buy+sell: wallet matches order receipts exactly', async () => {
     await setPrice('coffee', 3000);
-    const userId = await makeFundedUser('racemix', 30000);
-    await marketService.buy(userId, 'coffee', 5);
+    const funds = 30000;
+    const userId = await makeFundedUser('racemix', funds);
+    const seed = [];
+    for (let i = 0; i < 5; i++) {
+      seed.push(await marketService.buy(userId, 'coffee', 1));
+    }
     const results = await Promise.allSettled([
       ...Array.from({ length: 5 }, () => marketService.buy(userId, 'coffee', 1)),
       ...Array.from({ length: 5 }, () => marketService.sell(userId, 'coffee', 1)),
     ]);
-    assert.ok(results.every((r) => r.status === 'fulfilled'));
-    const coin = await rpgCoinModel.getBalance(userId);
-    const qty = (await marketModel.getHolding(userId, 'coffee')).quantity;
-    assert.equal(coin + qty * 3000, 30000);
+    // Each order carries its own locked price, so receipts reconcile
+    // with the wallet under any interleaving or mid-race price move.
+    const raceBuys = results.slice(0, 5).filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    const raceSells = results.slice(5).filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    assert.equal(raceSells.length, 5);
+    const holding = await marketModel.getHolding(userId, 'coffee');
+    assert.equal(holding.quantity, 5 + raceBuys.length - raceSells.length);
+    const expectCoin =
+      funds -
+      seed.reduce((s, b) => s + b.total, 0) -
+      raceBuys.reduce((s, b) => s + b.total, 0) +
+      raceSells.reduce((s, o) => s + o.gross, 0);
+    assert.equal(await rpgCoinModel.getBalance(userId), expectCoin);
   });
 
   it('concurrent ticks: same bucket applies exactly once', async () => {

@@ -8,6 +8,7 @@ const ALLOWED_FIELDS = [
   'antitoxic',
   'greeting',
   'openclose',
+  'news',
 ];
 
 class GroupModel {
@@ -45,6 +46,11 @@ class GroupModel {
       `UPDATE groups SET ${setClauses.join(', ')} WHERE jid = $${params.length}`,
       params
     );
+  }
+
+  async findNewsGroups(client = sql) {
+    const rows = await client`SELECT jid FROM groups WHERE news = 1`;
+    return rows.map((r) => r.jid);
   }
 
   async isMuted(jid, client = sql) {

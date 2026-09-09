@@ -1,11 +1,12 @@
 /**
  * Economy 2.0 — `.market` command (migrated from legacy, same UI).
  *
- * Thin layer over marketService. Changes vs legacy: news subcommand
- * stripped (news ships separately), wallet coin via the current wallet
- * store. All views and trade flows are otherwise identical.
+ * Thin layer over marketService. Changes vs legacy: wallet coin via the
+ * current wallet store. Views and trade flows are otherwise identical;
+ * `.market` list output stays news-free, news lives under `.market news`.
  */
 import { marketService } from '#features/economy/services/market-service.js';
+import { marketNewsService } from '#features/economy/services/market-news-service.js';
 import { marketModel } from '#features/economy/models/market.model.js';
 import { userModel } from '#storage/models/user.js';
 import { rpgCoinModel } from '#features/rpg/models/rpg-coin.model.js';
@@ -72,8 +73,24 @@ function marketView(list, coin) {
     `Detail: \`.market\` <barang>`,
     `Beli: \`.market\` buy <barang> <jumlah>`,
     `Jual: \`.market\` sell <barang> <jumlah>`,
+    `Berita: \`.market\` news`,
     `Aset: \`.aset\``
   );
+  return lines.join('\n');
+}
+
+function newsView(list) {
+  if (!list.length) {
+    return ['📰 *MARKET NEWS*', '', 'Belum ada berita pasar.'].join('\n');
+  }
+
+  const lines = ['📰 *MARKET NEWS*', ''];
+  for (const item of list) {
+    lines.push(`${item.emoji} *${item.label}* • ${item.age} lalu`);
+    if (item.commodities) lines.push(item.commodities);
+    lines.push(item.message, '');
+  }
+  lines.push('_Berita hanya informasi. Arah harga tetap ditentukan pasar._');
   return lines.join('\n');
 }
 
@@ -156,6 +173,7 @@ function sellView(result) {
 
 const BUY_WORDS = new Set(['buy', 'beli']);
 const SELL_WORDS = new Set(['sell', 'jual']);
+const NEWS_WORDS = new Set(['news', 'berita']);
 const LIST_WORDS = new Set(['', 'list', 'info']);
 
 const UNKNOWN = `❌ Komoditas tidak dikenal. Lihat daftarnya: \`.market\`.`;
@@ -190,6 +208,11 @@ export default {
       } catch (err) {
         return ctx.fail(err.message);
       }
+    }
+
+    if (NEWS_WORDS.has(sub)) {
+      const feed = await marketNewsService.feed();
+      return ctx.reply(newsView(feed));
     }
 
     if (!LIST_WORDS.has(sub)) {

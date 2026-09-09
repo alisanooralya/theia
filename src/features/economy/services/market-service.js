@@ -7,8 +7,9 @@
  * - Wallet: legacy `wallets.cash` -> current `rpg_wallets.coin`, with the
  *   standard users -> rpg_players -> rpg_wallets ensure chain. No new
  *   currency; the `cash` result/UI key now carries coin.
- * - News stripped: no `rollNews`/`newsPressure` (no news tables in 2.0).
- *   The engine defaults (bias 0 / swing 1) apply; economy EVENTS are kept.
+ * - News pressure rewired: `computeNext` accepts the active-news context
+ *   and feeds it through `newsPressure` (same as legacy); the news rows
+ *   themselves are maintained by the news service in its own transaction.
  * - No `transactions` ledger rows (no ledger system in 2.0).
  * Everything else — price math, avg-cost accounting, partial/full sell,
  * MAX_ORDER_QTY / MAX_TRADE_VALUE guards, history display — is identical.
@@ -34,6 +35,7 @@ import {
   readIndicators,
   readTrend,
 } from '../market-engine.js';
+import { newsPressure } from '../market-news-engine.js';
 
 const money = (value) => Number(value).toLocaleString('id-ID');
 
@@ -130,7 +132,7 @@ export function createMarketService({
       return { ...decorate(state), history };
     },
 
-    computeNext(states, tickIndex) {
+    computeNext(states, tickIndex, context = {}) {
       const activeEventIds = states
         .filter((s) => Number(s.event_ticks) > 0)
         .map((s) => s.event_id);
@@ -148,8 +150,13 @@ export function createMarketService({
           newEvents.push({ ...rolled.event, ticks: rolled.ticks });
       }
 
+      const activeNews = context.news ?? [];
       const next = states.map((state) => {
-        const options = {};
+        const pressure = newsPressure(activeNews, state.id, tickIndex);
+        const options = {
+          newsBias: pressure.bias,
+          newsSwing: pressure.swing,
+        };
         if (targets.includes(state.id)) {
           options.newEventId = rolled.event.id;
           options.newEventTicks = rolled.ticks;

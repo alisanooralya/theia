@@ -1,17 +1,21 @@
 /**
- * Economy 2.0 — Market scheduler extension (migrated from legacy).
+ * Economy 2.0 — Market scheduler extension (price tick + news layer).
  *
- * Hourly price ticks: checks every CHECK_INTERVAL_MS whether the hour
- * bucket rolled over and applies the tick (with catch-up after downtime).
- * Restart-safe: the `market_state` row lock means concurrent ticks
- * serialize and only one tick applies per bucket; the `running` guard
- * prevents overlapping runs inside this process.
+ * Single scheduler for Market. Each run:
+ *   1. advance Market prices (own transaction; pressure from active news)
+ *   2. maintain News rows — expire/spawn/skip (own transaction, isolated:
+ *      a news failure is logged and never rolls back the price tick)
+ *   3. claim + broadcast pending announcements (atomic PENDING -> SENT)
  *
- * Changes vs legacy: news announcement stripped (no news system in 2.0).
+ * Restart-safe: the `market_state` row lock serializes ticks (one tick per
+ * bucket, catch-up bounded); the `running` guard prevents overlap here.
  */
 import { marketModel } from '#features/economy/models/market.model.js';
+import { marketNewsModel } from '#features/economy/models/market-news.model.js';
 import { marketService } from '#features/economy/services/market-service.js';
+import { marketNewsService } from '#features/economy/services/market-news-service.js';
 import { CHECK_INTERVAL_MS } from '#features/economy/config/market-config.js';
+import { getSocket } from '#helpers/shutdown.js';
 import { logger } from '#helpers/logger.js';
 
 let timer = null;
@@ -19,8 +23,12 @@ let running = false;
 
 async function runTick(nowMs = Date.now()) {
   await marketService.ensureReady();
+
+  // Pressure snapshot for this tick (active rows only; expired ones weigh ~0).
+  const newsContext = { news: await marketNewsModel.active() };
   const result = await marketModel.advance(
-    (states, tickIndex) => marketService.computeNext(states, tickIndex),
+    (states, tickIndex) =>
+      marketService.computeNext(states, tickIndex, newsContext),
     nowMs
   );
 
@@ -29,6 +37,20 @@ async function runTick(nowMs = Date.now()) {
     return result;
   }
   if (!result.applied) return result;
+
+  // News maintenance is isolated: its failure must not break the tick.
+  let newsReport = null;
+  try {
+    newsReport = await marketNewsService.maintain(result.tick);
+    if (newsReport.created) {
+      logger.info(
+        { id: newsReport.created.id, type: newsReport.created.type },
+        '[Market] Berita baru dibuat'
+      );
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, '[Market] News maintenance gagal');
+  }
 
   const summary = (result.states ?? [])
     .map((state) => {
@@ -51,7 +73,19 @@ async function runTick(nowMs = Date.now()) {
     );
   }
 
-  return result;
+  try {
+    const announced = await marketNewsService.announcePending(getSocket());
+    if (announced.announced) {
+      logger.info(
+        { sent: announced.sent, failed: announced.failed },
+        `[Market] ${announced.announced} berita diumumkan`
+      );
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, '[Market] Pengumuman berita gagal');
+  }
+
+  return { ...result, news: newsReport };
 }
 
 export { runTick };

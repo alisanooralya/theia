@@ -45,12 +45,6 @@ describe('market config (migrated untouched)', () => {
     assert.equal(COMMODITY_ALIASES.kopi, 'coffee');
     assert.ok(PHASES.normal && PHASES.boom && PHASES.crash);
   });
-
-  it('has no news tables/config in the migrated path', async () => {
-    const fs = await import('node:fs');
-    assert.equal(fs.existsSync('src/features/economy/market-news.js'), false);
-    assert.equal(fs.existsSync('src/features/economy/models/market-news.model.js'), false);
-  });
 });
 
 describe('price engine (pure)', () => {
