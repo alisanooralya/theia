@@ -200,15 +200,26 @@ describe('domain runs (database)', { skip: !dbAvailable }, () => {
     await executeDomain({ sender: userId, args: [], reply: async (m) => replies.push(m) });
     assert.ok(replies[0].includes('Easy') && replies[0].includes('Hard'));
     const run = [];
+    const edits = [];
+    const fakeKey = { id: 'domain1' };
     await executeDomain({
       sender: userId,
+      jid: 'g@test',
       args: ['easy'],
-      reply: async (m) => run.push(m),
+      reply: async (m) => {
+        run.push(m);
+        return { key: fakeKey };
+      },
       fail: async (m) => {
         throw new Error(m);
       },
+      sock: {
+        sendMessage: async (jid, body) => edits.push([jid, body]),
+      },
     });
     assert.ok(run[0].includes('Slime King'));
-    assert.ok(run[1].includes('DOMAIN CLEAR') || run[1].includes('DOMAIN FAILED'));
+    assert.equal(edits.length, 1);
+    assert.equal(edits[0][1].edit, fakeKey);
+    assert.ok(edits[0][1].text.includes('DOMAIN CLEAR') || edits[0][1].text.includes('DOMAIN FAILED'));
   });
 });

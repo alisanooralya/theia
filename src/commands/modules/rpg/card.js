@@ -1,6 +1,10 @@
 import { F } from '#helpers/index.js';
 import { cardService } from '#features/rpg/services/card-service.js';
 
+function formatCooldown(ms) {
+  return `${Number((ms / 1000).toFixed(2))}s`;
+}
+
 export function formatMainCards(cards) {
   const lines = ['🎴 *YOUR CARDS*', '', '*Main Card:*'];
   if (!cards.length) {
@@ -8,13 +12,27 @@ export function formatMainCards(cards) {
     return lines.join('\n');
   }
   cards.forEach((card, i) => {
+    const active = card.definition.active;
+    const passive = card.definition.passive;
+    const activeStatus = !card.skills.active.unlocked
+      ? `(*unlocks* at lv.${active.unlockLevel})`
+      : card.skills.active.upgraded
+        ? '(*upgrade*)'
+        : '(*unlocked*)';
+    const passiveStatus = !card.skills.passive.unlocked
+      ? `(*unlocks* at lv.${passive.unlockLevel})`
+      : card.skills.passive.upgraded
+        ? '(*upgrade*)'
+        : '(*unlocked*)';
     lines.push(
       '',
       `#${i + 1} *${card.definition.name}* - Lv.${card.level}`,
       `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
       '',
-      `Active: ${card.skills.active.unlocked ? (card.skills.active.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`,
-      `Passive: ${card.skills.passive.unlocked ? (card.skills.passive.upgraded ? 'Upgraded' : 'Unlocked') : 'Locked'}`
+      `⚡ Active ${active.name} (cd: ${formatCooldown(active.cooldownMs)})`,
+      `${active.description} ${activeStatus}`,
+      `✨ Passive ${passive.name}`,
+      `${passive.description} ${passiveStatus}`
     );
   });
   return lines.join('\n');
@@ -27,11 +45,13 @@ export function formatSignCards(cards) {
     return lines.join('\n');
   }
   cards.forEach((card, i) => {
+    const passive = card.definition.passive;
     lines.push(
       '',
       `#${i + 1}. *${card.definition.name}* - Lv.${card.level}`,
       `${card.equipped ? 'Equipped' : 'Not Equipped'}`,
-      `Passive: ${card.signCompatible ? 'Active' : 'Inactive'}`
+      `✨ Passive ${passive.name}`,
+      `${passive.description} (${card.signCompatible ? '*active*' : '*inactive*'})`
     );
     if (card.equipped && !card.signCompatible) {
       lines.push('Reason: Incompatible with equipped Main Card');

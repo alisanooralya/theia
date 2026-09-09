@@ -7,19 +7,25 @@ function formatCooldown(ms) {
 }
 
 /**
- * Skill block lines: name, status, config description, cooldown for
- * actives. Descriptions always show so players can preview locked skills.
+ * Skill block lines: name (+ cooldown for actives), config description,
+ * then unlock status. Descriptions always show so players can preview
+ * locked skills.
  */
 function skillLines(icon, label, skill, { cooldownMs = null } = {}) {
-  const lines = [`${icon} ${label} ${skill.name}`];
-  if (!skill.unlocked) {
+  const cd = cooldownMs !== null ? ` (cd: ${formatCooldown(cooldownMs)})` : '';
+  const lines = [`${icon} ${label} ${skill.name}${cd}`];
+  if (skill.description) {
+    const status = !skill.unlocked
+      ? `(*unlocks* at lv.${skill.unlockLevel})`
+      : skill.upgraded
+        ? '(*upgrade*)'
+        : '(*unlocked*)';
+    lines.push(`${skill.description} ${status}`);
+  } else if (!skill.unlocked) {
     lines.push(`🔒 Unlocks at Lv.${skill.unlockLevel}`);
   } else {
     lines.push(`🟢 Unlocked${skill.upgraded ? ' (Upgraded)' : ''}`);
   }
-  if (skill.description) lines.push(skill.description);
-  if (cooldownMs !== null)
-    lines.push(`⏱️ Cooldown: ${formatCooldown(cooldownMs)}`, '');
   return lines;
 }
 

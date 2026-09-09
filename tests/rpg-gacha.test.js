@@ -133,6 +133,7 @@ describe('gacha command parsing and UI', () => {
 
   it('28. animation delays once and result edits it in place', async () => {
     let delays = 0;
+    let cooldowns = 0;
     const replies = [];
     const edits = [];
     const fakeKey = { id: 'anim1' };
@@ -143,6 +144,9 @@ describe('gacha command parsing and UI', () => {
       reply: async (msg) => {
         replies.push(msg);
         return { key: fakeKey };
+      },
+      applyCooldown: async () => {
+        cooldowns += 1;
       },
       sock: {
         sendMessage: async (jid, body) => edits.push([jid, body]),
@@ -163,6 +167,7 @@ describe('gacha command parsing and UI', () => {
       },
     });
     assert.equal(delays, 1);
+    assert.equal(cooldowns, 1);
     assert.equal(replies.length, 1);
     assert.ok(replies[0].includes('Sedang melakukan gacha'));
     assert.equal(edits.length, 1);
@@ -179,6 +184,7 @@ describe('gacha command parsing and UI', () => {
       jid: 'g@test',
       args: ['1'],
       reply: async (msg) => replies.push(msg),
+      applyCooldown: async () => {},
       fail: async (msg) => {
         throw new Error(msg);
       },

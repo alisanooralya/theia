@@ -84,8 +84,9 @@ describe('card command (database)', { skip: !dbAvailable }, () => {
     assert.ok(r3[0].includes('Lena'));
     assert.ok(r3[0].includes('Equipped'));
     assert.ok(r3[0].includes('Not Equipped'));
-    assert.ok(r3[0].includes('Active: Unlocked'));
-    assert.ok(r3[0].includes('Passive: Locked'));
+    assert.ok(r3[0].includes('(*unlocked*)'));
+    assert.ok(r3[0].includes('(*unlocks* at lv.50)'));
+    assert.ok(r3[0].includes('(cd: 8s)'));
   });
 
   it('3-6. equip/unequip main via command, single equipped', async () => {
@@ -162,7 +163,7 @@ describe('card command (database)', { skip: !dbAvailable }, () => {
     assert.equal(equipped.signCompatible, false);
     const { ctx: c2, replies: r2 } = stubCtx(userId, ['sign']);
     await executeCard(c2);
-    assert.ok(r2[0].includes('Passive: Inactive'));
+    assert.ok(r2[0].includes('*inactive*'));
     assert.ok(r2[0].includes('Incompatible'));
   });
 

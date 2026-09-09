@@ -120,18 +120,16 @@ describe('profile formatting', () => {
   it('renders card layout with main + compatible sign', async () => {
     const t = await text({ main: mainCard(), sign: signCard() });
     assert.ok(t.includes('*Girgas* - Lv.25'));
-    assert.ok(t.includes('⚡ Active Lollipop Crash'));
-    assert.ok(t.includes('🟢 Unlocked'));
-    assert.ok(t.includes(MAIN_CARDS.girgas.active.description));
-    assert.ok(t.includes('⏱️ Cooldown: 8s'));
+    assert.ok(t.includes('⚡ Active Lollipop Crash (cd: 8s)'));
+    assert.ok(t.includes(`${MAIN_CARDS.girgas.active.description} (*unlocked*)`));
     assert.ok(t.includes('✨ Passive Sugar Rush'));
-    assert.ok(t.includes('🔒 Unlocks at Lv.50'));
-    assert.ok(t.includes(MAIN_CARDS.girgas.passive.description));
+    assert.ok(t.includes(`${MAIN_CARDS.girgas.passive.description} (*unlocks* at lv.50)`));
     assert.ok(t.includes('*Girgas Sign* - Lv.10'));
     assert.ok(t.includes('🟢 Passive: Active (Lollipop Drive)'));
     assert.ok(t.includes(SIGN_CARDS.girgas_sign.passive.description));
     // Passive blocks carry no cooldown.
     assert.ok(!t.includes('Cooldown: null'));
+    assert.ok(!t.includes('(cd: null)'));
   });
 
   it('renders full stats when no main card is equipped', async () => {
@@ -201,8 +199,8 @@ describe('profile formatting', () => {
         },
       }),
     });
-    assert.ok(locked.includes('Lv.25'));
-    assert.ok(locked.includes('Lv.50'));
+    assert.ok(locked.includes('(*unlocks* at lv.25)'));
+    assert.ok(locked.includes('(*unlocks* at lv.50)'));
     const maxed = await text({
       main: mainCard({
         level: 100,
@@ -212,7 +210,7 @@ describe('profile formatting', () => {
         },
       }),
     });
-    assert.ok(maxed.includes('Upgraded'));
+    assert.ok(maxed.includes('(*upgrade*)'));
   });
 
   it('renders HP 0 without healing markers', async () => {
