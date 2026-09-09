@@ -1,10 +1,3 @@
-/**
- * Economy 2.0 — `.market` command (migrated from legacy, same UI).
- *
- * Thin layer over marketService. Changes vs legacy: wallet coin via the
- * current wallet store. Views and trade flows are otherwise identical;
- * `.market` list output stays news-free, news lives under `.market news`.
- */
 import { marketService } from '#features/economy/services/market-service.js';
 import { marketNewsService } from '#features/economy/services/market-news-service.js';
 import { marketModel } from '#features/economy/models/market.model.js';
@@ -70,11 +63,11 @@ function marketView(list, coin) {
   lines.push(`⏳ Update harga: ${countdown}`);
   lines.push(
     '',
-    `Detail: \`.market\` <barang>`,
-    `Beli: \`.market\` buy <barang> <jumlah>`,
-    `Jual: \`.market\` sell <barang> <jumlah>`,
-    `Berita: \`.market\` news`,
-    `Aset: \`.aset\``
+    'Detail: `.market` <barang>',
+    'Beli: `.market` buy <barang> <jumlah>',
+    'Jual: `.market` sell <barang> <jumlah>',
+    'Berita: `.market` news',
+    'Aset: `.aset`'
   );
   return lines.join('\n');
 }

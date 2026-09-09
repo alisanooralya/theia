@@ -107,7 +107,8 @@ class RpgCoinModel {
       if (!balances.has(fromId) || !balances.has(toId)) {
         throw new RangeError('Wallet tidak ditemukan');
       }
-      if (balances.get(fromId) < amount) throw new RangeError('Coin tidak cukup');
+      if (balances.get(fromId) < amount)
+        throw new RangeError('Coin tidak cukup');
       const senderRows = await tx`
         UPDATE rpg_wallets
         SET coin = coin - ${amount}, updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
@@ -120,7 +121,10 @@ class RpgCoinModel {
         WHERE user_id = ${toId}
         RETURNING coin
       `;
-      return { senderCoin: senderRows[0].coin, receiverCoin: receiverRows[0].coin };
+      return {
+        senderCoin: senderRows[0].coin,
+        receiverCoin: receiverRows[0].coin,
+      };
     });
   }
 

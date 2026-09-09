@@ -2,7 +2,6 @@ import { F } from '#helpers/index.js';
 import { phoneToJid } from '#helpers/identifier.js';
 import { bankService } from '#features/economy/services/bank-service.js';
 
-/** Target resolution mirrors group commands: mention > reply > phone > self. */
 function resolveTarget(ctx) {
   return (
     ctx.mentions?.[0] ??

@@ -4,7 +4,6 @@ import { transferService } from '#features/economy/services/transfer-service.js'
 
 const USAGE = 'Usage: `.transfer @tag <jumlah>`';
 
-/** Target resolution mirrors group commands: mention > reply > phone. */
 function resolveTarget(ctx) {
   return (
     ctx.mentions?.[0] ??
@@ -28,12 +27,18 @@ export default {
     try {
       const target = resolveTarget(ctx);
       if (!target) ctx.fail(USAGE);
-      if (target === ctx.sender) ctx.fail('❌ Tidak bisa transfer ke diri sendiri.');
-      // First pure-digit arg, so `@tag` (mention or phone) can sit anywhere.
+      if (target === ctx.sender)
+        ctx.fail('❌ Tidak bisa transfer ke diri sendiri.');
+
       const rawAmount = ctx.args.find((a) => /^\d+$/.test(a));
-      const result = await transferService.transfer(ctx.sender, target, rawAmount, {
-        pushName: ctx.pushName,
-      });
+      const result = await transferService.transfer(
+        ctx.sender,
+        target,
+        rawAmount,
+        {
+          pushName: ctx.pushName,
+        }
+      );
       await ctx.reply(
         [
           `✅ Transfer *${F.formatNumber(result.amount)}* ke @${target.split('@')[0]} berhasil!`,

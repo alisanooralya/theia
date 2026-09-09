@@ -189,7 +189,8 @@ export function createMarketService({
         const walletRows = await t`
           SELECT coin FROM rpg_wallets WHERE user_id = ${jid} FOR UPDATE
         `;
-        if (!walletRows[0]) throw new Error('Wallet belum ada. Coba `.balance`.');
+        if (!walletRows[0])
+          throw new Error('Wallet belum ada. Coba `.balance`.');
         const cash = Number(walletRows[0].coin) || 0;
 
         const market = await marketRepo.lockPrice(commodityId, t);
@@ -255,7 +256,8 @@ export function createMarketService({
         const walletRows = await t`
           SELECT coin FROM rpg_wallets WHERE user_id = ${jid} FOR UPDATE
         `;
-        if (!walletRows[0]) throw new Error('Wallet belum ada. Coba `.balance`.');
+        if (!walletRows[0])
+          throw new Error('Wallet belum ada. Coba `.balance`.');
         const cash = Number(walletRows[0].coin) || 0;
 
         const market = await marketRepo.lockPrice(commodityId, t);
@@ -278,7 +280,8 @@ export function createMarketService({
 
         const avgCost = prevQty > 0 ? prevCost / prevQty : 0;
         const newQty = prevQty - quantity;
-        const costOut = newQty === 0 ? prevCost : Math.round(avgCost * quantity);
+        const costOut =
+          newQty === 0 ? prevCost : Math.round(avgCost * quantity);
         const newCost = Math.max(0, prevCost - costOut);
         const profit = gross - costOut;
 
@@ -338,7 +341,8 @@ export function createMarketService({
           cost: row.total_cost,
           value,
           profit,
-          profitPercent: row.total_cost > 0 ? (profit / row.total_cost) * 100 : 0,
+          profitPercent:
+            row.total_cost > 0 ? (profit / row.total_cost) * 100 : 0,
           realized: row.realized_pl,
         };
       });

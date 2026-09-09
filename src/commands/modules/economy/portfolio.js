@@ -1,7 +1,3 @@
-/**
- * Economy 2.0 — `.portfolio` command (migrated from legacy, same UI).
- * Thin layer over marketService.
- */
 import { marketService } from '#features/economy/services/market-service.js';
 import { userModel } from '#storage/models/user.js';
 
