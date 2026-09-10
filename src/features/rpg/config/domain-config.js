@@ -59,9 +59,9 @@ export const DOMAINS = Object.freeze({
     boss: boss({
       id: 'slime_king',
       name: 'Slime King',
-      maxHp: 100,
-      atk: 8,
-      def: 2,
+      maxHp: 130,
+      atk: 10,
+      def: 3,
     }),
     rewards: {
       exp: { min: 100, max: 150 },
@@ -77,9 +77,9 @@ export const DOMAINS = Object.freeze({
     boss: boss({
       id: 'stone_golem',
       name: 'Stone Golem',
-      maxHp: 5000,
-      atk: 40,
-      def: 20,
+      maxHp: 6500,
+      atk: 50,
+      def: 26,
     }),
     rewards: {
       exp: { min: 300, max: 500 },
