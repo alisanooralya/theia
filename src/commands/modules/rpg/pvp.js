@@ -11,56 +11,19 @@ import { logger } from '#helpers/logger.js';
 
 const HP_BAR_LEN = 10;
 
-async function displayName(jid) {
-  const u = await userModel.findById(jid);
-  return u?.push_name || jid.split('@')[0];
-}
-
 function hpBar(hp, max) {
   const ratio = max > 0 ? Math.max(0, Math.min(1, hp / max)) : 0;
   const filled = Math.round(ratio * HP_BAR_LEN);
   return '█'.repeat(filled) + '░'.repeat(HP_BAR_LEN - filled);
 }
 
-function padName(name, width) {
-  if (name.length >= width) return name.slice(0, width);
-  return name + ' '.repeat(width - name.length);
-}
-
-function buildStartText(aName, aNum, aHp, aMax, dName, dNum, dHp, dMax) {
-  return [
-    `╭────── ⚔️ DUEL ──────╮`,
-    `│`,
-    `│ 👤 ${aName} @${aNum}`,
-    `│ ❤️ ${F.formatNumber(aHp)} / ${F.formatNumber(aMax)}  ${hpBar(aHp, aMax)}`,
-    `│`,
-    `│        VS`,
-    `│`,
-    `│ 👤 ${dName} @${dNum}`,
-    `│ ❤️ ${F.formatNumber(dHp)} / ${F.formatNumber(dMax)}  ${hpBar(dHp, dMax)}`,
-    `│`,
-    `│ ⚔️ Battle starting...`,
-    `╰─────────────────────╯`,
-  ].join('\n');
-}
-
-function buildSnapshotText(
-  aName,
-  aNum,
-  aHp,
-  dName,
-  dNum,
-  dHp,
-  round,
-  total,
-  snap
-) {
+function buildSnapshotText(aNum, aHp, dNum, dHp, round, total, snap) {
   const lines = [
     `╭────── ⚔️ DUEL ──────╮`,
     `│ 🔁 Ronde ${round}/${total}`,
     `│`,
-    `│ 👤 ${padName(aName, 10)} @${aNum} ❤️ ${F.formatNumber(aHp)}`,
-    `│ 👤 ${padName(dName, 10)} @${dNum} ❤️ ${F.formatNumber(dHp)}`,
+    `│ 👤 @${aNum} ❤️ ${F.formatNumber(aHp)}`,
+    `│ 👤 @${dNum} ❤️ ${F.formatNumber(dHp)}`,
     `│`,
   ];
   if (snap) lines.push(`│ ${snap}`);
@@ -68,26 +31,24 @@ function buildSnapshotText(
   return lines.join('\n');
 }
 
-function buildResultText(result, aName, aNum, dName, dNum) {
+function buildResultText(result, aNum, dNum) {
   const { challengerHp, targetHp, draw, winner } = result;
   const lines = [
     `╭────── 🏆 DUEL RESULT ──────╮`,
     `│`,
-    `│ 👤 ${padName(aName, 10)} @${aNum} ❤️ ${F.formatNumber(Math.max(0, challengerHp))}`,
-    `│ 👤 ${padName(dName, 10)} @${dNum} ❤️ ${F.formatNumber(Math.max(0, targetHp))}`,
+    `│ 👤 @${aNum} ❤️ ${F.formatNumber(Math.max(0, challengerHp))}`,
+    `│ 👤 @${dNum} ❤️ ${F.formatNumber(Math.max(0, targetHp))}`,
     `│`,
   ];
 
   if (draw) {
     lines.push(`│ ⚖️ Battle berakhir seri!`);
   } else {
-    const winName = winner === result.challenger ? aName : dName;
-    const loseName = winner === result.challenger ? dName : aName;
     const winNum = winner === result.challenger ? aNum : dNum;
     const loseNum = winner === result.challenger ? dNum : aNum;
     lines.push(
-      `│ 🏆 ${winName} @${winNum} menang! 🪙 +${F.formatNumber(result.coin)} Coin`,
-      `│ 💀 ${loseName} @${loseNum} kalah 🪙 -${F.formatNumber(result.loserLoss)} Coin`,
+      `│ 🏆 @${winNum} menang! 🪙 +${F.formatNumber(result.coin)} Coin`,
+      `│ 💀 @${loseNum} kalah 🪙 -${F.formatNumber(result.loserLoss)} Coin`,
       `│ ⭐ EXP: +${F.formatNumber(result.exp.win)} / +${F.formatNumber(result.exp.lose)}`,
       `│ ⚔️ ${result.rounds} ronde`
     );
@@ -140,10 +101,6 @@ export async function runPvpBattle(ctx, session) {
   const challenger = session.challenger;
   const target = session.target;
 
-  const [aName, dName] = await Promise.all([
-    displayName(challenger),
-    displayName(target),
-  ]);
   const aNum = challenger.split('@')[0];
   const dNum = target.split('@')[0];
   const mentions = [challenger, target];
@@ -175,19 +132,7 @@ export async function runPvpBattle(ctx, session) {
     targetMax: result.targetHp,
   };
 
-  const battleMsg = await ctx.send(
-    buildStartText(
-      aName,
-      aNum,
-      start.challenger,
-      start.challengerMax,
-      dName,
-      dNum,
-      start.target,
-      start.targetMax
-    ),
-    { mentions }
-  );
+  const battleMsg = await ctx.send('⚔️ Battle starting...');
   const msgKey = battleMsg?.key;
 
   const edit = async (text) => {
@@ -209,10 +154,8 @@ export async function runPvpBattle(ctx, session) {
     };
     await edit(
       buildSnapshotText(
-        aName,
         aNum,
         hp.cHp,
-        dName,
         dNum,
         hp.tHp,
         round,
@@ -223,7 +166,7 @@ export async function runPvpBattle(ctx, session) {
     await sleep(PVP_ROUND_DELAY_MS);
   }
 
-  await edit(buildResultText(result, aName, aNum, dName, dNum));
+  await edit(buildResultText(result, aNum, dNum));
 }
 
 export default {
