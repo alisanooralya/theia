@@ -2,7 +2,7 @@ import { userModel } from '#storage/models/user.js';
 import { pvpService } from '#features/rpg/services/pvp-service.js';
 import {
   PVP_CONFIG,
-  PVP_SNAPSHOT_DELAY_MS,
+  PVP_ROUND_DELAY_MS,
 } from '#features/rpg/config/pvp-config.js';
 import { phoneToJid } from '#helpers/identifier.js';
 import { F } from '#helpers/index.js';
@@ -27,16 +27,16 @@ function padName(name, width) {
   return name + ' '.repeat(width - name.length);
 }
 
-function buildStartText(aName, aHp, aMax, dName, dHp, dMax) {
+function buildStartText(aName, aNum, aHp, aMax, dName, dNum, dHp, dMax) {
   return [
     `╭────── ⚔️ DUEL ──────╮`,
     `│`,
-    `│ 👤 ${aName}`,
+    `│ 👤 ${aName} @${aNum}`,
     `│ ❤️ ${F.formatNumber(aHp)} / ${F.formatNumber(aMax)}  ${hpBar(aHp, aMax)}`,
     `│`,
     `│        VS`,
     `│`,
-    `│ 👤 ${dName}`,
+    `│ 👤 ${dName} @${dNum}`,
     `│ ❤️ ${F.formatNumber(dHp)} / ${F.formatNumber(dMax)}  ${hpBar(dHp, dMax)}`,
     `│`,
     `│ ⚔️ Battle starting...`,
@@ -44,12 +44,13 @@ function buildStartText(aName, aHp, aMax, dName, dHp, dMax) {
   ].join('\n');
 }
 
-function buildSnapshotText(aName, aHp, dName, dHp, snap) {
+function buildSnapshotText(aName, aNum, aHp, dName, dNum, dHp, round, total, snap) {
   const lines = [
     `╭────── ⚔️ DUEL ──────╮`,
+    `│ 🔁 Ronde ${round}/${total}`,
     `│`,
-    `│ 👤 ${padName(aName, 10)} ❤️ ${F.formatNumber(aHp)}`,
-    `│ 👤 ${padName(dName, 10)} ❤️ ${F.formatNumber(dHp)}`,
+    `│ 👤 ${padName(aName, 10)} @${aNum} ❤️ ${F.formatNumber(aHp)}`,
+    `│ 👤 ${padName(dName, 10)} @${dNum} ❤️ ${F.formatNumber(dHp)}`,
     `│`,
   ];
   if (snap) lines.push(`│ ${snap}`);
@@ -57,13 +58,13 @@ function buildSnapshotText(aName, aHp, dName, dHp, snap) {
   return lines.join('\n');
 }
 
-function buildResultText(result, aName, dName) {
+function buildResultText(result, aName, aNum, dName, dNum) {
   const { challengerHp, targetHp, draw, winner } = result;
   const lines = [
     `╭────── 🏆 DUEL RESULT ──────╮`,
     `│`,
-    `│ 👤 ${padName(aName, 10)} ❤️ ${F.formatNumber(Math.max(0, challengerHp))}`,
-    `│ 👤 ${padName(dName, 10)} ❤️ ${F.formatNumber(Math.max(0, targetHp))}`,
+    `│ 👤 ${padName(aName, 10)} @${aNum} ❤️ ${F.formatNumber(Math.max(0, challengerHp))}`,
+    `│ 👤 ${padName(dName, 10)} @${dNum} ❤️ ${F.formatNumber(Math.max(0, targetHp))}`,
     `│`,
   ];
 
@@ -72,9 +73,11 @@ function buildResultText(result, aName, dName) {
   } else {
     const winName = winner === result.challenger ? aName : dName;
     const loseName = winner === result.challenger ? dName : aName;
+    const winNum = winner === result.challenger ? aNum : dNum;
+    const loseNum = winner === result.challenger ? dNum : aNum;
     lines.push(
-      `│ 🏆 ${winName} menang! 🪙 +${F.formatNumber(result.coin)} Coin`,
-      `│ 💀 ${loseName} kalah 🪙 -${F.formatNumber(result.loserLoss)} Coin`,
+      `│ 🏆 ${winName} @${winNum} menang! 🪙 +${F.formatNumber(result.coin)} Coin`,
+      `│ 💀 ${loseName} @${loseNum} kalah 🪙 -${F.formatNumber(result.loserLoss)} Coin`,
       `│ ⭐ EXP: +${F.formatNumber(result.exp.win)} / +${F.formatNumber(result.exp.lose)}`,
       `│ ⚔️ ${result.rounds} ronde`
     );
@@ -133,10 +136,10 @@ export async function runPvpBattle(ctx, session) {
     displayName(challenger),
     displayName(target),
   ]);
+  const aNum = challenger.split('@')[0];
+  const dNum = target.split('@')[0];
   const mentions = [challenger, target];
 
-  // Resolve the battle first (instant); every number rendered below comes
-  // from the same result object, so display and simulation cannot disagree.
   let result;
   try {
     result = await pvpService.run(session.id);
@@ -167,9 +170,11 @@ export async function runPvpBattle(ctx, session) {
   const battleMsg = await ctx.send(
     buildStartText(
       aName,
+      aNum,
       start.challenger,
       start.challengerMax,
       dName,
+      dNum,
       start.target,
       start.targetMax
     ),
@@ -186,20 +191,31 @@ export async function runPvpBattle(ctx, session) {
     }
   };
 
-  // Round snapshots at the legacy pacing points (3 / 6 / 9).
   const timeline = hpTimeline(result.log, start.challenger, start.target);
-  for (const round of [3, 6, 9]) {
-    if (round > result.rounds) break;
+  const playedRounds = [...timeline.keys()].sort((a, b) => a - b);
+  for (const round of playedRounds) {
     const snap = roundSnapshot(result.log, round);
     const hp = timeline.get(round) ?? {
       cHp: result.challengerHp,
       tHp: result.targetHp,
     };
-    await edit(buildSnapshotText(aName, hp.cHp, dName, hp.tHp, snap));
-    await sleep(PVP_SNAPSHOT_DELAY_MS);
+    await edit(
+      buildSnapshotText(
+        aName,
+        aNum,
+        hp.cHp,
+        dName,
+        dNum,
+        hp.tHp,
+        round,
+        playedRounds[playedRounds.length - 1],
+        snap
+      )
+    );
+    await sleep(PVP_ROUND_DELAY_MS);
   }
 
-  await edit(buildResultText(result, aName, dName));
+  await edit(buildResultText(result, aName, aNum, dName, dNum));
 }
 
 export default {
@@ -231,7 +247,7 @@ export default {
     try {
       session = await pvpService.challenge(ctx.sender, targetJid);
     } catch (err) {
-      return ctx.fail(`❌ ${err.message}`);
+      return ctx.fail(err.message);
     }
 
     const confirmMsg = await ctx.reply(

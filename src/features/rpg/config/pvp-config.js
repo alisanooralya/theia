@@ -13,3 +13,4 @@ export const PVP_CONFIG = Object.freeze({
 });
 
 export const PVP_SNAPSHOT_DELAY_MS = 2_700;
+export const PVP_ROUND_DELAY_MS = 1_000;
