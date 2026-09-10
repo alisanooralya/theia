@@ -1,14 +1,5 @@
-/**
- * RPG 2.0 — `.pvp` command (migrated from legacy `.battle`, same UI/flow).
- *
- * Main command is `.pvp`; legacy aliases (`battle`, `fight`, `lawan`,
- * `duel`) are kept for compatibility. Challenge -> target replies
- * yes/ya on the confirm message (handled by the pvp-confirm extension)
- * -> auto-simulated duel via the Battle Engine -> result + rewards.
- */
 import { userModel } from '#storage/models/user.js';
 import { pvpService } from '#features/rpg/services/pvp-service.js';
-import { finalStatService } from '#features/rpg/services/final-stat-service.js';
 import {
   PVP_CONFIG,
   PVP_SNAPSHOT_DELAY_MS,
@@ -93,7 +84,6 @@ function buildResultText(result, aName, dName) {
   return lines.join('\n');
 }
 
-/** Notable event line for a round snapshot (legacy style). */
 function roundSnapshot(log, round) {
   const entries = log.filter((e) => e.round === round);
   const crit = entries.find((e) => e.isCrit);
@@ -105,7 +95,6 @@ function roundSnapshot(log, round) {
   return biggest ? `⚔️ Hit -${F.formatNumber(biggest.damage)}` : null;
 }
 
-/** HP per side after each round, walked from the engine log. */
 function hpTimeline(log, startCHp, startTHp) {
   const byRound = new Map();
   let cHp = startCHp;
@@ -120,30 +109,53 @@ function hpTimeline(log, startCHp, startTHp) {
   return byRound;
 }
 
-/**
- * Run the duel UI: start message -> round snapshots -> result edit.
- * Shared by the command (after confirm) and the pvp-confirm extension.
- */
 export async function runPvpBattle(ctx, session) {
   const challenger = session.challenger;
   const target = session.target;
 
-  const [aName, dName, cFinal, tFinal] = await Promise.all([
+  const [aName, dName] = await Promise.all([
     displayName(challenger),
     displayName(target),
-    finalStatService.getFinalStats(challenger),
-    finalStatService.getFinalStats(target),
   ]);
   const mentions = [challenger, target];
+
+  // Resolve the battle first (instant); every number rendered below comes
+  // from the same result object, so display and simulation cannot disagree.
+  let result;
+  try {
+    result = await pvpService.run(session.id);
+  } catch (err) {
+    await pvpService.cancel(session.id);
+    await ctx.send(
+      `╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle dibatalkan\n│ ${err.message}\n╰─────────────────────╯`,
+      { mentions }
+    );
+    return;
+  }
+
+  if (!result) {
+    await ctx.send(
+      `╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle sudah tidak aktif\n╰─────────────────────╯`,
+      { mentions }
+    );
+    return;
+  }
+
+  const start = result.startHp ?? {
+    challenger: result.challengerHp,
+    target: result.targetHp,
+    challengerMax: result.challengerHp,
+    targetMax: result.targetHp,
+  };
 
   const battleMsg = await ctx.send(
     buildStartText(
       aName,
-      cFinal.currentHp,
-      cFinal.maxHp,
+      start.challenger,
+      start.challengerMax,
       dName,
-      tFinal.currentHp,
-      tFinal.maxHp
+      start.target,
+      start.targetMax
     ),
     { mentions }
   );
@@ -158,26 +170,8 @@ export async function runPvpBattle(ctx, session) {
     }
   };
 
-  let result;
-  try {
-    result = await pvpService.run(session.id);
-  } catch (err) {
-    await pvpService.cancel(session.id);
-    await edit(
-      `╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle dibatalkan\n│ ${err.message}\n╰─────────────────────╯`
-    );
-    return;
-  }
-
-  if (!result) {
-    await edit(
-      `╭────── ⚔️ DUEL ──────╮\n│\n│ ❌ Battle sudah tidak aktif\n╰─────────────────────╯`
-    );
-    return;
-  }
-
   // Round snapshots at the legacy pacing points (3 / 6 / 9).
-  const timeline = hpTimeline(result.log, cFinal.currentHp, tFinal.currentHp);
+  const timeline = hpTimeline(result.log, start.challenger, start.target);
   for (const round of [3, 6, 9]) {
     if (round > result.rounds) break;
     const snap = roundSnapshot(result.log, round);
@@ -233,7 +227,10 @@ export default {
       session.id,
       confirmMsg?.key?.id ?? ''
     );
-    if (!bound) await pvpService.cancel(session.id);
+    if (!bound) {
+      await pvpService.cancel(session.id);
+      return ctx.fail('❌ Gagal menyiapkan konfirmasi PvP, coba lagi.');
+    }
 
     return confirmMsg;
   },

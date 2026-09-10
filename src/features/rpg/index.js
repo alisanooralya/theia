@@ -103,6 +103,7 @@ export {
   calculateDamage,
   cooldownRounds,
   skillReadyRound,
+  autoSkillAction,
   playerTurn,
   enemyTurn,
   runRound,

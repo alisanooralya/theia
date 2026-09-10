@@ -137,6 +137,17 @@ export function skillReadyRound(usedRound, cooldownSec) {
   return usedRound + cooldownRounds(cooldownSec);
 }
 
+export function autoSkillAction(state) {
+  const skills = state?.playerSkills;
+  if (!skills || skills.unlocked === false) return 'basic_attack';
+  if (!Number.isFinite(skills.cooldownSec) || !(skills.cooldownSec > 0)) {
+    return 'basic_attack';
+  }
+  return (state.player.cooldowns.skill ?? 1) <= state.round
+    ? 'skill'
+    : 'basic_attack';
+}
+
 function collectMods(side, trigger) {
   const mods = {
     damageMult: 1,

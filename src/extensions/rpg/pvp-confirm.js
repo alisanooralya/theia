@@ -40,6 +40,13 @@ export default {
 
     if (isNo) {
       await pvpService.cancel(session.id);
+      const ctx = buildContext(parsed, sock);
+      await ctx
+        .send(
+          `⚔️ *PvP ditolak*\n\n@${session.target.split('@')[0]} menolak tantangan @${session.challenger.split('@')[0]}.`,
+          { mentions: [session.challenger, session.target] }
+        )
+        .catch((err) => logger.warn({ err }, '[PvP] decline notice failed'));
       return false;
     }
 

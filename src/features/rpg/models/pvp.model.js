@@ -12,13 +12,35 @@ class PvpModel {
     { confirmMsgId = null, expiresAt = 0 } = {},
     client = sql
   ) {
+    // One live battle per player regardless of role. The partial unique
+    // indexes only cover same-role duplicates (challenger↔challenger,
+    // target↔target), so A→B + C→A would both insert. Serialize creators
+    // per participant with advisory locks (stable order: no deadlock) and
+    // re-check both columns before inserting.
+    const txRunner = client?.begin ? client : sql;
     try {
-      const rows = await client`
-        INSERT INTO rpg_pvp_sessions (id, challenger, target, status, confirm_msg_id, expires_at)
-        VALUES (${makeSessionId()}, ${challenger}, ${target}, 'pending', ${confirmMsgId || null}, ${expiresAt})
-        RETURNING *
-      `;
-      return rows[0] ?? null;
+      return await txRunner.begin(async (tx) => {
+        const [first, second] =
+          challenger < target
+            ? [challenger, target]
+            : [target, challenger];
+        await tx`SELECT pg_advisory_xact_lock(hashtext(${'pvp:' + first}))`;
+        await tx`SELECT pg_advisory_xact_lock(hashtext(${'pvp:' + second}))`;
+        const busy = await tx`
+          SELECT 1 FROM rpg_pvp_sessions
+          WHERE status IN ('pending','accepted','running')
+            AND (challenger = ${challenger} OR target = ${challenger}
+              OR challenger = ${target} OR target = ${target})
+          LIMIT 1
+        `;
+        if (busy.length) return null;
+        const rows = await tx`
+          INSERT INTO rpg_pvp_sessions (id, challenger, target, status, confirm_msg_id, expires_at)
+          VALUES (${makeSessionId()}, ${challenger}, ${target}, 'pending', ${confirmMsgId || null}, ${expiresAt})
+          RETURNING *
+        `;
+        return rows[0] ?? null;
+      });
     } catch (err) {
       if (err?.code === '23505') return null;
       throw err;
@@ -44,6 +66,14 @@ class PvpModel {
       SET status = 'expired', updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
       WHERE status = 'pending' AND expires_at > 0 AND expires_at <= ${nowSec}
     `;
+    // Accepted but never started (e.g. crash between accept and run):
+    // started_at stays 0 so the running-rule below would never catch it.
+    await client`
+      UPDATE rpg_pvp_sessions
+      SET status = 'expired', updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      WHERE status = 'accepted' AND started_at = 0
+        AND expires_at > 0 AND expires_at <= ${nowSec}
+    `;
     if (staleRunningSec > 0) {
       await client`
         UPDATE rpg_pvp_sessions
@@ -54,10 +84,20 @@ class PvpModel {
     }
   }
 
-  async accept(id, nowSec = Math.floor(Date.now() / 1000), client = sql) {
+  async accept(
+    id,
+    nowSec = Math.floor(Date.now() / 1000),
+    client = sql,
+    runGraceSec = 180
+  ) {
+    // Refresh expires_at so the accepted session cannot be reaped between
+    // accept and start; accepted-never-started rows still expire via
+    // expireStale once the refreshed deadline passes.
     const rows = await client`
       UPDATE rpg_pvp_sessions
-      SET status = 'accepted', updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
+      SET status = 'accepted',
+          expires_at = ${nowSec + runGraceSec},
+          updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
       WHERE id = ${id} AND status = 'pending'
         AND (expires_at = 0 OR expires_at > ${nowSec})
       RETURNING *
@@ -71,7 +111,7 @@ class PvpModel {
       SET status = 'running',
           started_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT,
           updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
-      WHERE id = ${id} AND status IN ('pending','accepted')
+      WHERE id = ${id} AND status = 'accepted'
       RETURNING *
     `;
     return rows[0] ?? null;
@@ -90,7 +130,7 @@ class PvpModel {
       UPDATE rpg_pvp_sessions
       SET status = 'finished', result = ${JSON.stringify(result)},
           updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
-      WHERE id = ${id} AND status IN ('accepted','running')
+      WHERE id = ${id} AND status = 'running'
       RETURNING *
     `;
     return rows[0] ?? null;

@@ -6,6 +6,7 @@ import { pvpModel } from '../models/pvp.model.js';
 import { finalStatService } from './final-stat-service.js';
 import { createCardService } from './card-service.js';
 import {
+  autoSkillAction,
   battleSkillsFromEffects,
   createBattle,
   simulateBattle,
@@ -95,20 +96,16 @@ export function createPvpService({
     return pvpRepo.find(id);
   }
 
-  async function accept(confirmMsgId, responderId) {
-    const session = await pvpRepo.findByConfirmMsgId(confirmMsgId);
-    if (!session) return null;
-    if (session.target !== responderId) return null;
-    const accepted = await pvpRepo.accept(session.id);
-    return accepted;
-  }
-
   async function findPendingByConfirmMsg(confirmMsgId) {
     return pvpRepo.findByConfirmMsgId(confirmMsgId);
   }
 
   async function acceptBySession(id) {
-    return pvpRepo.accept(id);
+    // Give the battle a fresh deadline so the accepted session cannot be
+    // reaped between accept and start; never-started rows still expire
+    // once this grace passes (see pvpModel.expireStale).
+    const graceSec = Math.floor(config.battleTtlMs / 1000) + 60;
+    return pvpRepo.accept(id, Math.floor(Date.now() / 1000), sql, graceSec);
   }
 
   async function run(id, { random = Math.random } = {}) {
@@ -141,6 +138,7 @@ export function createPvpService({
       enemy: {
         id: target,
         name: target,
+        behavior: 'skill_based',
         stats: {
           maxHp: tFinal.maxHp,
           atk: tFinal.atk,
@@ -155,7 +153,9 @@ export function createPvpService({
       battleId: id,
     });
 
-    const end = simulateBattle(state, () => 'basic_attack', random);
+    // Both sides auto-cast their active skill whenever it is off cooldown;
+    // without this the active skills would never fire in a full-sim duel.
+    const end = simulateBattle(state, autoSkillAction, random);
     const draw = end.status === 'DRAW';
     const challengerWon = end.status === 'WIN';
     const winner = challengerWon ? challenger : target;
@@ -180,10 +180,11 @@ export function createPvpService({
 
       let coinApplied = 0;
       let loserLoss = 0;
+      let healed = null;
       if (!draw) {
         const winnerMax = winner === challenger ? cFinal.maxHp : tFinal.maxHp;
         const winnerHp = winner === challenger ? challengerHp : targetHp;
-        const healed = Math.min(
+        healed = Math.min(
           winnerMax,
           winnerHp + Math.floor(winnerMax * config.winnerHealPct)
         );
@@ -209,14 +210,28 @@ export function createPvpService({
         challenger,
         target,
         rounds: end.round,
-        challengerHp,
-        targetHp,
+        // Post-heal values so the displayed HP matches what is stored.
+        challengerHp:
+          !draw && winner === challenger ? healed : challengerHp,
+        targetHp: !draw && winner === target ? healed : targetHp,
+        // Battle-start snapshot so the UI timeline anchors to the same
+        // numbers the engine actually simulated from.
+        startHp: {
+          challenger: cFinal.currentHp,
+          target: tFinal.currentHp,
+          challengerMax: cFinal.maxHp,
+          targetMax: tFinal.maxHp,
+        },
         coin: coinApplied,
         loserLoss,
         exp: draw ? 0 : { win: config.expWin, lose: config.expLose },
         log: end.log,
       };
-      await pvpRepo.finish(id, result, tx);
+      // The session may have been cancelled mid-battle (e.g. target
+      // declined in the same instant); rolling back keeps HP, coins and
+      // EXP consistent instead of rewarding a dead session.
+      const finished = await pvpRepo.finish(id, result, tx);
+      if (!finished) throw new RangeError('Sesi PvP sudah tidak aktif.');
       return result;
     });
   }
@@ -228,7 +243,6 @@ export function createPvpService({
   return {
     challenge,
     bindConfirm,
-    accept,
     findPendingByConfirmMsg,
     acceptBySession,
     run,
