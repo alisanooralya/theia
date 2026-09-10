@@ -19,8 +19,8 @@ export const JOBS = [
     label: 'Ojol',
     emoji: '🛵',
     durationMs: 30 * MINUTE_MS,
-    coin: [1900, 2400],
-    exp: [8, 12],
+    coin: [18000, 25000],
+    exp: [18, 25],
   },
   {
     id: 'kuli',
@@ -28,8 +28,8 @@ export const JOBS = [
     label: 'Kuli Bangunan',
     emoji: '🧱',
     durationMs: 45 * MINUTE_MS,
-    coin: [2000, 3000],
-    exp: [10, 16],
+    coin: [28000, 38000],
+    exp: [25, 35],
   },
   {
     id: 'kebun',
@@ -37,8 +37,8 @@ export const JOBS = [
     label: 'Tukang Kebun',
     emoji: '🌱',
     durationMs: 1 * HOUR_MS,
-    coin: [2800, 3600],
-    exp: [12, 18],
+    coin: [35000, 50000],
+    exp: [30, 45],
   },
   {
     id: 'programmer',
@@ -46,8 +46,8 @@ export const JOBS = [
     label: 'Programmer Freelance',
     emoji: '💻',
     durationMs: 1 * HOUR_MS,
-    coin: [5000, 6800],
-    exp: [25, 35],
+    coin: [85000, 120000],
+    exp: [60, 85],
   },
   {
     id: 'guru',
@@ -55,8 +55,8 @@ export const JOBS = [
     label: 'Guru Les',
     emoji: '📚',
     durationMs: 2 * HOUR_MS,
-    coin: [5900, 7200],
-    exp: [45, 60],
+    coin: [100000, 140000],
+    exp: [90, 120],
   },
   {
     id: 'chef',
@@ -64,8 +64,8 @@ export const JOBS = [
     label: 'Chef',
     emoji: '👨‍🍳',
     durationMs: 3 * HOUR_MS,
-    coin: [7000, 10000],
-    exp: [55, 70],
+    coin: [130000, 180000],
+    exp: [120, 160],
   },
 ];
 
