@@ -1,7 +1,3 @@
-/**
- * RPG 2.0 — `.heal` command (rebuilt simple per spec).
- * Thin layer over healService: full heal at 1 Coin per HP.
- */
 import { F } from '#helpers/index.js';
 import { healService } from '#features/rpg/services/heal-service.js';
 import { HEAL_CONFIG } from '#features/rpg/config/heal-config.js';

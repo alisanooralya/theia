@@ -110,9 +110,6 @@ export {
   simulateBattle,
   battleSkillsFromEffects,
 } from './services/battle-engine.js';
-export {
-  PVP_CONFIG,
-  PVP_SNAPSHOT_DELAY_MS,
-} from './config/pvp-config.js';
+export { PVP_CONFIG, PVP_SNAPSHOT_DELAY_MS } from './config/pvp-config.js';
 export { pvpModel, makeSessionId } from './models/pvp.model.js';
 export { pvpService, createPvpService } from './services/pvp-service.js';

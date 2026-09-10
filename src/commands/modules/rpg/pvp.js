@@ -44,7 +44,17 @@ function buildStartText(aName, aNum, aHp, aMax, dName, dNum, dHp, dMax) {
   ].join('\n');
 }
 
-function buildSnapshotText(aName, aNum, aHp, dName, dNum, dHp, round, total, snap) {
+function buildSnapshotText(
+  aName,
+  aNum,
+  aHp,
+  dName,
+  dNum,
+  dHp,
+  round,
+  total,
+  snap
+) {
   const lines = [
     `╭────── ⚔️ DUEL ──────╮`,
     `│ 🔁 Ronde ${round}/${total}`,
@@ -91,9 +101,7 @@ function buildResultText(result, aName, aNum, dName, dNum) {
 }
 
 function usedSkills(log) {
-  return [
-    ...new Set((log ?? []).filter((e) => e.skill).map((e) => e.skill)),
-  ];
+  return [...new Set((log ?? []).filter((e) => e.skill).map((e) => e.skill))];
 }
 
 function roundSnapshot(log, round) {

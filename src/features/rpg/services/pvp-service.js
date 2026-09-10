@@ -211,8 +211,7 @@ export function createPvpService({
         target,
         rounds: end.round,
         // Post-heal values so the displayed HP matches what is stored.
-        challengerHp:
-          !draw && winner === challenger ? healed : challengerHp,
+        challengerHp: !draw && winner === challenger ? healed : challengerHp,
         targetHp: !draw && winner === target ? healed : targetHp,
         // Battle-start snapshot so the UI timeline anchors to the same
         // numbers the engine actually simulated from.

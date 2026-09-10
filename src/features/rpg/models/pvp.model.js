@@ -21,9 +21,7 @@ class PvpModel {
     try {
       return await txRunner.begin(async (tx) => {
         const [first, second] =
-          challenger < target
-            ? [challenger, target]
-            : [target, challenger];
+          challenger < target ? [challenger, target] : [target, challenger];
         await tx`SELECT pg_advisory_xact_lock(hashtext(${'pvp:' + first}))`;
         await tx`SELECT pg_advisory_xact_lock(hashtext(${'pvp:' + second}))`;
         const busy = await tx`
