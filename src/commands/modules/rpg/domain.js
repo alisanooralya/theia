@@ -7,6 +7,8 @@ import {
 
 export const DOMAIN_USAGE = '🏰 *RPG DOMAIN*\n\nChoose Difficulty:';
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 export function formatDomainList() {
   const lines = [DOMAIN_USAGE, ''];
   for (const domain of getDomains()) {
@@ -77,6 +79,8 @@ export async function executeDomain(ctx) {
     const outcome = await domainService.runDomain(ctx.sender, domain.id, {
       requestKey: makeDomainKey(ctx.sender, domain.id),
     });
+
+    await sleep((outcome.rounds ?? 0) * 1000);
 
     await ctx.sock.sendMessage(ctx.jid, {
       text: formatDomainResult(outcome),
