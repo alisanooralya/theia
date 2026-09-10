@@ -34,7 +34,7 @@ export const kickCommand = {
       try {
         await ctx.sock.groupParticipantsUpdate(ctx.jid, [jid], 'remove');
       } catch (err) {
-        ctx.fail(`❌ ${err.message}`);
+        ctx.fail(err.message);
       }
     }
     const names = targets.map((j) => `@${j.split('@')[0]}`).join(', ');
@@ -62,7 +62,7 @@ export const promoteCommand = {
         mentions: targets,
       });
     } catch (err) {
-      return ctx.fail(`❌ ${err.message}`);
+      await ctx.fail(err.message);
     }
   },
 };
@@ -85,7 +85,7 @@ export const demoteCommand = {
       const names = targets.map((j) => `@${j.split('@')[0]}`).join(', ');
       await ctx.reply(`✅ Admin ${names} dicabut.`, { mentions: targets });
     } catch (err) {
-      return ctx.fail(`❌ ${err.message}`);
+      await ctx.fail(err.message);
     }
   },
 };

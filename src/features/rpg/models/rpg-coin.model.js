@@ -1,12 +1,3 @@
-/**
- * RPG 2.0 — Coin repository (minimal RPG-scoped balance store).
- *
- * Sole data-access layer for `rpg_wallets`. Same currency as everywhere
- * else in the project (coin); no interest, fee, limit, or ledger baggage.
- * Spending and bank moves are atomic at the row level: insufficient
- * balance fails the UPDATE itself, so coin can never go negative,
- * vanish, or appear from nothing.
- */
 import { sql } from '#storage/connection.js';
 
 class RpgCoinModel {
@@ -31,23 +22,12 @@ class RpgCoinModel {
     return row ? row.coin : 0;
   }
 
-  /**
-   * Full wallet state (Coin + Bank). Missing row reads as zero balances;
-   * callers that mutate must `ensure()` first.
-   */
   async getWallet(userId, client = sql) {
     const row = await this.get(userId, client);
     if (!row) return { coin: 0, bank: 0 };
     return { coin: row.coin, bank: row.bank ?? 0 };
   }
 
-  /**
-   * Atomic deposit: moves `amount` from coin to bank in ONE conditional
-   * UPDATE. The row lock serializes concurrent deposits and the
-   * `coin >= amount` guard runs inside the statement itself, so balances
-   * can never go negative and coin+bank total is conserved by
-   * construction. Throws when funds are short (nothing is written).
-   */
   async depositToBank(userId, amount, client = sql) {
     if (!Number.isInteger(amount) || amount < 1) {
       throw new RangeError('amount must be a positive integer');
@@ -62,7 +42,6 @@ class RpgCoinModel {
     return { coin: rows[0].coin, bank: rows[0].bank };
   }
 
-  /** Atomic withdraw: mirror of depositToBank (bank -> coin). */
   async withdrawFromBank(userId, amount, client = sql) {
     if (!Number.isInteger(amount) || amount < 1) {
       throw new RangeError('amount must be a positive integer');
@@ -77,15 +56,6 @@ class RpgCoinModel {
     return { coin: rows[0].coin, bank: rows[0].bank };
   }
 
-  /**
-   * Atomic coin transfer between two users. Both wallet rows are locked
-   * FOR UPDATE in sorted-id order inside one transaction, so concurrent
-   * transfers (even opposite-direction pairs) serialize without
-   * deadlock; the balance check runs after locking, so the sender can
-   * never overdraw. Full amount moves, no fee: sender -X, receiver +X.
-   * Throws when funds are short or sender tries to pay themselves
-   * (nothing is written). Both rows must exist (service ensures them).
-   */
   async transferCoin(fromId, toId, amount) {
     if (!Number.isInteger(amount) || amount < 1) {
       throw new RangeError('amount must be a positive integer');
@@ -141,10 +111,6 @@ class RpgCoinModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Atomic spend: the row updates only when the balance covers it.
-   * Returns the remaining balance; throws when funds are short.
-   */
   async spendCoin(userId, amount, client = sql) {
     if (!Number.isInteger(amount) || amount < 1) {
       throw new RangeError('amount must be a positive integer');

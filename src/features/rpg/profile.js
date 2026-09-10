@@ -30,7 +30,6 @@ function statBar(ctx, x, y, w, h, pct, color) {
   ctx.fill();
 }
 
-// Simple vector icons drawn with canvas paths (no emoji font dependency)
 const ICONS = {
   heart(ctx, cx, cy, s, color) {
     ctx.fillStyle = color;
@@ -123,14 +122,12 @@ const ICONS = {
     ctx.fillStyle = color;
     const u = s / 2;
 
-    // Crosshair ring (crit precision)
     ctx.beginPath();
     ctx.arc(0, 0, u * 0.75, 0, Math.PI * 2);
     ctx.lineWidth = u * 0.12;
     ctx.strokeStyle = color;
     ctx.stroke();
 
-    // Crosshair ticks
     for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
       ctx.beginPath();
       ctx.moveTo(Math.cos(angle) * u * 0.5, Math.sin(angle) * u * 0.5);
@@ -139,7 +136,6 @@ const ICONS = {
       ctx.stroke();
     }
 
-    // Center diamond burst
     ctx.beginPath();
     ctx.moveTo(0, -u * 0.38);
     ctx.lineTo(u * 0.28, 0);
@@ -238,17 +234,15 @@ export async function renderProfileCard(data) {
   }
   const showArt = Boolean(artImg);
 
-  // ---- Canvas + panel geometry ----
-  const panelH = 410; // height of the stats panel
+  const panelH = 410;
   const Hc = showArt ? H : panelH + 48;
   const panelY = showArt ? Hc - panelH : 24;
 
   const canvas = createCanvas(W, Hc);
   const ctx = canvas.getContext('2d');
-  const R = 28; // outer corner radius
-  const pad = 24; // side padding for panel content
+  const R = 28;
+  const pad = 24;
 
-  // Base fill
   ctx.fillStyle = '#1a1233';
   ctx.fillRect(0, 0, W, Hc);
 
@@ -257,49 +251,41 @@ export async function renderProfileCard(data) {
   ctx.clip();
 
   if (showArt) {
-    // ---- Full-bleed character artwork on top ----
     const scale = Math.max(W / artImg.width, Hc / artImg.height);
     const iw = artImg.width * scale;
     const ih = artImg.height * scale;
     ctx.drawImage(artImg, (W - iw) / 2, 0, iw, ih);
 
-    // Soft fade where art meets the panel
     const fade = ctx.createLinearGradient(0, panelY - 150, 0, panelY + 10);
     fade.addColorStop(0, 'rgba(24,17,41,0)');
     fade.addColorStop(1, 'rgba(24,17,41,0.97)');
     ctx.fillStyle = fade;
     ctx.fillRect(0, panelY - 150, W, 160);
 
-    // Solid panel body
     ctx.fillStyle = 'rgba(24,17,41,0.94)';
     ctx.fillRect(0, panelY + 10, W, panelH - 10);
   } else {
-    // ---- Panel only: the whole card is the stats panel ----
     ctx.fillStyle = '#181129';
     ctx.fillRect(0, 0, W, Hc);
   }
 
   ctx.restore();
 
-  // Outer border
   roundRect(ctx, 0, 0, W, Hc, R);
   ctx.strokeStyle = 'rgba(255,215,120,0.35)';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // ---- Panel content (compact rhythm) ----
   const px = pad;
   const contentW = W - pad * 2;
   let y = panelY + 24;
 
-  // Name
   ctx.font = 'bold 40px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
   ctx.fillText(name, px, y, contentW);
   y += 48;
 
-  // Level + EXP on one row (EXP flush right)
   ctx.font = 'bold 21px sans-serif';
   ctx.fillStyle = '#ffd97a';
   ctx.textAlign = 'left';
@@ -311,12 +297,10 @@ export async function renderProfileCard(data) {
   ctx.textAlign = 'left';
   y += 32;
 
-  // EXP bar
   const expPct = expNeeded > 0 ? exp / expNeeded : 0;
   statBar(ctx, px, y, contentW, 13, expPct, ['#ffd97a', '#ff9d4d']);
   y += 27;
 
-  // HP row
   ICONS.heart(ctx, px + 12, y + 12, 26, '#ff5f6d');
   ctx.font = '23px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -333,7 +317,6 @@ export async function renderProfileCard(data) {
   ]);
   y += 38;
 
-  // Stat chips: ATK, DEF, CRIT RATE, CRIT DMG (1x4 row)
   const chipH = 86;
   const gap = 10;
   const chipW = (contentW - gap * 3) / 4;
@@ -375,7 +358,6 @@ export async function renderProfileCard(data) {
   );
   y += chipH + 14;
 
-  // Card slots: card + sign
   const cardH = 96;
   const cardGap = 12;
   const cardW = (contentW - cardGap) / 2;

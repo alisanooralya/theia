@@ -1,10 +1,3 @@
-/**
- * RPG 2.0 — Expedition config. Single source of truth for Expedition.
- *
- * Migrated from legacy (`features/rpg/expedition.js`): same two reward
- * tracks (coin / exp), same durations, same reward ranges. Rewards are
- * rolled once at start and stored — claim only pays out what was stored.
- */
 import SETTINGS from '#environment/settings.js';
 
 export const EXPEDITION_COOLDOWN_MS = 12 * 60 * 60 * 1000;
@@ -21,19 +14,19 @@ export const EXPEDITIONS = {
       short: {
         name: 'Short',
         durationMs: 1 * HOUR_MS,
-        coin: [2000, 3500],
+        coin: [8000, 12000],
         exp: [0, 0],
       },
       long: {
         name: 'Long',
         durationMs: 4 * HOUR_MS,
-        coin: [5500, 8500],
+        coin: [18000, 28000],
         exp: [0, 0],
       },
       extended: {
         name: 'Extended',
         durationMs: 8 * HOUR_MS,
-        coin: [13500, 15000],
+        coin: [35000, 50000],
         exp: [0, 0],
       },
     },
@@ -48,19 +41,19 @@ export const EXPEDITIONS = {
         name: 'Short',
         durationMs: 1 * HOUR_MS,
         coin: [0, 0],
-        exp: [30, 40],
+        exp: [50, 80],
       },
       long: {
         name: 'Long',
         durationMs: 4 * HOUR_MS,
         coin: [0, 0],
-        exp: [125, 185],
+        exp: [200, 350],
       },
       extended: {
         name: 'Extended',
         durationMs: 8 * HOUR_MS,
         coin: [0, 0],
-        exp: [265, 390],
+        exp: [450, 700],
       },
     },
   },

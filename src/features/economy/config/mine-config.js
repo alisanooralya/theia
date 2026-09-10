@@ -1,10 +1,3 @@
-/**
- * Economy 2.0 — Mine config. Single source of truth for Mining.
- *
- * Mirrors the fishing mechanic (see fish-config.js): twelve possible
- * finds, weighted rates, coin reward ranges, flat EXP.
- * Rate weights are relative (total is normalized at pick time).
- */
 export const MINE_COOLDOWN_MS = 60 * 60 * 1000;
 
 export const ORES = [
@@ -40,7 +33,6 @@ export const ORES = [
   },
 ];
 
-/** Weighted pick over ORES (relative rates). */
 export function pickOre(random = Math.random) {
   const total = ORES.reduce((s, m) => s + m.rate, 0);
   let roll = random() * total;

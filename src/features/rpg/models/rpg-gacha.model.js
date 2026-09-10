@@ -1,10 +1,3 @@
-/**
- * RPG 2.0 — Gacha request repository (idempotency keys).
- *
- * Sole data-access layer for `rpg_gacha_requests`. Claim-or-return must
- * run inside the purchase transaction: the unique key serializes retries
- * and concurrent duplicates so rewards are never granted twice.
- */
 import { sql } from '#storage/connection.js';
 
 class RpgGachaModel {

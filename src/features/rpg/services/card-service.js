@@ -1,18 +1,3 @@
-/**
- * RPG 2.0 — Card service (business logic; no SQL here).
- *
- * Owns Main + Sign Card rules: ownership, atomic leveling (coin +
- * Cerelia spent in one transaction), equipment slots, milestone-gated
- * skills, sign compatibility, and the Card stat-bonus layer:
- *   Base Stats -> Main Card bonuses -> Sign Card bonuses -> Final Stats.
- *
- * Notes:
- * - Database work stays in the model files; config in card-config.js.
- * - Leveling charges coin + Cerelia from the RPG wallet/inventory inside
- *   a transaction: any failure rolls everything back.
- * - No combat integration. No support cards. No legacy `src/legacy`
- *   dependencies.
- */
 import { sql } from '#storage/connection.js';
 import { rpgPlayerModel } from '../models/rpg-player.model.js';
 import { rpgCardModel } from '../models/rpg-card.model.js';
@@ -41,7 +26,6 @@ function requireDefinition(cardId) {
   return def;
 }
 
-/** Attach definition + level-scaled stats + skill state to a DB row. */
 export function enrichCard(row, kind) {
   if (!row) return null;
   const def = requireDefinition(row.card_id);
@@ -97,7 +81,6 @@ export function createCardService({
       throw new RangeError('target level must be above current level');
     }
     if (targetLevel === current.level) {
-      // Idempotent no-op (safe retries / lost races): nothing to charge.
       return {
         card: enrichCard(current, def.kind),
         fromLevel: current.level,
@@ -107,9 +90,6 @@ export function createCardService({
         noop: true,
       };
     }
-    // Authoritative cost is computed inside the transaction on freshly
-    // locked state, so concurrent callers serialize instead of double
-    // charging: a loser whose target is already reached becomes a no-op.
     const result = await db.begin(async (tx) => {
       const fresh = await cards.find(userId, cardId, def.kind, tx, true);
       if (!fresh) throw new RangeError(`card not owned: ${cardId}`);
@@ -152,7 +132,6 @@ export function createCardService({
   }
 
   return {
-    /** All owned cards, grouped by slot kind. */
     async getOwnedCards(userId) {
       const [mainRows, signRows] = await Promise.all([
         cards.owned(userId, 'main'),
@@ -164,15 +143,6 @@ export function createCardService({
       };
     },
 
-    /**
-     * Auto-level the equipped card of a slot ('main' | 'sign') as far as
-     * current Coin + Cerelia reach (existing affordableLevels curve).
-     * No level argument by design. Throws when nothing is equipped or
-     * the card is maxed; returns { leveled: false } when resources
-     * cover zero levels — never partial-charges. The actual level-up
-     * revalidates inside its own transaction, so concurrent callers
-     * serialize on fresh state.
-     */
     async autoLevelUp(userId, kind) {
       if (kind !== 'main' && kind !== 'sign') {
         throw new RangeError(`unknown equip slot: ${kind}`);
@@ -216,8 +186,6 @@ export function createCardService({
         equipped.card_id,
         affordable.toLevel
       ).catch(async (err) => {
-        // Stale target after a concurrent level-up advanced past it:
-        // re-read and report current state instead of failing.
         if (
           err instanceof RangeError &&
           /above current level/.test(err.message)
@@ -235,7 +203,6 @@ export function createCardService({
         throw err;
       });
       if (done.levels === 0) {
-        // Lost a race: someone else finished first. Re-read for accuracy.
         const current = await cards.equipped(userId, kind);
         const def = requireDefinition(current.card_id);
         return {
@@ -255,21 +222,14 @@ export function createCardService({
       };
     },
 
-    /** Enriched owned card or null. Throws for unknown card ids. */
     async getCard(userId, cardId) {
       return owned(userId, cardId);
     },
 
-    /** True when the user owns the card. Throws for unknown card ids. */
     async hasCard(userId, cardId) {
       return (await owned(userId, cardId)) !== null;
     },
 
-    /**
-     * Grant a card. Unknown ids throw; already-owned cards are returned
-     * as-is with isNew: false (never duplicated). Accepts an optional
-     * transaction client so callers (gacha, rewards) stay atomic.
-     */
     async grantCard(userId, cardId, client) {
       const def = requireDefinition(cardId);
       await players.ensure(userId, client);
@@ -282,25 +242,14 @@ export function createCardService({
       return { card: enrichCard(row, def.kind), isNew };
     },
 
-    /**
-     * Single-step cost for a kind at a level. Thin wrapper over config.
-     */
     getLevelUpCost(kind, currentLevel) {
       return getLevelUpCost(kind, currentLevel);
     },
 
-    /**
-     * Bulk cost from current to target by summing every step.
-     * Thin wrapper over config.
-     */
     getBulkLevelUpCost(kind, currentLevel, targetLevel) {
       return getBulkLevelUpCost(kind, currentLevel, targetLevel);
     },
 
-    /**
-     * Dry-run check: can this card reach `targetLevel` (default +1)?
-     * Returns { can, reason, cost, fromLevel, toLevel }. Never mutates.
-     */
     async canLevelUp(userId, cardId, targetLevel = null) {
       const def = requireDefinition(cardId);
       const max = maxLevelFor(def.kind);
@@ -364,12 +313,6 @@ export function createCardService({
       };
     },
 
-    /**
-     * Level a card up by `levels` steps (default 1). The target must not
-     * exceed the kind max — overshooting is rejected, never silently
-     * capped. Coin + Cerelia are spent and the level persisted inside
-     * one transaction: any failure rolls everything back.
-     */
     async levelUp(userId, cardId, levels = 1) {
       const def = requireDefinition(cardId);
       const current = await cards.find(userId, cardId, def.kind);
@@ -380,17 +323,8 @@ export function createCardService({
       return bulkLevelUp(userId, cardId, current.level + levels);
     },
 
-    /**
-     * Level a card to an exact `targetLevel`. Same atomic guarantees as
-     * levelUp: validate -> spend coin -> remove Cerelia -> set level ->
-     * commit, with full rollback on any failure.
-     */
     bulkLevelUp,
 
-    /**
-     * Equip a Main Card, replacing the current one. Returns the enriched
-     * equipped card.
-     */
     async equipMainCard(userId, cardId) {
       const def = requireDefinition(cardId);
       if (def.kind !== 'main')
@@ -401,11 +335,6 @@ export function createCardService({
       return enrichCard(row, 'main');
     },
 
-    /**
-     * Equip a Sign Card, replacing the current one. Any sign fits any
-     * main (incompatible signs keep ATK/DEF, passive stays inactive),
-     * but a sign cannot be equipped with no Main Card equipped.
-     */
     async equipSignCard(userId, cardId) {
       const def = requireDefinition(cardId);
       if (def.kind !== 'sign')
@@ -422,11 +351,6 @@ export function createCardService({
       return enriched;
     },
 
-    /**
-     * Unequip a slot ('main' | 'sign'). Unequipping the main also
-     * unequips the sign, since a sign cannot float without a main.
-     * Returns the unequipped enriched card(s), or null when empty.
-     */
     async unequip(userId, kind) {
       if (kind !== 'main' && kind !== 'sign') {
         throw new RangeError(`unknown equip slot: ${kind}`);
@@ -438,12 +362,10 @@ export function createCardService({
       return enrichCard(row, kind);
     },
 
-    /** Enriched equipped Main Card, or null. */
     async getEquippedMainCard(userId) {
       return enrichCard(await cards.equipped(userId, 'main'), 'main');
     },
 
-    /** Enriched equipped Sign Card (with compatibility flag), or null. */
     async getEquippedSignCard(userId) {
       const row = await cards.equipped(userId, 'sign');
       if (!row) return null;
@@ -456,10 +378,6 @@ export function createCardService({
       return enriched;
     },
 
-    /**
-     * Card stat-bonus layer for the future Final-stat computation.
-     * Sign ATK/DEF always apply; sign passive only when compatible.
-     */
     async getCardBonuses(userId) {
       const [mainRow, signRow] = await Promise.all([
         cards.equipped(userId, 'main'),
@@ -488,10 +406,6 @@ export function createCardService({
       };
     },
 
-    /**
-     * Currently active card effects: unlocked main skills (base or
-     * upgraded set per milestone) plus the sign passive when compatible.
-     */
     async getActiveEffects(userId) {
       const effects = [];
       const mainRow = await cards.equipped(userId, 'main');
@@ -537,7 +451,6 @@ export function createCardService({
       return effects;
     },
 
-    /** Minimum card level (1). Exposed so callers avoid magic numbers. */
     minLevel: CARD_MIN_LEVEL,
   };
 }

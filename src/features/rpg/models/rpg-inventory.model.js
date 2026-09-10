@@ -1,11 +1,3 @@
-/**
- * RPG 2.0 — Inventory repository (generic item rows, no per-item columns).
- *
- * Sole data-access layer for `rpg_inventory`. One row per (user, item);
- * quantity accumulates on the existing row, never duplicates.
- * Rows hitting zero are deleted so reads stay clean; missing rows read
- * as quantity 0. Removal is atomic: overdraft fails the UPDATE itself.
- */
 import { sql } from '#storage/connection.js';
 
 class RpgInventoryModel {
@@ -32,10 +24,6 @@ class RpgInventoryModel {
     return rows[0];
   }
 
-  /**
-   * Atomic remove. Returns the remaining quantity, deletes the row at
-   * zero, throws when the stock does not cover the amount.
-   */
   async remove(userId, itemId, quantity, client = sql) {
     const rows = await client`
       UPDATE rpg_inventory

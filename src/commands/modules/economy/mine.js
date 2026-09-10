@@ -1,8 +1,3 @@
-/**
- * Economy 2.0 — `.mine` command. Mirrors `.fish` (same UI/flow).
- * Thin layer over mineService: start message, random 3-5s wait, edit to
- * result. Cooldown (1h) guards concurrency.
- */
 import { mineService } from '#features/economy/services/mine-service.js';
 import { MINE_COOLDOWN_MS } from '#features/economy/config/mine-config.js';
 import { F } from '#helpers/index.js';

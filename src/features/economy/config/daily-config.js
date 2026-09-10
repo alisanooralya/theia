@@ -1,20 +1,5 @@
-/**
- * RPG 2.0 — Daily Economy config. Single source of truth for Daily rewards.
- *
- * Adapted from legacy (`commands/modules/economy/daily.js`): legacy paid
- * a flat 5,500–6,000 coin with NO streak bonus, so this config is flat
- * too — no invented streak tiers, freeze, or pity. Only the numbers were
- * retuned per spec.
- *
- * Streak rule (legacy `recordDaily`, preserved exactly):
- * - first claim -> streak 1
- * - gap since last claim < 48h -> streak + 1 (may skip a calendar day
- *   and still continue, e.g. Mon 23:00 -> Wed 01:00)
- * - gap >= 48h -> reset to 1
- * Same-day claims are rejected separately by WIB calendar-day key.
- */
 export const DAILY_CONFIG = Object.freeze({
-  coin: Object.freeze({ min: 10000, max: 20000 }),
+  coin: Object.freeze({ min: 25_000, max: 50_000 }),
 });
 
 export const WIB_OFFSET_HOURS = 7;

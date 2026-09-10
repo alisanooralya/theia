@@ -1,14 +1,3 @@
-/**
- * Economy 2.0 — Crime config. Single source of truth for Crime balancing.
- *
- * Migrated from legacy (`commands/modules/economy/crime.js`): same five
- * crimes, same reward/penalty ranges, same chances, same jail durations.
- *
- * Dropped vs legacy: the `exp` field (legacy fed the old user-level
- * system, which no longer exists; RPG player EXP is out of scope for
- * Crime — same rationale as Daily dropping EXP). Cooldown lives on the
- * command (`manualCooldown`, like legacy + gacha).
- */
 export const CRIME_COOLDOWN_MS = 60 * 60 * 1000;
 
 export const CRIMES = [
@@ -17,8 +6,8 @@ export const CRIMES = [
     name: 'jambret',
     emoji: '👜',
     label: '🟡 SEDANG',
-    reward: [4000, 6000],
-    penalty: [1000, 3000],
+    reward: [50_000, 60_000],
+    penalty: [60_000, 70_000],
     successChance: 0.55,
     caughtChance: 0.3,
     prisonMs: 4 * 60 * 60 * 1000,
@@ -28,19 +17,19 @@ export const CRIMES = [
     name: 'hacker',
     emoji: '💻',
     label: '🔴 NEKAT',
-    reward: [6000, 9000],
-    penalty: [2000, 6000],
+    reward: [100_000, 150_000],
+    penalty: [90_000, 100_000],
     successChance: 0.4,
     caughtChance: 0.45,
-    prisonMs: 12 * 60 * 60 * 1000,
+    prisonMs: 24 * 60 * 60 * 1000,
   },
   {
     id: 'copet',
     name: 'copet',
     emoji: '👛',
     label: '🟢 AMAN',
-    reward: [3000, 4000],
-    penalty: [500, 1500],
+    reward: [20_000, 25_000],
+    penalty: [25_000, 30_000],
     successChance: 0.75,
     caughtChance: 0.15,
     prisonMs: 4 * 60 * 60 * 1000,
@@ -50,14 +39,14 @@ export const CRIMES = [
     name: 'judi online',
     emoji: '🎰',
     label: '🎲 GAMBLING',
-    reward: [3500, 5000],
-    penalty: [500, 2000],
+    reward: [50_000, 100_000],
+    penalty: [100_000, 80_000],
     gamble: true,
     jackpotChance: 0.06,
     winChance: 0.34,
     caughtChance: 0.18,
-    jackpotReward: [15000, 30000],
-    loseCost: [500, 2000],
+    jackpotReward: [500_000, 600_000],
+    loseCost: [200_000, 300_000],
     prisonMs: 12 * 60 * 60 * 1000,
   },
   {
@@ -65,11 +54,11 @@ export const CRIMES = [
     name: 'skimming ATM',
     emoji: '💳',
     label: '🔴 NEKAT',
-    reward: [9000, 11000],
-    penalty: [3000, 8000],
+    reward: [500_000, 1_000_000],
+    penalty: [800_000, 1_000_000],
     successChance: 0.35,
     caughtChance: 0.5,
-    prisonMs: 24 * 60 * 60 * 1000,
+    prisonMs: 2 * 24 * 60 * 60 * 1000,
   },
 ];
 
@@ -80,7 +69,6 @@ export function getCrime(id) {
   return CRIME_MAP[String(id).toLowerCase()] ?? null;
 }
 
-/** Displayed success chance (jackpot counts as success for gambling). */
 export function successChance(crime) {
   return crime.gamble
     ? crime.jackpotChance + crime.winChance

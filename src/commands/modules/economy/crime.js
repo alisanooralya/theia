@@ -1,7 +1,3 @@
-/**
- * Economy 2.0 — `.crime` command (migrated from legacy, same UI/flow).
- * Thin layer over crimeService: menu, jail gate, cooldown handling, texts.
- */
 import { F } from '#helpers/index.js';
 import { Button } from '#messages/builder.js';
 import { crimeService } from '#features/economy/services/crime-service.js';
@@ -123,7 +119,7 @@ export default {
       await sendResult(ctx, firstMsg.key, text);
     } catch (err) {
       if (!rolled) await ctx.clearCooldown();
-      throw err;
+      await ctx.fail(err.message);
     }
   },
 };

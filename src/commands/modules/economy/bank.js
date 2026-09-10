@@ -50,10 +50,7 @@ export default {
         ].join('\n')
       );
     } catch (err) {
-      const message = err.message.startsWith('❌')
-        ? err.message
-        : `❌ ${err.message}`;
-      await ctx.fail(message);
+      await ctx.fail(err.message);
     }
   },
 };

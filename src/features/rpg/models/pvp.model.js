@@ -1,18 +1,3 @@
-/**
- * RPG 2.0 — PvP repository.
- *
- * Sole data-access layer for `rpg_pvp_sessions` and the PvP streak
- * columns on `rpg_players`. Concurrency is enforced at the row level:
- *
- * - The partial unique indexes make a "one live challenge per side"
- *   rule impossible to violate even with concurrent writers.
- * - `accept` and `start` are compare-and-swap status transitions, so a
- *   pending challenge can be accepted once and an accepted battle can be
- *   started once; retries and late responses get zero rows.
- * - `recordOutcome` writes results + rewards under a user row lock, so
- *   two concurrent finishes for the same player serialize instead of a
- *   lost update.
- */
 import { randomUUID } from 'node:crypto';
 import { sql } from '#storage/connection.js';
 
@@ -21,11 +6,6 @@ export function makeSessionId() {
 }
 
 class PvpModel {
-  /**
-   * Insert a pending challenge. Returns null when either player already
-   * has a live session (unique-index violation) — the caller turns that
-   * into a friendly error.
-   */
   async create(
     challenger,
     target,
@@ -58,11 +38,6 @@ class PvpModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Sweep stale rows: expired pending -> 'expired'; accepted/running
-   * older than the battle TTL -> 'cancelled' (crash recovery — no
-   * rewards were persisted, so nothing is lost).
-   */
   async expireStale(nowSec, staleRunningSec, client = sql) {
     await client`
       UPDATE rpg_pvp_sessions
@@ -79,11 +54,6 @@ class PvpModel {
     }
   }
 
-  /**
-   * Accept a pending challenge (CAS). Only a still-pending, unexpired
-   * session flips to 'accepted'; a second accept or a late reply
-   * returns null.
-   */
   async accept(id, nowSec = Math.floor(Date.now() / 1000), client = sql) {
     const rows = await client`
       UPDATE rpg_pvp_sessions
@@ -95,7 +65,6 @@ class PvpModel {
     return rows[0] ?? null;
   }
 
-  /** CAS pending/accepted -> running. Returns the row or null. */
   async start(id, client = sql) {
     const rows = await client`
       UPDATE rpg_pvp_sessions
@@ -116,11 +85,6 @@ class PvpModel {
     `;
   }
 
-  /**
-   * Record the outcome. Rewards are applied inside the caller's
-   * transaction; streaks/wins/losses are plain conditional updates that
-   * serialize on the player row.
-   */
   async finish(id, result, client = sql) {
     const rows = await client`
       UPDATE rpg_pvp_sessions

@@ -4,45 +4,10 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-/**
- * RPG 2.0 — Card config.
- *
- * Single source of truth for the Card + Sign Card system: definitions,
- * stat scaling, milestones, leveling costs, and the Cerelia material.
- * Services must read everything from here; no `if (cardId === ...)`
- * branches and no balance values scattered in services.
- *
- * Concepts:
- * - Main Card = the character (HP/ATK/DEF, Lv.1-100, active + passive).
- * - Sign Card = signature layer attached to a Main Card (ATK/DEF only,
- *   Lv.1-50, passive only, gated by `compatibleCard`).
- *
- * Skill effect format (generic, combat consumes it later):
- *   { stat: 'hp'|'atk'|'def'|'critRate'|'critDmg',
- *     mode: 'add' (flat) | 'pct' (fraction, 0.10 = +10%),
- *     value: number }
- * Active skills always configure `cooldownMs`; passives have no cooldown
- * and stay active once unlocked (sign passives additionally require the
- * matching equipped Main Card).
- *
- * Stat pipeline (future StatService):
- *   Base Stats -> Main Card bonuses -> Sign Card bonuses -> Final Stats.
- * Final stats are computed at read time and never stored.
- */
-
 export const CARD_MIN_LEVEL = 1;
 export const MAIN_MAX_LEVEL = 100;
 export const SIGN_MAX_LEVEL = 50;
 
-/**
- * Standard Main Card milestones. Skill entries below repeat these levels
- * explicitly; the engine reads the skill entries, this documents the rule:
- *   Lv.25  -> unlock Active Skill
- *   Lv.50  -> unlock Passive Skill
- *   Lv.75  -> upgrade Active Skill
- *   Lv.100 -> upgrade Passive Skill
- * There is no separate skill-level system.
- */
 export const MAIN_MILESTONES = Object.freeze([
   Object.freeze({ level: 25, type: 'unlock', skill: 'active' }),
   Object.freeze({ level: 50, type: 'unlock', skill: 'passive' }),
@@ -50,26 +15,14 @@ export const MAIN_MILESTONES = Object.freeze([
   Object.freeze({ level: 100, type: 'upgrade', skill: 'passive' }),
 ]);
 
-/**
- * Leveling economy. One shared curve for Main and Sign cards.
- * Cost of stepping from level L to L+1:
- *   coin    = coinBase + coinPerLevel * (L - 1)
- *   cerelia = cereliaBase + floor((L - 1) / cereliaEvery)
- * `materialId` points at the CERELIA_ITEM below.
- */
 export const CARD_LEVELING = Object.freeze({
   materialId: 'cerelia',
-  coinBase: 5000,
-  coinPerLevel: 500,
-  cereliaBase: 5,
-  cereliaEvery: 1,
+  coinBase: 2000,
+  coinPerLevel: 300,
+  cereliaBase: 2,
+  cereliaEvery: 100,
 });
 
-/**
- * Cerelia — Card leveling material (replaces the legacy Card Core idea).
- * Identity only (id/name/description). Shop pricing/purchasability lives
- * in shop-config.js, which reuses this entry — never define Cerelia twice.
- */
 export const CERELIA_ITEM = Object.freeze({
   id: 'cerelia',
   name: 'Cerelia',
@@ -138,10 +91,8 @@ function signCard(id, name, compatibleCard, base, growth, passive) {
   });
 }
 
-/** Directory containing card artwork images. */
 export const CARD_DIR = join(__dirname, '..', '..', '..', '..', 'temp', 'card');
 
-/** Main card id -> artwork filename. */
 export const CARD_IMAGE_MAP = Object.freeze({
   girgas: 'girgas.webp',
   lena: 'lena.webp',
@@ -149,13 +100,11 @@ export const CARD_IMAGE_MAP = Object.freeze({
   daisy: 'daisy.webp',
 });
 
-/** Artwork filename for a main card id, or null. */
 export function cardArtFile(cardId) {
   if (!cardId) return null;
   return CARD_IMAGE_MAP[cardId] ?? null;
 }
 
-/** Absolute path to the artwork file if it exists on disk, otherwise null. */
 export function cardArtPath(cardId) {
   const file = cardArtFile(cardId);
   if (!file) return null;
@@ -168,8 +117,8 @@ export const MAIN_CARDS = Object.freeze({
     'girgas',
     'Girgas',
     'Attacker',
-    { hp: 220, atk: 60, def: 10 },
-    { hp: 7.0, atk: 1.36, def: 0.22 },
+    { hp: 213, atk: 128, def: 10 },
+    { hp: 24, atk: 13, def: 0.4 },
     skill(
       'Lollipop Crash',
       'A crushing blow that deals increased damage to the enemy.',
@@ -192,8 +141,8 @@ export const MAIN_CARDS = Object.freeze({
     'lena',
     'Lena',
     'Archer',
-    { hp: 200, atk: 62, def: 12 },
-    { hp: 5.66, atk: 1.39, def: 0.26 },
+    { hp: 196, atk: 123, def: 13 },
+    { hp: 21, atk: 12, def: 0.5 },
     skill(
       'Starfall Volley',
       'A rain of starlight arrows over the target area.',
@@ -216,8 +165,8 @@ export const MAIN_CARDS = Object.freeze({
     'ameris',
     'Ameris',
     'Supporter',
-    { hp: 230, atk: 80, def: 14 },
-    { hp: 6.97, atk: 1.82, def: 0.26 },
+    { hp: 221, atk: 119, def: 15 },
+    { hp: 22, atk: 12, def: 0.4 },
     skill(
       'Choco Barrage',
       'Rapid cocoa-charged strikes in quick succession.',
@@ -240,8 +189,8 @@ export const MAIN_CARDS = Object.freeze({
     'daisy',
     'Daisy',
     'Defender',
-    { hp: 260, atk: 55, def: 8 },
-    { hp: 7.07, atk: 1.21, def: 0.14 },
+    { hp: 255, atk: 94, def: 9 },
+    { hp: 26, atk: 9, def: 0.7 },
     skill(
       'Guardian Slam',
       'A shield-first slam that strikes the enemy.',
@@ -267,8 +216,8 @@ export const SIGN_CARDS = Object.freeze({
     'girgas_sign',
     'Girgas Sign',
     'girgas',
-    { atk: 20, def: 8 },
-    { atk: 0.8, def: 0.3 },
+    { atk: 43, def: 13 },
+    { atk: 2.6, def: 0.9 },
     {
       name: 'Lollipop Drive',
       description: 'Signature resonance: attacks hit noticeably harder.',
@@ -279,8 +228,8 @@ export const SIGN_CARDS = Object.freeze({
     'lena_sign',
     'Lena Sign',
     'lena',
-    { atk: 22, def: 7 },
-    { atk: 0.85, def: 0.28 },
+    { atk: 44, def: 12 },
+    { atk: 2.6, def: 0.8 },
     {
       name: 'Eagle Eye String',
       description: 'Signature resonance: shots find weak points.',
@@ -291,8 +240,8 @@ export const SIGN_CARDS = Object.freeze({
     'ameris_sign',
     'Ameris Sign',
     'ameris',
-    { atk: 24, def: 9 },
-    { atk: 0.9, def: 0.32 },
+    { atk: 47, def: 14 },
+    { atk: 2.4, def: 0.9 },
     {
       name: 'Cocoa Guard',
       description: 'Signature resonance: a sweet, sturdy barrier.',
@@ -303,8 +252,8 @@ export const SIGN_CARDS = Object.freeze({
     'daisy_sign',
     'Daisy Sign',
     'daisy',
-    { atk: 16, def: 12 },
-    { atk: 0.7, def: 0.4 },
+    { atk: 34, def: 17 },
+    { atk: 2.1, def: 0.9 },
     {
       name: 'Bulwark Heart',
       description: 'Signature resonance: reduces damage taken.',
@@ -313,29 +262,24 @@ export const SIGN_CARDS = Object.freeze({
   ),
 });
 
-/** Max level for a card kind ('main' | 'sign'). */
 export function maxLevelFor(kind) {
   if (kind === 'main') return MAIN_MAX_LEVEL;
   if (kind === 'sign') return SIGN_MAX_LEVEL;
   throw new RangeError(`unknown card kind: ${kind}`);
 }
 
-/** Main Card definition by id, or null. */
 export function getMainCard(cardId) {
   return MAIN_CARDS[cardId] ?? null;
 }
 
-/** Sign Card definition by id, or null. */
 export function getSignCard(cardId) {
   return SIGN_CARDS[cardId] ?? null;
 }
 
-/** Any card definition (main or sign) by id, or null. */
 export function getCardDefinition(cardId) {
   return getMainCard(cardId) ?? getSignCard(cardId) ?? null;
 }
 
-/** 'main', 'sign', or null for unknown ids. */
 export function cardKind(cardId) {
   if (MAIN_CARDS[cardId]) return 'main';
   if (SIGN_CARDS[cardId]) return 'sign';
@@ -348,11 +292,6 @@ function assertLevelIn(level, min, max) {
   }
 }
 
-/**
- * Card stats at a given level. Linear scaling:
- *   stat = floor(base + growth * (level - 1))
- * Main cards return { hp, atk, def }; sign cards return { atk, def }.
- */
 export function cardStatsAtLevel(def, level) {
   if (!def) throw new RangeError('unknown card definition');
   const max = maxLevelFor(def.kind);
@@ -371,10 +310,6 @@ export function cardStatsAtLevel(def, level) {
   };
 }
 
-/**
- * Cost of stepping from level L to L+1 (pure, config-driven).
- * Returns null when L is already at `maxLevel`.
- */
 export function levelStepCost(level, maxLevel) {
   if (!Number.isInteger(level) || level < CARD_MIN_LEVEL) {
     throw new RangeError('level must be a positive integer');
@@ -388,10 +323,6 @@ export function levelStepCost(level, maxLevel) {
   };
 }
 
-/**
- * Total cost of leveling `count` steps from `fromLevel`, capped at
- * `maxLevel`. Pure — used by bulk level-up and tests.
- */
 export function bulkLevelCost(fromLevel, count, maxLevel) {
   const levels = Math.max(
     0,
@@ -413,22 +344,11 @@ export function bulkLevelCost(fromLevel, count, maxLevel) {
   };
 }
 
-/**
- * Cost of stepping from `currentLevel` to `currentLevel + 1` for a card
- * kind ('main' | 'sign'). Returns { coin, cerelia, materialId }, or null
- * when already at max. Pure — single source of truth for level-up cost.
- */
 export function getLevelUpCost(kind, currentLevel) {
   const max = maxLevelFor(kind);
   return levelStepCost(currentLevel, max);
 }
 
-/**
- * Total cost of leveling from `currentLevel` to `targetLevel` by summing
- * every step (never single-step x count). Returns
- * { coin, cerelia, materialId, levels, toLevel }. Throws when the target
- * is not above current or exceeds the kind max.
- */
 export function getBulkLevelUpCost(kind, currentLevel, targetLevel) {
   const max = maxLevelFor(kind);
   if (!Number.isInteger(currentLevel) || !Number.isInteger(targetLevel)) {
@@ -459,10 +379,6 @@ export function getBulkLevelUpCost(kind, currentLevel, targetLevel) {
   };
 }
 
-/**
- * How many levels can be afforded with the given coin + cerelia.
- * Pure — used by a future "level up as much as possible" flow.
- */
 export function affordableLevels(fromLevel, coin, cerelia, maxLevel) {
   let levels = 0;
   let spentCoin = 0;

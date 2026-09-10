@@ -1,9 +1,3 @@
-/**
- * RPG 2.0 — Inventory service (generic business logic, no SQL here).
- *
- * Thin validation over rpg-inventory.model.js. Item identity comes from
- * Shop Config; this service never enumerates items itself.
- */
 import { rpgInventoryModel } from '../models/rpg-inventory.model.js';
 
 function assertPositiveInt(quantity, label = 'quantity') {
@@ -22,7 +16,6 @@ export function createInventoryService({ inventoryModel } = {}) {
   const items = inventoryModel ?? rpgInventoryModel;
 
   return {
-    /** Raw rows [{ user_id, item_id, quantity, ... }]. Read-only. */
     async getInventory(userId) {
       return items.getAll(userId);
     },
@@ -44,7 +37,6 @@ export function createInventoryService({ inventoryModel } = {}) {
       return items.add(userId, itemId, quantity, client);
     },
 
-    /** Returns remaining quantity (0 when the row is cleaned up). */
     async removeItem(userId, itemId, quantity, client) {
       assertItemId(itemId);
       assertPositiveInt(quantity);

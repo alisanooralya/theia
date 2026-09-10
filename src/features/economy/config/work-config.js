@@ -1,10 +1,3 @@
-/**
- * Economy 2.0 — Work config. Single source of truth for Work balancing.
- *
- * Migrated from legacy (`features/economy/work.js`): same six jobs, same
- * durations, same coin/exp ranges. Cooldown lives on the command
- * (`manualCooldown`, applied at claim like legacy).
- */
 import SETTINGS from '#environment/settings.js';
 
 export const WORK_COOLDOWN_MS = 6 * 60 * 60 * 1000;

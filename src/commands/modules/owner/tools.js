@@ -25,7 +25,7 @@ export default {
           ).slice(0, 3000)}\n\`\`\``
         );
       } catch (err) {
-        return ctx.fail(`❌ ${err.message}`);
+        await ctx.fail(err.message);
       }
       return;
     }

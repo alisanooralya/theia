@@ -1,8 +1,3 @@
-/**
- * Economy 2.0 — `.bounty` command (migrated from legacy, same UI/flow).
- * Thin layer over bountyService: menu, daily gate handled by the service
- * (atomic), 3s tracking delay, edit-message result.
- */
 import { Button } from '#messages/builder.js';
 import { bountyService as bounty } from '#features/economy/services/bounty-service.js';
 import {

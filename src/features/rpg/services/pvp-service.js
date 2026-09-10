@@ -1,22 +1,3 @@
-/**
- * RPG 2.0 — PvP service (`features/rpg` business logic).
- *
- * Migrated from legacy `features/combat/battle.js` +
- * `commands/modules/rpg/battle.js`. The battle math now comes from the
- * Battle Engine (turn order, crit, skills); stats come from Final Stats;
- * HP persistence mirrors legacy (post-battle HP is written back to
- * `rpg_players.current_hp`; winner heals 20% of max HP once).
- *
- * Concurrency/race hardening vs legacy:
- * - One live challenge per side per direction is enforced by DB unique
- *   partial indexes, not by an in-memory Set.
- * - Accept/start are compare-and-swap UPDATEs; an expired or already
- *   handled challenge is a no-op, never a duplicate reward path.
- * - Reward + HP persistence runs in a single transaction, so a crash
- *   mid-fight cannot leave coin granted but HP unsaved.
- * - The legacy card coin-bonus multiplier (`coinRewardTotal`) stays
- *   dropped: no income-bonus concept in 2.0 — pay the config amount.
- */
 import { sql } from '#storage/connection.js';
 import { userModel } from '#storage/models/user.js';
 import { rpgPlayerModel } from '../models/rpg-player.model.js';
@@ -55,12 +36,6 @@ export function createPvpService({
     await coinRepo.ensure(userId);
   }
 
-  /**
-   * Register a new challenge. Throws:
-   * - 'self'      → Cannot challenge yourself.
-   * - 'hp0'       → Either side is at 0 HP.
-   * - 'busy'      → Either side already has a live session.
-   */
   async function challenge(challenger, target, { confirmMsgId = '' } = {}) {
     if (challenger === target) {
       const err = new RangeError('Tidak bisa battle dengan diri sendiri.');
@@ -101,10 +76,6 @@ export function createPvpService({
     return session;
   }
 
-  /**
-   * Bind the WhatsApp confirm message to an existing session so a reply
-   * (yes/ya) on that message is the ONLY way to accept.
-   */
   async function bindConfirm(id, confirmMsgId) {
     if (!confirmMsgId) return pvpRepo.find(id);
     const current = await pvpRepo.find(id);
@@ -124,7 +95,6 @@ export function createPvpService({
     return pvpRepo.find(id);
   }
 
-  /** Accept a challenge via its confirm message. CAS — once only. */
   async function accept(confirmMsgId, responderId) {
     const session = await pvpRepo.findByConfirmMsgId(confirmMsgId);
     if (!session) return null;
@@ -133,21 +103,14 @@ export function createPvpService({
     return accepted;
   }
 
-  /** Pending session lookup for the confirm extension. */
   async function findPendingByConfirmMsg(confirmMsgId) {
     return pvpRepo.findByConfirmMsgId(confirmMsgId);
   }
 
-  /** Direct accept by session id (after target check). */
   async function acceptBySession(id) {
     return pvpRepo.accept(id);
   }
 
-  /**
-   * Run the duel to completion. CAS 'pending/accepted' -> 'running' so
-   * concurrent runs serialize; the loser path silently no-ops (returns
-   * null) instead of double-rewarding.
-   */
   async function run(id, { random = Math.random } = {}) {
     const started = await pvpRepo.start(id);
     if (!started) return null;
@@ -155,9 +118,6 @@ export function createPvpService({
     const challenger = started.challenger;
     const target = started.target;
 
-    // Final Stats snapshots BEFORE the transaction (getFinalStats runs
-    // internal ensures; a nested ensure under the tx row locks would
-    // self-deadlock, same as the Bounty fix).
     const [cFinal, tFinal] = await Promise.all([
       finalsSvc.getFinalStats(challenger),
       finalsSvc.getFinalStats(target),
@@ -201,7 +161,6 @@ export function createPvpService({
     const winner = challengerWon ? challenger : target;
     const loser = challengerWon ? target : challenger;
 
-    // Per-side HP after the fight (engine clamps at 0).
     const challengerHp = end.player.hp;
     const targetHp = end.enemy.hp;
 
@@ -216,14 +175,12 @@ export function createPvpService({
         );
 
     return db.begin(async (tx) => {
-      // Persist HP like legacy (post-battle HP is durable state).
       await playerRepo.setCurrentHp(challenger, challengerHp, tx);
       await playerRepo.setCurrentHp(target, targetHp, tx);
 
       let coinApplied = 0;
       let loserLoss = 0;
       if (!draw) {
-        // Winner heals 20% of max HP once.
         const winnerMax = winner === challenger ? cFinal.maxHp : tFinal.maxHp;
         const winnerHp = winner === challenger ? challengerHp : targetHp;
         const healed = Math.min(
@@ -264,7 +221,6 @@ export function createPvpService({
     });
   }
 
-  /** Best-effort cancel (used when the flow aborts before running). */
   async function cancel(id) {
     await pvpRepo.cancel(id);
   }

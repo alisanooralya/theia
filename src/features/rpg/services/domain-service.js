@@ -1,14 +1,3 @@
-/**
- * RPG 2.0 — Domain service (PvE content over the shared Battle Engine).
- *
- * Flow per execution: validate difficulty -> ensure player -> claim
- * idempotency key -> lock player row -> snapshot Final Stats -> build
- * battle from Domain Config boss + equipped Card skills -> simulate
- * synchronously -> on WIN roll config-range rewards and apply EXP
- * (with existing progression curve), Coin, and Cerelia atomically.
- * LOSE/DRAW persist the outcome with no rewards. Battle HP never
- * touches persistent currentHp (no drain, no heal, no exploit).
- */
 import { randomUUID } from 'node:crypto';
 import { sql } from '#storage/connection.js';
 import { getDomain, rollReward } from '../config/domain-config.js';
@@ -31,7 +20,6 @@ export function makeDomainKey(userId, difficulty) {
 function applyExp(level, exp, gained) {
   let total = exp + gained;
   let lv = level;
-  // Existing progression curve only; no new formula.
   for (;;) {
     const need = expRequiredForLevel(lv);
     if (total < need) break;
@@ -81,11 +69,6 @@ export function createDomainService({
   }
 
   return {
-    /**
-     * Run a domain. Returns
-     * { requestKey, difficulty, bossName, status, rounds, rewards,
-     *   leveledUp, duplicate }. Rewards present only on WIN.
-     */
     async runDomain(
       userId,
       difficulty,

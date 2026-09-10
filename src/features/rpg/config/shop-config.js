@@ -1,18 +1,3 @@
-/**
- * RPG 2.0 — Shop config. Single source of truth for RPG Shop items.
- *
- * RULE: adding an item = adding one entry here. Commands, services, and
- * the database schema never change per item. No second item list may
- * exist anywhere else; `getShopItems()` reads this object directly.
- *
- * Entry shape:
- *   { id, name, description, price (coin), currency: 'coin',
- *     category, purchasable }
- *
- * Cerelia identity (id/name/description) is reused from Card Config so
- * the Card system and the Shop never define a second Cerelia — only the
- * shop price/purchasability live here.
- */
 import { CERELIA_ITEM, SIGN_CARDS, MAIN_CARDS } from './card-config.js';
 
 function shopItem({
@@ -52,7 +37,7 @@ function signShopEntries() {
       name: def.name,
       emoji: '🔰',
       description: `Sign Card untuk ${mainName}.`,
-      price: 250000,
+      price: 500000,
       category: 'sign',
       cardId: def.id,
     });
@@ -66,27 +51,23 @@ export const SHOP_ITEMS = Object.freeze({
     name: CERELIA_ITEM.name,
     emoji: '🧪',
     description: 'Material untuk meningkatkan Card dan Sign Card.',
-    price: 5000,
+    price: 3000,
   }),
   ...signShopEntries(),
 });
 
-/** All shop entries as an array, in definition order. */
 export function getShopItems() {
   return Object.values(SHOP_ITEMS);
 }
 
-/** Only buyable entries (what `.shop` displays). */
 export function getPurchasableItems() {
   return getShopItems().filter((item) => item.purchasable);
 }
 
-/** Buyable entries that land in inventory (excludes card grants). */
 export function getInventoryItems() {
   return getPurchasableItems().filter((item) => !item.cardId);
 }
 
-/** Entry by id, or null. No branching, no hardcoded ids. */
 export function getShopItem(itemId) {
   if (!itemId) return null;
   return SHOP_ITEMS[itemId] ?? null;

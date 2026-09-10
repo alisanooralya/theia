@@ -1,8 +1,3 @@
-/**
- * Economy 2.0 — `.fish` command (migrated from legacy, same UI/flow).
- * Thin layer over fishService: start message, random 3-5s wait, edit to
- * result. Cooldown (1h) guards concurrency where legacy used a Set.
- */
 import { fishService } from '#features/economy/services/fish-service.js';
 import { FISH_COOLDOWN_MS } from '#features/economy/config/fish-config.js';
 import { F } from '#helpers/index.js';

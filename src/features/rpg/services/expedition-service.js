@@ -1,15 +1,3 @@
-/**
- * RPG 2.0 — Expedition service (migrated from legacy, same flow).
- *
- * Pick a track + duration -> rewards are rolled ONCE at start and stored
- * -> claim pays out exactly the stored amounts. Coin goes to the existing
- * wallet, EXP to the RPG player row (existing curve), both atomically with
- * the session flip in one transaction.
- *
- * Dropped vs legacy: the card coin-bonus multiplier
- * (`cardService.coinRewardTotal`) — the 2.0 card system has no income-bonus
- * concept, and inventing one is out of scope. Stored coin pays out as-is.
- */
 import { sql } from '#storage/connection.js';
 import { expeditionModel } from '../models/expedition.model.js';
 import { userModel } from '#storage/models/user.js';

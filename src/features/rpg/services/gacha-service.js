@@ -1,15 +1,3 @@
-/**
- * RPG 2.0 — Gacha service (validation, rolls, rewards, atomicity).
- *
- * Flow per request: validate count -> claim idempotency key -> lock
- * player row -> spend coin -> roll N independent pulls -> grant via
- * existing Card/Inventory services -> store results -> commit.
- * Any failure rolls everything back; retries return stored results.
- *
- * Pools are never listed here: mains come from Card Config, items from
- * Shop Config. Owned mains (including ones granted earlier in the same
- * request) resolve to zonk — never rerolled, never duplicated.
- */
 import { randomUUID } from 'node:crypto';
 import { sql } from '#storage/connection.js';
 import {
@@ -57,10 +45,6 @@ export function createGachaService({
   return {
     config: GACHA_CONFIG,
 
-    /**
-     * Run `count` pulls (must be a configured cost key: 1 or 10).
-     * Returns { requestKey, count, total, results, duplicate }.
-     */
     async pull(
       userId,
       count,
@@ -128,7 +112,6 @@ export function createGachaService({
       });
     },
 
-    /** Main pool ids (live Card Config). */
     mainPool() {
       return Object.keys(MAIN_CARDS);
     },

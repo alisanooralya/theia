@@ -18,7 +18,7 @@ export default {
         `✅ Redeem berhasil! Kamu mendapatkan ${F.formatNumber(reward.amount)} coin.`
       );
     } catch (err) {
-      return ctx.fail(`❌ ${err.message}`);
+      await ctx.fail(err.message);
     }
   },
 };

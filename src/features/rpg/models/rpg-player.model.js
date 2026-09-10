@@ -1,18 +1,3 @@
-/**
- * RPG 2.0 — Player repository.
- *
- * Sole data-access layer for the `rpg_players` table. All SQL for RPG
- * player/base-stat state lives here; callers go through these methods.
- *
- * Notes:
- * - One RPG player per user: `user_id` is the PRIMARY KEY.
- * - `ensure()` also ensures the parent `users` row first: the message
- *   pipeline does not create one for every sender, and without it the
- *   `rpg_players` FK rejects the insert (no RPG table would update).
- * - `current_hp` is independent persistent state. It is never derived
- *   from `max_hp` here: changing Max HP does not touch Current HP.
- * - No derived/Final stats are stored. No Card logic.
- */
 import { sql } from '#storage/connection.js';
 import { userModel } from '#storage/models/user.js';
 import { defaultRpgStats } from '../config/stats-config.js';
@@ -66,10 +51,6 @@ class RpgPlayerModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Persistent HP state. Floored at 0, deliberately NOT clamped to
-   * max_hp so Current HP stays independent from Max HP.
-   */
   async setCurrentHp(userId, hp, client = sql) {
     if (!Number.isInteger(hp)) {
       throw new RangeError('hp must be an integer');

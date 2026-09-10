@@ -1,14 +1,3 @@
-/**
- * RPG 2.0 — Domain config. Single source of truth for PvE domains.
- *
- * RULE: tuning a domain = editing one entry here. Services/commands
- * never hardcode boss stats or reward numbers. Reward rolls resolve
- * uniformly within [min, max] (inclusive integers).
- *
- * v1 balance note: base player is ~100 HP / 10 ATK / 5 DEF before Card
- * bonuses. Easy is clearable nearly naked; medium wants a leveled card;
- * hard wants a strong equipped Main Card + Sign.
- */
 function boss({
   id,
   name,
@@ -70,13 +59,13 @@ export const DOMAINS = Object.freeze({
     boss: boss({
       id: 'slime_king',
       name: 'Slime King',
-      maxHp: 80,
+      maxHp: 100,
       atk: 8,
       def: 2,
     }),
     rewards: {
       exp: { min: 100, max: 150 },
-      coin: { min: 5000, max: 10000 },
+      coin: { min: 20000, max: 35000 },
       cerelia: { min: 2, max: 4 },
     },
   }),
@@ -88,14 +77,14 @@ export const DOMAINS = Object.freeze({
     boss: boss({
       id: 'stone_golem',
       name: 'Stone Golem',
-      maxHp: 300,
-      atk: 25,
-      def: 10,
+      maxHp: 5000,
+      atk: 40,
+      def: 20,
     }),
     rewards: {
-      exp: { min: 250, max: 400 },
-      coin: { min: 15000, max: 25000 },
-      cerelia: { min: 5, max: 8 },
+      exp: { min: 300, max: 500 },
+      coin: { min: 40000, max: 65000 },
+      cerelia: { min: 5, max: 10 },
     },
   }),
   hard: domain({
@@ -106,9 +95,9 @@ export const DOMAINS = Object.freeze({
     boss: boss({
       id: 'abyss_dragon',
       name: 'Abyss Dragon',
-      maxHp: 800,
-      atk: 60,
-      def: 25,
+      maxHp: 15000,
+      atk: 80,
+      def: 50,
       behavior: 'skill_based',
       skills: {
         active: {
@@ -124,25 +113,22 @@ export const DOMAINS = Object.freeze({
       },
     }),
     rewards: {
-      exp: { min: 600, max: 900 },
-      coin: { min: 35000, max: 50000 },
-      cerelia: { min: 10, max: 15 },
+      exp: { min: 800, max: 1200 },
+      coin: { min: 80000, max: 100000 },
+      cerelia: { min: 10, max: 20 },
     },
   }),
 });
 
-/** Domain entry by id (case-insensitive), or null. */
 export function getDomain(difficulty) {
   if (!difficulty) return null;
   return DOMAINS[String(difficulty).toLowerCase()] ?? null;
 }
 
-/** All domains in definition order. */
 export function getDomains() {
   return Object.values(DOMAINS);
 }
 
-/** Uniform integer roll within [min, max]. */
 export function rollReward(range, random = Math.random) {
   return range.min + Math.floor(random() * (range.max - range.min + 1));
 }

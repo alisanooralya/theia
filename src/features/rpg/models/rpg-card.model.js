@@ -1,16 +1,3 @@
-/**
- * RPG 2.0 — Card repository.
- *
- * Sole data-access layer for `rpg_main_cards` / `rpg_sign_cards`.
- * All SQL for Card ownership, levels, and equipment lives here.
- *
- * Rules enforced here / by schema:
- * - One copy per card id per user (UNIQUE(user_id, card_id)).
- * - Granting an owned card never duplicates (ON CONFLICT DO NOTHING).
- * - One equipped card per slot per user (partial unique index +
- *   clear-then-set in equip()).
- * - Level ranges per kind (main 1-100, sign 1-50) via CHECK.
- */
 import { sql } from '#storage/connection.js';
 
 const TABLES = Object.freeze({
@@ -69,10 +56,6 @@ class RpgCardModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Equip a card, replacing whatever is in the slot. Clear-then-set keeps
-   * the single-equipped partial unique index satisfied at every step.
-   */
   async equip(userId, cardId, kind, client = sql) {
     const table = tableFor(kind);
     await client.unsafe(

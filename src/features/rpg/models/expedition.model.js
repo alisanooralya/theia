@@ -1,11 +1,3 @@
-/**
- * RPG 2.0 — Expedition repository (migrated from legacy, same table).
- *
- * Sole data-access layer for `expeditions`. One row per user: starting a
- * new expedition overwrites only non-active rows; claiming flips
- * active -> claimed only after the duration elapsed, so concurrent/retry
- * claims pay out once.
- */
 import { sql } from '#storage/connection.js';
 
 const nowSec = () => Math.floor(Date.now() / 1000);

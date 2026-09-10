@@ -1,30 +1,3 @@
-/**
- * RPG 2.0 — Battle Engine v1 (pure core, no I/O).
- *
- * The single battle system for Domain, Raid, PvE, PvP, and future modes.
- * Do NOT build per-feature battle engines; build callers on top of this.
- *
- * Boundaries (enforced by design, not by imports):
- * - No commands/UI, no WhatsApp messages, no rewards, no database.
- * - Input: battle state + action. Output: updated battle state.
- * - No timers. Rounds are conceptual (1 round = 2 seconds);
- *   the caller owns pacing and presentation.
- *
- * Data flow:
- *   Final Stats (snapshot once at createBattle, never re-read)
- *   + Enemy Config + resolved skills/passives
- *   -> Battle State -> turns -> WIN / LOSE / DRAW (+ structured log)
- *
- * Assumptions (v1):
- * - One active skill slot per side; passives are trigger-based modifiers.
- * - Active-skill damage multiplier is derived generically from the
- *   existing skill config: 1 + sum of `atk` pct effects (upgraded set
- *   once the Lv.75 milestone state is passed in). No card-id branches.
- * - Passive stat effects translate generically: atk/crit* -> attack
- *   modifiers, def/hp -> defend (damage-taken) modifiers.
- * - Skill cooldownMs (seconds) -> ready round: ceil(sec / 2).
- */
-
 export const MAX_ROUNDS_DEFAULT = 50;
 export const ROUND_SECONDS = 2;
 
@@ -80,10 +53,6 @@ function cloneState(state) {
 
 let battleSeq = 0;
 
-/**
- * Create a battle. Player stats (Final Stats) are snapshotted; enemy
- * starts at full HP. Throws when player currentHp <= 0.
- */
 export function createBattle({
   playerStats,
   enemy,
@@ -140,11 +109,6 @@ export function createBattle({
   return state;
 }
 
-/**
- * Single generic damage path for player AND enemy. No per-side variants.
- * Rounding happens once at the end; minimum damage is 1; the only
- * randomness is the crit roll.
- */
 export function calculateDamage({
   atk,
   skillMultiplier = 1,
@@ -164,13 +128,11 @@ export function calculateDamage({
   return { damage: Math.max(1, Math.round(damage)), isCrit };
 }
 
-/** Rounds (2s each) until a seconds-based cooldown is ready again. */
 export function cooldownRounds(cooldownSec) {
   if (!(cooldownSec > 0)) throw new RangeError('cooldownSec must be positive');
   return Math.ceil(cooldownSec / ROUND_SECONDS);
 }
 
-/** Ready round when a skill is used on `usedRound`. */
 export function skillReadyRound(usedRound, cooldownSec) {
   return usedRound + cooldownRounds(cooldownSec);
 }
@@ -200,10 +162,6 @@ function collectMods(side, trigger) {
   return { mods, fired };
 }
 
-/**
- * Apply direct trigger effects ({type:'damage'|'heal', value}) for a side.
- * Damage hits the opposing side; heal restores the owner (capped).
- */
 function applyTriggerEffects(state, owner, trigger) {
   const side = owner === 'player' ? state.player : state.enemy;
   const foe = owner === 'player' ? state.enemy : state.player;
@@ -303,7 +261,6 @@ function takeTurn(state, side, skillsKey, action, roll) {
   return next;
 }
 
-/** Player turn: exactly one action (basic attack or active skill). */
 export function playerTurn(
   state,
   action = 'basic_attack',
@@ -313,7 +270,6 @@ export function playerTurn(
   return takeTurn(state, 'player', 'playerSkills', action, roll);
 }
 
-/** Enemy turn. `basic` always attacks; `skill_based` uses skill when ready. */
 export function enemyTurn(state, roll = Math.random()) {
   if (state.status !== 'ONGOING') return cloneState(state);
   const behavior = state.enemyMeta.behavior;
@@ -324,7 +280,6 @@ export function enemyTurn(state, roll = Math.random()) {
   return takeTurn(state, 'enemy', 'enemySkills', want, roll);
 }
 
-/** Full round: player acts first, then enemy (only if still alive). */
 export function runRound(
   state,
   playerAction = 'basic_attack',
@@ -346,7 +301,6 @@ export function runRound(
   return next;
 }
 
-/** Run rounds until terminal (WIN/LOSE/DRAW). Caller owns pacing. */
 export function simulateBattle(
   state,
   chooseAction = () => 'basic_attack',
@@ -362,11 +316,6 @@ export function simulateBattle(
   return next;
 }
 
-/**
- * Adapter: existing Card/Skill-system output (getActiveEffects entries)
- * -> generic battle skills. No card-id branches; unknown stats map to
- * the closest generic trigger (documented v1 simplification).
- */
 export function battleSkillsFromEffects(activeEffects = []) {
   let active = null;
   const passives = [];

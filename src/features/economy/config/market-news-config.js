@@ -1,29 +1,11 @@
-/**
- * Konfigurasi Market News — bagian dari konfigurasi Virtual Market.
- *
- * Semua balancing berita ada di file ini: peluang muncul, cooldown,
- * probabilitas outcome (TRUE/PARTIAL/FALSE), kekuatan dampak, durasi,
- * bobot komoditas, dan teks berita. Service & engine tidak boleh
- * menghardcode angka balancing.
- */
-
-// Peluang sebuah berita muncul pada satu tick market (1 tick = 1 jam).
 export const NEWS_SPAWN_CHANCE = 0.32;
-
-// Jarak minimal (tick) antar berita apa pun, supaya tidak spam.
 export const NEWS_GLOBAL_COOLDOWN_TICKS = 2;
 
-// Batas berita yang berpengaruh bersamaan.
 export const NEWS_MAX_ACTIVE = 3;
 export const NEWS_MAX_ACTIVE_PER_COMMODITY = 1;
 
-// Jumlah berita yang diumumkan ke grup per siklus pengiriman.
 export const NEWS_ANNOUNCE_PER_RUN = 1;
-
-// Jeda antar grup saat mengirim pengumuman.
 export const NEWS_DELIVERY_DELAY_MS = 1_500;
-
-// Jumlah berita yang ditampilkan `.market news`.
 export const NEWS_FEED_LIMIT = 5;
 
 /**
@@ -76,45 +58,31 @@ export const NEWS_TYPE_IDS = Object.keys(NEWS_TYPES);
 
 export const NEWS_OUTCOMES = ['TRUE', 'PARTIAL', 'FALSE'];
 
-/** Probabilitas hidden outcome per tipe. Rumor paling tidak bisa dipercaya. */
 export const NEWS_OUTCOME_WEIGHTS = {
   news: { TRUE: 0.5, PARTIAL: 0.33, FALSE: 0.17 },
   rumor: { TRUE: 0.3, PARTIAL: 0.3, FALSE: 0.4 },
   breaking: { TRUE: 0.55, PARTIAL: 0.3, FALSE: 0.15 },
 };
 
-/** Pengali kekuatan dampak per outcome. FALSE hampir tidak berdampak. */
 export const NEWS_OUTCOME_MULT = {
   TRUE: [0.85, 1.0],
   PARTIAL: [0.35, 0.6],
   FALSE: [0.0, 0.25],
 };
 
-/** Peluang arah dampak berbalik dari yang tersirat di beritanya. */
 export const NEWS_REVERSE_CHANCE = {
   TRUE: 0,
   PARTIAL: 0.12,
   FALSE: 0.45,
 };
 
-/**
- * PARTIAL pada berita multi-komoditas: peluang sebuah komoditas tambahan
- * tidak ikut terdampak (efek "hanya sebagian benar").
- */
 export const NEWS_PARTIAL_DROP_CHANCE = 0.35;
-
-// Efek tidak langsung penuh: delay sebelum mulai, lalu naik bertahap.
 export const NEWS_IMPACT_DELAY = [1, 2];
 export const NEWS_IMPACT_RAMP = [2, 3];
-
-// Porsi akhir masa berlaku yang dipakai untuk meredakan efek secara bertahap.
 export const NEWS_FADE_PORTION = 0.5;
-
-// Pagar total pengaruh semua berita, supaya tidak melebihi event ekonomi.
 export const NEWS_TOTAL_BIAS_CLAMP = 0.04;
 export const NEWS_TOTAL_SWING_CLAMP = 1.45;
 
-/** Bobot komoditas sebagai bahan berita. */
 export const NEWS_COMMODITY_WEIGHTS = {
   rice: 1.0,
   coffee: 1.2,
