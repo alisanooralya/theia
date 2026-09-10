@@ -1,27 +1,9 @@
-/**
- * Konfigurasi Virtual Market — semua angka balancing ada di file ini.
- * Ubah nilai di sini untuk tuning tanpa menyentuh engine.
- */
-
-// Interval resmi perubahan harga (1 jam).
 export const TICK_MS = 1 * 60 * 60 * 1000;
-
-// Frekuensi scheduler mengecek apakah bucket jam sudah berganti.
 export const CHECK_INTERVAL_MS = 60 * 1000;
-
-// Jumlah titik history yang disimpan per komoditas.
 export const HISTORY_LIMIT = 24;
-
-// Minimal 10 perubahan terakhir dipakai untuk tampilan trend.
 export const HISTORY_DISPLAY = 4;
-
-// Batas transaksi supaya tidak ada overflow / order absurd.
 export const MAX_ORDER_QTY = 100_000;
-
-// Batas nilai satu transaksi & saldo (kolom cash/transactions bertipe INTEGER).
 export const MAX_TRADE_VALUE = 2_000_000_000;
-
-// Maksimal tick yang dikejar sekaligus setelah bot lama offline.
 export const MAX_CATCHUP_TICKS = 6;
 
 /**
@@ -40,7 +22,7 @@ export const COMMODITIES = {
     name: 'Rice',
     emoji: '🌾',
     character: 'stabil',
-    basePrice: 1_500,
+    basePrice: 12_000,
     drift: 0.0023,
     noise: 0.0137,
     phaseScale: 0.435,
@@ -54,7 +36,7 @@ export const COMMODITIES = {
     name: 'Coffee',
     emoji: '☕',
     character: 'medium',
-    basePrice: 3_000,
+    basePrice: 45_000,
     drift: 0.0034,
     noise: 0.04,
     phaseScale: 1.06,
@@ -68,7 +50,7 @@ export const COMMODITIES = {
     name: 'Oil',
     emoji: '🛢️',
     character: 'volatile',
-    basePrice: 8_000,
+    basePrice: 11_500,
     drift: 0.0,
     noise: 0.0685,
     phaseScale: 1.55,
@@ -82,7 +64,7 @@ export const COMMODITIES = {
     name: 'Gold',
     emoji: '🪙',
     character: 'aman',
-    basePrice: 16_000,
+    basePrice: 1_450_000,
     drift: 0.0045,
     noise: 0.0183,
     phaseScale: 0.62,
@@ -96,7 +78,7 @@ export const COMMODITIES = {
     name: 'Diamond',
     emoji: '💎',
     character: 'sangat volatile',
-    basePrice: 23_000,
+    basePrice: 4_000_000,
     drift: 0.0,
     noise: 0.097,
     phaseScale: 2.1,
@@ -109,18 +91,14 @@ export const COMMODITIES = {
 
 export const COMMODITY_IDS = Object.keys(COMMODITIES);
 
-// Alias input user -> id komoditas.
 export const COMMODITY_ALIASES = {
   beras: 'rice',
   padi: 'rice',
   kopi: 'coffee',
-  cof: 'coffee',
   minyak: 'oil',
   bbm: 'oil',
   emas: 'gold',
-  au: 'gold',
-  diamon: 'diamond',
-  dia: 'diamond',
+  berlian: 'diamond',
   intan: 'diamond',
 };
 
@@ -148,7 +126,6 @@ export const PHASES = {
     swing: 0.8,
     min: 3,
     max: 6,
-    // Reli kecil juga bisa mati muda sebelum mencapai boom.
     popChance: 0.01,
     next: [
       ['boom', 0.5],
@@ -161,7 +138,6 @@ export const PHASES = {
     swing: 1.0,
     min: 2,
     max: 5,
-    // Reli panas bisa pecah kapan saja, tidak harus menunggu bubble.
     popChance: 0.025,
     next: [
       ['bubble', 0.5],
@@ -174,12 +150,10 @@ export const PHASES = {
     swing: 1.3,
     min: 2,
     max: 5,
-    // Bubble hampir selalu berakhir crash, tapi tidak pasti.
     next: [
       ['crash', 0.75],
       ['normal', 0.25],
     ],
-    // Peluang dasar bubble pecah lebih awal setiap tick.
     popChance: 0.22,
   },
   crash: {
@@ -206,20 +180,13 @@ export const PHASES = {
 
 export const DEFAULT_PHASE = 'normal';
 
-// Momentum membuat pergerakan harga tidak acak per jam (ada kelanjutan tren).
 export const MOMENTUM_DECAY = 0.55;
 export const MOMENTUM_GAIN = 0.4;
 export const MOMENTUM_CLAMP = 0.09;
 
-// Pagar keras perubahan harga per tick supaya tidak melonjak ekstrem.
 export const MAX_TICK_CHANGE = 0.35;
-
-// Kenaikan peluang pop per 1x basePrice di atas base (mis. ratio 2.0 = +gain).
-// Makin tinggi harga, makin besar chance pecah tiap tick — puncak tiap
-// siklus jadi acak dan tidak bisa ditebak pemain.
 export const POP_RATIO_GAIN = 0.03;
 
-// Peluang sebuah event ekonomi baru muncul pada satu tick.
 export const EVENT_CHANCE = 0.14;
 
 /**
