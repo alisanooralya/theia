@@ -112,6 +112,9 @@ export function createBountyService({
         });
         const end = simulateBattle(state, () => 'basic_attack', random);
         const won = end.status === 'WIN';
+        const playerHp = end.player.hp;
+
+        await playerRepo.setCurrentHp(userId, playerHp, t);
 
         let reward = null;
         if (won) {

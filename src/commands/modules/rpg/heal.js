@@ -11,7 +11,7 @@ export default {
   aliases: ['sembuh', 'recover'],
   category: 'rpg',
   description: 'Heal HP penuh (1 Coin per HP)',
-  cooldown: 0,
+  cooldown: 3 * 60 * 60 * 1000,
 
   async execute(ctx) {
     try {

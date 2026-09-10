@@ -117,6 +117,9 @@ export function createDomainService({
           ...(maxRounds ? { maxRounds } : {}),
         });
         const end = simulateBattle(state, () => 'basic_attack', random);
+        const playerHp = end.player.hp;
+
+        await players.setCurrentHp(userId, playerHp, tx);
 
         if (end.status !== 'WIN') {
           await tx`
