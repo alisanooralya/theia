@@ -5,6 +5,7 @@ import { rpgCoinModel } from '../../rpg/models/rpg-coin.model.js';
 import { finalStatService } from '../../rpg/services/final-stat-service.js';
 import { createCardService } from '../../rpg/services/card-service.js';
 import {
+  autoSkillAction,
   battleSkillsFromEffects,
   createBattle,
   simulateBattle,
@@ -110,7 +111,9 @@ export function createBountyService({
           playerSkills,
           battleId: `bounty:${userId}:${target.id}:${nowSec}`,
         });
-        const end = simulateBattle(state, () => 'basic_attack', random);
+        // Target buronan tidak punya skill (PvE): hanya pemain yang
+        // auto-cast active skill saat siap, musuh tetap basic attack.
+        const end = simulateBattle(state, autoSkillAction, random);
         const won = end.status === 'WIN';
         const playerHp = end.player.hp;
 

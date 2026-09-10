@@ -8,6 +8,7 @@ import { rpgInventoryModel } from '../models/rpg-inventory.model.js';
 import { finalStatService as defaultFinals } from './final-stat-service.js';
 import { createCardService } from './card-service.js';
 import {
+  autoSkillAction,
   battleSkillsFromEffects,
   createBattle,
   simulateBattle,
@@ -113,10 +114,11 @@ export function createDomainService({
           },
           enemy: domain.boss,
           playerSkills,
+          enemySkills: domain.boss.skills ?? null,
           battleId: key,
           ...(maxRounds ? { maxRounds } : {}),
         });
-        const end = simulateBattle(state, () => 'basic_attack', random);
+        const end = simulateBattle(state, autoSkillAction, random);
         const playerHp = end.player.hp;
 
         await players.setCurrentHp(userId, playerHp, tx);
