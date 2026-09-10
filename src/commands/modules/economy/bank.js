@@ -1,8 +1,7 @@
 import { F } from '#helpers/index.js';
 import { bankService } from '#features/economy/services/bank-service.js';
 
-const USAGE =
-  'Usage: `.bank` atau `.bank deposit <jumlah>` atau `.bank withdraw <jumlah>`';
+const USAGE = 'Usage: `.bank` deposit <jumlah> atau `.bank` withdraw <jumlah>';
 
 const isDeposit = (sub) => sub === 'deposit' || sub === 'tabung';
 const isWithdraw = (sub) => sub === 'withdraw' || sub === 'ambil';
@@ -27,8 +26,7 @@ export default {
             '🏦 *BANK*',
             '',
             `🏦 Bank: ${F.formatNumber(balance.bank)}`,
-            `💰 Coin: ${F.formatNumber(balance.coin)}`,
-            `💎 Total: ${F.formatNumber(balance.total)}`,
+            `🪙 Coin: ${F.formatNumber(balance.coin)}`,
           ].join('\n')
         );
         return;
@@ -46,7 +44,7 @@ export default {
         [
           `✅ ${action === 'deposit' ? 'Deposit' : 'Withdraw'} *${F.formatNumber(result.amount)}* ${verb} berhasil!`,
           `🏦 Bank: *${F.formatNumber(result.bank)}*`,
-          `💰 Coin: *${F.formatNumber(result.coin)}*`,
+          `🪙 Coin: *${F.formatNumber(result.coin)}*`,
         ].join('\n')
       );
     } catch (err) {

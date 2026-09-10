@@ -1,10 +1,3 @@
-/**
- * Economy 2.0 — Work session repository (migrated from legacy, same table).
- *
- * Sole data-access layer for `work_sessions`. One row per user: starting a
- * new job overwrites only non-active rows; claiming flips active -> claimed
- * only after the duration elapsed, so concurrent/retry claims grant once.
- */
 import { sql } from '#storage/connection.js';
 
 const nowSec = () => Math.floor(Date.now() / 1000);

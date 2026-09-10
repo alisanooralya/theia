@@ -1,11 +1,3 @@
-/**
- * Economy 2.0 — Work service (migrated from legacy, same flow).
- *
- * Pick a job -> session runs for the job duration -> claim rolls coin+exp
- * from the job ranges and credits both atomically with the session flip.
- * Only the single conditional-claim UPDATE wins, so concurrent claims and
- * retries grant once. EXP lands on the RPG player row (existing curve).
- */
 import { sql } from '#storage/connection.js';
 import { workModel } from '../models/work.model.js';
 import { userModel } from '#storage/models/user.js';

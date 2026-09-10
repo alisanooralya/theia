@@ -33,9 +33,8 @@ export default {
         [
           `💰 *Dompet ${tag}*`,
           '',
-          `💰 Coin: ${F.formatNumber(balance.coin)}`,
+          `🪙 Coin: ${F.formatNumber(balance.coin)}`,
           `🏦 Bank: ${F.formatNumber(balance.bank)}`,
-          `💎 Total: ${F.formatNumber(balance.total)}`,
         ].join('\n'),
         target === ctx.sender ? {} : { mentions: [target] }
       );

@@ -1,15 +1,3 @@
-/**
- * Economy 2.0 — Bounty service (migrated from legacy, same mechanics).
- *
- * One `attempt` = one daily-slot claim + battle + reward, all in one
- * transaction: the conditional daily UPDATE locks the user row, so
- * concurrent/retry attempts cannot double-hunt or double-reward. Battle
- * mirrors the domain flow (Final Stats snapshot + card skills, basic
- * attack rounds); WIN pays config-range coin + player EXP atomically.
- *
- * Dropped vs legacy: `cardService.coinRewardTotal` multiplier (no income
- * bonus concept in the 2.0 card system — pays full range as-is).
- */
 import { sql } from '#storage/connection.js';
 import { userModel } from '#storage/models/user.js';
 import { rpgPlayerModel } from '../../rpg/models/rpg-player.model.js';
@@ -58,11 +46,6 @@ export function createBountyService({
     getBountyDifficulty,
     getBountyTarget,
 
-    /**
-     * One bounty attempt. Throws RangeError 'jailed-day' when the daily
-     * slot is already used, 'hp0' when current HP is 0. Returns
-     * { won, rounds, reward? }.
-     */
     async attempt(
       userId,
       difficulty,
@@ -81,15 +64,11 @@ export function createBountyService({
 
       const dayStart = wibDayStart(nowSec);
 
-      // Snapshot Final Stats + card skills BEFORE the transaction: these
-      // calls run ensures, and any write inside the tx (daily claim locks
-      // the user row) would self-deadlock with a nested ensure.
       const final = await finalsSvc.getFinalStats(userId);
       const activeEffects = await cardsSvc.getActiveEffects(userId);
       const playerSkills = battleSkillsFromEffects(activeEffects);
 
       return db.begin(async (t) => {
-        // Atomic daily claim: only one attempt per WIB day, race-safe.
         const claimed = await userRepo.claimBountyDay(
           userId,
           dayStart,
@@ -102,7 +81,6 @@ export function createBountyService({
           throw err;
         }
 
-        // No ensure may run after this point (rows are locked).
         const hpRows = await t`
           SELECT current_hp FROM rpg_players WHERE user_id = ${userId} FOR UPDATE
         `;

@@ -1,19 +1,3 @@
-/**
- * Economy 2.0 — Market service (migrated from legacy, same mechanics).
- *
- * Business logic for the virtual commodity market; commands stay thin.
- *
- * Changes vs legacy (`features/economy/market.js`):
- * - Wallet: legacy `wallets.cash` -> current `rpg_wallets.coin`, with the
- *   standard users -> rpg_players -> rpg_wallets ensure chain. No new
- *   currency; the `cash` result/UI key now carries coin.
- * - News pressure rewired: `computeNext` accepts the active-news context
- *   and feeds it through `newsPressure` (same as legacy); the news rows
- *   themselves are maintained by the news service in its own transaction.
- * - No `transactions` ledger rows (no ledger system in 2.0).
- * Everything else — price math, avg-cost accounting, partial/full sell,
- * MAX_ORDER_QTY / MAX_TRADE_VALUE guards, history display — is identical.
- */
 import { sql } from '#storage/connection.js';
 import { marketModel } from '../models/market.model.js';
 import { userModel } from '#storage/models/user.js';

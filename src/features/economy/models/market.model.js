@@ -1,16 +1,3 @@
-/**
- * Economy 2.0 — Market repository (migrated from legacy, same tables).
- *
- * Sole data-access layer for `market_commodities`, `market_state`,
- * `market_history`, `market_portfolio`, and `market_trades`.
- *
- * Changes vs legacy (`storage/models/market.js`):
- * - News stripped: no `marketNewsModel` (no news tables/scheduler in 2.0).
- *   `advance()` runs pure price ticks; economy events (inline
- *   `event_id`/`event_ticks` columns) are untouched.
- * Everything else — schema shape, seeding, bucket/catch-up rules,
- * history pruning, holding locks — is identical to legacy.
- */
 import { sql } from '#storage/connection.js';
 import {
   COMMODITY_IDS,
@@ -126,12 +113,6 @@ class MarketModel {
     return rows.map((row) => Number(row.price)).reverse();
   }
 
-  /**
-   * Hourly tick with restart safety: the `market_state` row lock makes
-   * concurrent ticks serialize; only one applies per hour bucket and a
-   * second caller for the same bucket gets `{ skipped: true }`.
-   * After downtime, up to MAX_CATCHUP_TICKS buckets are replayed.
-   */
   async advance(computeNext, nowMs = Date.now()) {
     const bucket = currentBucket(nowMs);
 

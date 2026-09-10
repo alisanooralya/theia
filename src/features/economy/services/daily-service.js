@@ -1,14 +1,3 @@
-/**
- * Economy — Daily service (business logic; thin SQL via models).
- *
- * Atomic `.daily` claim: lock user row -> reject same WIB calendar day
- * -> legacy 48h streak rule -> config-range coin roll -> credit wallet
- * -> persist streak/date -> commit. Concurrent same-day claims serialize
- * on the row lock, so at most one succeeds; failures roll back coin and
- * streak together. Coin uses the existing RPG wallet store (the only
- * coin system available); no new currency, no EXP (user levels no longer
- * exist), no streak bonus (legacy had none).
- */
 import { sql } from '#storage/connection.js';
 import { userModel } from '#storage/models/user.js';
 import { rpgPlayerModel } from '../../rpg/models/rpg-player.model.js';
@@ -25,12 +14,6 @@ export function createDailyService({ users, players, coins, db = sql } = {}) {
   const coinRepo = coins ?? rpgCoinModel;
 
   return {
-    /**
-     * Claim daily for `userId`. Returns
-     * { status: 'claimed', coin, streak } or
-     * { status: 'already', coin: 0, streak }.
-     * `nowSec`/`random` injectable for tests.
-     */
     async claimDaily(
       userId,
       {
@@ -65,7 +48,6 @@ export function createDailyService({ users, players, coins, db = sql } = {}) {
       });
     },
 
-    /** Current streak without mutating (0 when never claimed). */
     async currentStreak(userId) {
       const state = await userRepo.getDaily(userId);
       return state?.daily_streak ?? 0;

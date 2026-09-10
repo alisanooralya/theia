@@ -1,16 +1,3 @@
-/**
- * Economy 2.0 — Market News service (migrated from legacy, same behavior).
- *
- * Optional layer over Market: news spawns per tick, applies delayed /
- * ramp / decay pressure through the price engine, and is announced once
- * to news-enabled groups. Hidden outcome/impact never leave the server.
- *
- * Changes vs legacy (`features/economy/market-news.js`):
- * - Injectable model/groups/broadcast for tests (same defaults).
- * - Added `maintain(tick)`: expiry + spawn + stale-skip in its OWN
- *   transaction, separate from the price tick — a news failure can never
- *   roll back a valid price tick or touch coin/portfolio.
- */
 import { sql } from '#storage/connection.js';
 import { marketNewsModel } from '../models/market-news.model.js';
 import { groupModel } from '#storage/models/group.js';
@@ -90,10 +77,6 @@ export function createMarketNewsService({
       });
     },
 
-    /**
-     * Expire due news, roll + persist one spawn, skip stale announcements.
-     * Own transaction: independent of the Market price tick.
-     */
     async maintain(tick) {
       return db.begin(async (t) => {
         const active = await newsRepo.activeForUpdate(t);
@@ -120,11 +103,6 @@ export function createMarketNewsService({
       });
     },
 
-    /**
-     * Claim + broadcast pending announcements. Atomic PENDING -> SENT
-     * claim per row: only one process ever sends a given news item.
-     * Items expiring before send become SKIPPED and are never sent.
-     */
     async announcePending(sock, limit = NEWS_ANNOUNCE_PER_RUN) {
       const pending = await newsRepo.pendingAnnouncements(limit);
       if (!pending.length) return { announced: 0, sent: 0, failed: 0 };
