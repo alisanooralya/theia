@@ -9,7 +9,10 @@
 import { userModel } from '#storage/models/user.js';
 import { pvpService } from '#features/rpg/services/pvp-service.js';
 import { finalStatService } from '#features/rpg/services/final-stat-service.js';
-import { PVP_CONFIG, PVP_SNAPSHOT_DELAY_MS } from '#features/rpg/config/pvp-config.js';
+import {
+  PVP_CONFIG,
+  PVP_SNAPSHOT_DELAY_MS,
+} from '#features/rpg/config/pvp-config.js';
 import { phoneToJid } from '#helpers/identifier.js';
 import { F } from '#helpers/index.js';
 import { sleep } from '#helpers/formatter.js';
@@ -178,7 +181,10 @@ export async function runPvpBattle(ctx, session) {
   for (const round of [3, 6, 9]) {
     if (round > result.rounds) break;
     const snap = roundSnapshot(result.log, round);
-    const hp = timeline.get(round) ?? { cHp: result.challengerHp, tHp: result.targetHp };
+    const hp = timeline.get(round) ?? {
+      cHp: result.challengerHp,
+      tHp: result.targetHp,
+    };
     await edit(buildSnapshotText(aName, hp.cHp, dName, hp.tHp, snap));
     await sleep(PVP_SNAPSHOT_DELAY_MS);
   }
@@ -223,7 +229,10 @@ export default {
       { mentions: [ctx.sender, targetJid] }
     );
 
-    const bound = await pvpService.bindConfirm(session.id, confirmMsg?.key?.id ?? '');
+    const bound = await pvpService.bindConfirm(
+      session.id,
+      confirmMsg?.key?.id ?? ''
+    );
     if (!bound) await pvpService.cancel(session.id);
 
     return confirmMsg;

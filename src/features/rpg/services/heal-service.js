@@ -32,7 +32,7 @@ export function createHealService({
      * Full heal. Returns { healed, cost, currentHp, maxHp }.
      * Throws RangeError 'full' (HP already full), 'Coin tidak cukup'
      * (insufficient funds), or 'player missing'.
-     */    async heal(userId) {
+     */ async heal(userId) {
       await playerRepo.ensure(userId);
       await coinRepo.ensure(userId);
 

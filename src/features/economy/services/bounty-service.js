@@ -67,7 +67,11 @@ export function createBountyService({
       userId,
       difficulty,
       targetId,
-      { nowSec = Math.floor(Date.now() / 1000), random = Math.random, pushName = '' } = {}
+      {
+        nowSec = Math.floor(Date.now() / 1000),
+        random = Math.random,
+        pushName = '',
+      } = {}
     ) {
       const config = getBountyDifficulty(difficulty);
       if (!config) throw new RangeError('Difficulty tidak valid.');
@@ -86,7 +90,12 @@ export function createBountyService({
 
       return db.begin(async (t) => {
         // Atomic daily claim: only one attempt per WIB day, race-safe.
-        const claimed = await userRepo.claimBountyDay(userId, dayStart, nowSec, t);
+        const claimed = await userRepo.claimBountyDay(
+          userId,
+          dayStart,
+          nowSec,
+          t
+        );
         if (!claimed) {
           const err = new RangeError('daily used');
           err.code = 'DAILY_USED';
@@ -99,7 +108,9 @@ export function createBountyService({
         `;
         const currentHp = Number(hpRows[0]?.current_hp ?? 0);
         if (currentHp <= 0) {
-          const err = new RangeError('HP kamu 0! Heal dulu sebelum berburu buronan.');
+          const err = new RangeError(
+            'HP kamu 0! Heal dulu sebelum berburu buronan.'
+          );
           err.code = 'HP0';
           throw err;
         }

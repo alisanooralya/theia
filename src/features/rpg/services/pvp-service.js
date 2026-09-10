@@ -86,10 +86,7 @@ export function createPvpService({
     }
 
     const nowSec = Math.floor(Date.now() / 1000);
-    await pvpRepo.expireStale(
-      nowSec,
-      Math.floor(config.battleTtlMs / 1000)
-    );
+    await pvpRepo.expireStale(nowSec, Math.floor(config.battleTtlMs / 1000));
 
     const expiresAt = nowSec + Math.floor(config.confirmTtlMs / 1000);
     const session = await pvpRepo.create(challenger, target, {
@@ -227,8 +224,7 @@ export function createPvpService({
       let loserLoss = 0;
       if (!draw) {
         // Winner heals 20% of max HP once.
-        const winnerMax =
-          winner === challenger ? cFinal.maxHp : tFinal.maxHp;
+        const winnerMax = winner === challenger ? cFinal.maxHp : tFinal.maxHp;
         const winnerHp = winner === challenger ? challengerHp : targetHp;
         const healed = Math.min(
           winnerMax,

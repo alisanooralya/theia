@@ -16,9 +16,30 @@ export const BOUNTY_DIFFICULTY = {
     coin: [6000, 8000],
     exp: [20, 40],
     targets: [
-      { id: 'copet', name: 'Copet Pasar', emoji: '🪙', hp: 2450, atk: 175, def: 84 },
-      { id: 'garong', name: 'Garong Kampung', emoji: '🗡️', hp: 2940, atk: 210, def: 105 },
-      { id: 'rampok', name: 'Rampok Jalanan', emoji: '🪓', hp: 3500, atk: 245, def: 126 },
+      {
+        id: 'copet',
+        name: 'Copet Pasar',
+        emoji: '🪙',
+        hp: 2450,
+        atk: 175,
+        def: 84,
+      },
+      {
+        id: 'garong',
+        name: 'Garong Kampung',
+        emoji: '🗡️',
+        hp: 2940,
+        atk: 210,
+        def: 105,
+      },
+      {
+        id: 'rampok',
+        name: 'Rampok Jalanan',
+        emoji: '🪓',
+        hp: 3500,
+        atk: 245,
+        def: 126,
+      },
     ],
   },
   medium: {
@@ -27,9 +48,30 @@ export const BOUNTY_DIFFICULTY = {
     coin: [13000, 17000],
     exp: [50, 80],
     targets: [
-      { id: 'bandit', name: 'Bandit Elite', emoji: '🏹', hp: 4400, atk: 300, def: 130 },
-      { id: 'preman', name: 'Preman Pelabuhan', emoji: '🥊', hp: 5000, atk: 340, def: 145 },
-      { id: 'sindikat', name: 'Bos Sindikat', emoji: '🎭', hp: 5600, atk: 380, def: 160 },
+      {
+        id: 'bandit',
+        name: 'Bandit Elite',
+        emoji: '🏹',
+        hp: 4400,
+        atk: 300,
+        def: 130,
+      },
+      {
+        id: 'preman',
+        name: 'Preman Pelabuhan',
+        emoji: '🥊',
+        hp: 5000,
+        atk: 340,
+        def: 145,
+      },
+      {
+        id: 'sindikat',
+        name: 'Bos Sindikat',
+        emoji: '🎭',
+        hp: 5600,
+        atk: 380,
+        def: 160,
+      },
     ],
   },
   hard: {
@@ -38,9 +80,30 @@ export const BOUNTY_DIFFICULTY = {
     coin: [21000, 27000],
     exp: [100, 120],
     targets: [
-      { id: 'assassin', name: 'Shadow Assassin', emoji: '🥷', hp: 6600, atk: 440, def: 175 },
-      { id: 'warlord', name: 'Warlord', emoji: '⚔️', hp: 7500, atk: 500, def: 195 },
-      { id: 'overlord', name: 'Cursed Overlord', emoji: '👹', hp: 8400, atk: 560, def: 215 },
+      {
+        id: 'assassin',
+        name: 'Shadow Assassin',
+        emoji: '🥷',
+        hp: 6600,
+        atk: 440,
+        def: 175,
+      },
+      {
+        id: 'warlord',
+        name: 'Warlord',
+        emoji: '⚔️',
+        hp: 7500,
+        atk: 500,
+        def: 195,
+      },
+      {
+        id: 'overlord',
+        name: 'Cursed Overlord',
+        emoji: '👹',
+        hp: 8400,
+        atk: 560,
+        def: 215,
+      },
     ],
   },
 };
@@ -67,5 +130,8 @@ export function rewardRange(config) {
 
 /** Epoch seconds at which the current WIB calendar day started. */
 export function wibDayStart(tsSec) {
-  return Math.floor((tsSec + WIB_OFFSET_HOURS * 3600) / 86400) * 86400 - WIB_OFFSET_HOURS * 3600;
+  return (
+    Math.floor((tsSec + WIB_OFFSET_HOURS * 3600) / 86400) * 86400 -
+    WIB_OFFSET_HOURS * 3600
+  );
 }

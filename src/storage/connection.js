@@ -2,25 +2,19 @@ import postgres from 'postgres';
 import SETTINGS from '#environment/settings.js';
 import { logger } from '#helpers/logger.js';
 
-// TEST_DATABASE_URL (local Postgres) overrides Supabase for fast local tests.
-const DATABASE_URL = process.env.TEST_DATABASE_URL || SETTINGS.supabaseDbUrl;
-const isLocalDb = /^postgres(?:ql)?:\/\/[^@]*@(localhost|127\.0\.0\.1)[/:?]/.test(
-  DATABASE_URL
-);
-
-if (!DATABASE_URL) {
+if (!SETTINGS.supabaseDbUrl) {
   logger.fatal(
     'supabaseDbUrl belum dikonfigurasi di src/environment/config.js'
   );
   process.exit(1);
 }
 
-export const sql = postgres(DATABASE_URL, {
+export const sql = postgres(SETTINGS.supabaseDbUrl, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
   prepare: false,
-  ssl: isLocalDb ? false : { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false },
   onnotice: (notice) => {
     const severity = notice?.severity ?? '';
     if (severity === 'NOTICE' || severity === 'INFO') return;

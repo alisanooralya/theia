@@ -26,7 +26,12 @@ class PvpModel {
    * has a live session (unique-index violation) — the caller turns that
    * into a friendly error.
    */
-  async create(challenger, target, { confirmMsgId = null, expiresAt = 0 } = {}, client = sql) {
+  async create(
+    challenger,
+    target,
+    { confirmMsgId = null, expiresAt = 0 } = {},
+    client = sql
+  ) {
     try {
       const rows = await client`
         INSERT INTO rpg_pvp_sessions (id, challenger, target, status, confirm_msg_id, expires_at)

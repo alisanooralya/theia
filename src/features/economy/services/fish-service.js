@@ -31,10 +31,7 @@ export function createFishService({
     /**
      * One fishing cast. Returns { fish, coin, exp, level }.
      */
-    async fish(
-      userId,
-      { random = Math.random, pushName = '' } = {}
-    ) {
+    async fish(userId, { random = Math.random, pushName = '' } = {}) {
       await userRepo.ensure(userId, { pushName });
       await playerRepo.ensure(userId);
       await coinRepo.ensure(userId);

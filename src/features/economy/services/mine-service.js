@@ -28,10 +28,7 @@ export function createMineService({
     /**
      * One mining dig. Returns { ore, coin, exp, level }.
      */
-    async mine(
-      userId,
-      { random = Math.random, pushName = '' } = {}
-    ) {
+    async mine(userId, { random = Math.random, pushName = '' } = {}) {
       await userRepo.ensure(userId, { pushName });
       await playerRepo.ensure(userId);
       await coinRepo.ensure(userId);

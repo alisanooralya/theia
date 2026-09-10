@@ -19,7 +19,13 @@ export const FISH = [
   { name: 'Ikan Arwana', reward: [2500, 6500], exp: 40, emoji: '🐉', rate: 4 },
   { name: 'Ikan Hiu', reward: [3800, 9000], exp: 60, emoji: '🦈', rate: 2 },
   { name: 'Ikan Koi', reward: [5000, 11500], exp: 75, emoji: '🎏', rate: 1 },
-  { name: 'Harta Karam', reward: [10000, 19000], exp: 100, emoji: '💰', rate: 1 },
+  {
+    name: 'Harta Karam',
+    reward: [10000, 19000],
+    exp: 100,
+    emoji: '💰',
+    rate: 1,
+  },
 ];
 
 /** Legacy weighted pick over FISH (relative rates). */
