@@ -5,8 +5,8 @@ export const RPG_STATS_CONFIG = Object.freeze({
   startingCurrentHp: 173,
   startingAtk: 23,
   startingDef: 9,
-  startingCritRate: 0.05,
-  startingCritDmg: 2.0,
+  startingCritRate: 0.25,
+  startingCritDmg: 1.3,
 
   progression: Object.freeze({
     baseExp: 100,

@@ -1,6 +1,6 @@
 import SETTINGS from '#environment/settings.js';
 
-export const WORK_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+export const WORK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 export const MINUTE_MS = 60 * 1000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -47,8 +47,8 @@ export const JOBS = [
     name: 'guru les',
     label: 'Guru Les',
     emoji: '📚',
-    durationMs: 2 * HOUR_MS,
-    coin: [100000, 140000],
+    durationMs: 3 * HOUR_MS,
+    coin: [100000, 130000],
     exp: [90, 120],
   },
   {
@@ -56,8 +56,8 @@ export const JOBS = [
     name: 'chef',
     label: 'Chef',
     emoji: '👨‍🍳',
-    durationMs: 3 * HOUR_MS,
-    coin: [130000, 180000],
+    durationMs: 5 * HOUR_MS,
+    coin: [120000, 150000],
     exp: [120, 160],
   },
 ];
