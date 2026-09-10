@@ -111,14 +111,26 @@ export default {
           `🎯 BOUNTY • ${config.name.toUpperCase()}`,
           '',
           `${target.emoji} ${target.name}`,
-          `⚔️ Melacak buronan...`,
+          `🔍 Mencari buronan...`,
         ].join('\n')
       );
 
-      await sleep(3000);
+      await sleep(1000);
+
+      await ctx.sock.sendMessage(ctx.jid, {
+        text: [
+          `🎯 BOUNTY • ${config.name.toUpperCase()}`,
+          '',
+          `${target.emoji} ${target.name} ditemukan!`,
+          `⚔️ Sedang bertarung...`,
+        ].join('\n'),
+        edit: statusMsg.key,
+      });
 
       result = await bounty.attempt(ctx.sender, sub, target.id);
       await ctx.applyCooldown();
+
+      await sleep(result.rounds * 1000);
 
       const finalText = result.won
         ? formatVictory(target, result.reward, result.rounds)
