@@ -80,12 +80,28 @@ function buildResultText(result, aName, dName) {
     );
   }
 
+  const skills = usedSkills(result.log);
+  if (skills.length) lines.push(`│ ⚡ Skill: ${skills.join(', ')}`);
+
   lines.push(`╰─────────────────────────────╯`);
   return lines.join('\n');
 }
 
+function usedSkills(log) {
+  return [
+    ...new Set((log ?? []).filter((e) => e.skill).map((e) => e.skill)),
+  ];
+}
+
 function roundSnapshot(log, round) {
   const entries = log.filter((e) => e.round === round);
+  const skilled = entries.filter((e) => e.skill);
+  if (skilled.length) {
+    const biggest = skilled.reduce((best, e) =>
+      !best || e.damage > best.damage ? e : best
+    );
+    return `⚡ ${biggest.skill} -${F.formatNumber(biggest.damage)}`;
+  }
   const crit = entries.find((e) => e.isCrit);
   if (crit) return `💥 Hit kritis! -${F.formatNumber(crit.damage)}`;
   const biggest = entries.reduce(
