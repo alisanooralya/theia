@@ -271,6 +271,21 @@ const STATIC_SCHEMA = [
   // Group opt-in flag for automatic Market News delivery (default off).
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS news INTEGER NOT NULL DEFAULT 0`,
 
+  // Economy 2.0 Farming plots. One row per user (single land, no
+  // upgrades): empty land is crop_id = '' with quantity = 0. Maturity is
+  // timestamp-based (planted_at/mature_at in ms), so restarts are safe.
+  `
+  CREATE TABLE IF NOT EXISTS farm_plots (
+    user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    crop_id     TEXT    NOT NULL DEFAULT '',
+    quantity    INTEGER NOT NULL DEFAULT 0,
+    planted_at  BIGINT  NOT NULL DEFAULT 0,
+    mature_at   BIGINT  NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
   // Economy 2.0 Work sessions + RPG 2.0 Expeditions (migrated from legacy,
   // same schemas). One row per user; claiming flips active -> claimed only
   // after the duration elapsed, so retries grant once.
@@ -367,3 +382,5 @@ export async function createSchema() {
   }
   logger.info('Schema ready');
 }
+
+export { STATIC_SCHEMA };
