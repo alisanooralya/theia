@@ -6,7 +6,13 @@ export const FARM_SEEDS_PER_PLANT = 4;
 
 export const FARM_DEMAND = Object.freeze({
   LOW: { id: 'LOW', label: 'LOW', emoji: '📉', modifier: 0.7, weight: 0.25 },
-  NORMAL: { id: 'NORMAL', label: 'NORMAL', emoji: '➖', modifier: 1.0, weight: 0.5 },
+  NORMAL: {
+    id: 'NORMAL',
+    label: 'NORMAL',
+    emoji: '➖',
+    modifier: 1.0,
+    weight: 0.5,
+  },
   HIGH: { id: 'HIGH', label: 'HIGH', emoji: '📈', modifier: 1.4, weight: 0.25 },
 });
 
@@ -80,8 +86,7 @@ export function getFarmCrop(idOrAlias) {
   const key = String(idOrAlias).toLowerCase();
   if (FARM_CROPS[key]) return FARM_CROPS[key];
   return (
-    Object.values(FARM_CROPS).find((crop) => crop.aliases.includes(key)) ??
-    null
+    Object.values(FARM_CROPS).find((crop) => crop.aliases.includes(key)) ?? null
   );
 }
 

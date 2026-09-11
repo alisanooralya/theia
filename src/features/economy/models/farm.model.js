@@ -25,7 +25,11 @@ class FarmModel {
     return rows[0] ?? null;
   }
 
-  async setPlanting(userId, { cropId, quantity, plantedAt, matureAt }, client = sql) {
+  async setPlanting(
+    userId,
+    { cropId, quantity, plantedAt, matureAt },
+    client = sql
+  ) {
     const rows = await client`
       UPDATE farm_plots
       SET crop_id = ${cropId}, quantity = ${quantity},

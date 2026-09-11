@@ -4,25 +4,29 @@ import { getFarmCrops } from '#features/economy/config/farm-config.js';
 
 function cropChoices() {
   return getFarmCrops()
-    .map((c) => `${c.emoji} \`${c.aliases[0]}\``)
+    .map((c) => `${c.aliases[0]}`)
     .join(', ');
 }
 
 function marketLines(market) {
   return market.map(
     (m) =>
-      `${m.crop.emoji} *${m.crop.harvestName}* — ${m.demand.emoji} ${m.demand.label} (F: ${m.forecast.label}, ${m.trend}) — ${F.formatNumber(m.price)}/pcs`
+      `${m.crop.emoji} *${m.crop.harvestName}* — ${m.demand.emoji} (F: ${m.forecast.label}) — ${F.formatNumber(m.price)}/pcs`
   );
 }
 
 function statusView(state) {
   const lines = ['🌾 *FARM*', ''];
   if (!state.plot) {
-    lines.push('🟫 Lahan kosong.', '', `Tanam: \`.farm plant <crop>\` (${cropChoices()})`);
+    lines.push(
+      '🟫 Lahan kosong.',
+      '',
+      `Tanam: \`.farm\` plant <tanam> (${cropChoices()})`
+    );
   } else {
     const p = state.plot;
     lines.push(
-      `${p.crop.emoji} *${p.crop.harvestName}* × ${p.quantity}`,
+      `${p.crop.emoji} *${p.crop.harvestName}* ×${p.quantity}`,
       p.mature
         ? '✅ Siap panen! Ketik `.farm harvest`'
         : `⏳ Matang dalam ${F.formatDuration(p.remainingMs)}`
@@ -51,7 +55,7 @@ function marketView(market) {
 export default {
   name: 'farm',
   aliases: ['kebun'],
-  category: 'rpg',
+  category: 'economy',
   description: 'Berkebun: tanam, panen, dan jual hasil panen',
   cooldown: 0,
 
@@ -61,18 +65,15 @@ export default {
     try {
       if (sub === 'plant') {
         if (!arg1) return ctx.fail(`Pilih crop: ${cropChoices()}`);
-        const result = await farmService.plant(
-          ctx.sender,
-          arg1.toLowerCase()
-        );
+        const result = await farmService.plant(ctx.sender, arg1.toLowerCase());
         return ctx.reply(
-          `🌱 Menanam *${result.crop.harvestName}* × ${result.quantity}\n⏳ Matang dalam ${F.formatDuration(result.crop.growthMs)}`
+          `🌱 Menanam *${result.crop.harvestName}* ×${result.quantity}\n⏳ Matang dalam ${F.formatDuration(result.crop.growthMs)}`
         );
       }
       if (sub === 'harvest') {
         const result = await farmService.harvest(ctx.sender);
         return ctx.reply(
-          `🧺 Panen *${result.crop.harvestName}* × ${result.quantity} masuk Inventory!`
+          `🧺 Panen *${result.crop.harvestName}* ×${result.quantity} masuk Inventory!`
         );
       }
       if (sub === 'sell') {
@@ -93,7 +94,7 @@ export default {
       }
       if (sub && sub !== 'status') {
         return ctx.fail(
-          `Subcommand tidak dikenal. Pakai: \`.farm\`, \`.farm plant <crop>\`, \`.farm harvest\`, \`.farm sell <crop> <qty>\`, \`.farm market\``
+          `Pakai: \`.farm\`, \`.farm\` plant <tanam>, \`.farm\` harvest, \`.farm\` sell <tanam> <qty>, \`.farm\` market`
         );
       }
       const state = await farmService.status(ctx.sender);
@@ -104,7 +105,7 @@ export default {
           `⏳ Belum matang. Sisa ${F.formatDuration(err.remainingMs ?? 0)}`
         );
       }
-      return ctx.fail(err.message);
+      await ctx.fail(err.message);
     }
   },
 };
