@@ -1,15 +1,3 @@
-/**
- * Economy 2.0 — Market scheduler extension (price tick + news layer).
- *
- * Single scheduler for Market. Each run:
- *   1. advance Market prices (own transaction; pressure from active news)
- *   2. maintain News rows — expire/spawn/skip (own transaction, isolated:
- *      a news failure is logged and never rolls back the price tick)
- *   3. claim + broadcast pending announcements (atomic PENDING -> SENT)
- *
- * Restart-safe: the `market_state` row lock serializes ticks (one tick per
- * bucket, catch-up bounded); the `running` guard prevents overlap here.
- */
 import { marketModel } from '#features/economy/models/market.model.js';
 import { marketNewsModel } from '#features/economy/models/market-news.model.js';
 import { marketService } from '#features/economy/services/market-service.js';
@@ -24,7 +12,6 @@ let running = false;
 async function runTick(nowMs = Date.now()) {
   await marketService.ensureReady();
 
-  // Pressure snapshot for this tick (active rows only; expired ones weigh ~0).
   const newsContext = { news: await marketNewsModel.active() };
   const result = await marketModel.advance(
     (states, tickIndex) =>
@@ -38,7 +25,6 @@ async function runTick(nowMs = Date.now()) {
   }
   if (!result.applied) return result;
 
-  // News maintenance is isolated: its failure must not break the tick.
   let newsReport = null;
   try {
     newsReport = await marketNewsService.maintain(result.tick);

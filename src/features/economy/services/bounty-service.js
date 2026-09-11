@@ -111,8 +111,7 @@ export function createBountyService({
           playerSkills,
           battleId: `bounty:${userId}:${target.id}:${nowSec}`,
         });
-        // Target buronan tidak punya skill (PvE): hanya pemain yang
-        // auto-cast active skill saat siap, musuh tetap basic attack.
+
         const end = simulateBattle(state, autoSkillAction, random);
         const won = end.status === 'WIN';
         const playerHp = end.player.hp;

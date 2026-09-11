@@ -80,9 +80,6 @@ export function stepCommodity(state, options = {}) {
 
   const currentPhase = phaseConfig(phase);
   let popped = false;
-  // Hazard pop umum: berlaku di fase naik mana pun yang punya popChance
-  // (growth/boom/bubble), dan membesar seiring harga memanas sehingga
-  // puncak tiap siklus tidak bisa ditebak.
   if (currentPhase.popChance) {
     const heat = Math.max(0, price / commodity.basePrice - 1);
     const popChance = clamp(

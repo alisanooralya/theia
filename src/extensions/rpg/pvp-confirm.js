@@ -1,11 +1,3 @@
-/**
- * RPG 2.0 — PvP confirm extension (migrated from legacy battle-confirm).
- *
- * Watches replies to a PvP confirm message: the challenged player
- * replies yes/ya to accept (atomic DB claim) or no/tidak to decline.
- * Only the challenge target can respond, and only while the session is
- * still pending — late/duplicate replies are ignored.
- */
 import { buildContext } from '#messages/context.js';
 import { pvpService } from '#features/rpg/services/pvp-service.js';
 import { runPvpBattle } from '#commands/modules/rpg/pvp.js';
