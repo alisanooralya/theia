@@ -45,6 +45,52 @@ function signShopEntries() {
   return entries;
 }
 
+const SEED_DEFS = [
+  {
+    id: 'corn_seed',
+    name: 'Bibit Jagung',
+    emoji: '🌽',
+    description: 'Bibit jagung untuk ditanam di Farming.',
+    price: 2000,
+  },
+  {
+    id: 'tomato_seed',
+    name: 'Bibit Tomat',
+    emoji: '🍅',
+    description: 'Bibit tomat untuk ditanam di Farming.',
+    price: 2500,
+  },
+  {
+    id: 'carrot_seed',
+    name: 'Bibit Wortel',
+    emoji: '🥕',
+    description: 'Bibit wortel untuk ditanam di Farming.',
+    price: 3000,
+  },
+  {
+    id: 'potato_seed',
+    name: 'Bibit Kentang',
+    emoji: '🥔',
+    description: 'Bibit kentang untuk ditanam di Farming.',
+    price: 4000,
+  },
+  {
+    id: 'pumpkin_seed',
+    name: 'Bibit Labu',
+    emoji: '🎃',
+    description: 'Bibit labu untuk ditanam di Farming.',
+    price: 5000,
+  },
+];
+
+function seedShopEntries() {
+  const entries = {};
+  for (const def of SEED_DEFS) {
+    entries[def.id] = shopItem({ ...def, category: 'seed' });
+  }
+  return entries;
+}
+
 export const SHOP_ITEMS = Object.freeze({
   [CERELIA_ITEM.id]: shopItem({
     id: CERELIA_ITEM.id,
@@ -53,6 +99,7 @@ export const SHOP_ITEMS = Object.freeze({
     description: 'Material untuk meningkatkan Card dan Sign Card.',
     price: 3000,
   }),
+  ...seedShopEntries(),
   ...signShopEntries(),
 });
 
