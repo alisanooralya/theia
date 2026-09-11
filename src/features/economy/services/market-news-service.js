@@ -4,6 +4,7 @@ import { groupModel } from '#storage/models/group.js';
 import { broadcastService } from '../../broadcast.js';
 import SETTINGS from '#environment/settings.js';
 import { F } from '#helpers/index.js';
+import { logger } from '#helpers/logger.js';
 import { COMMODITIES } from '../config/market-config.js';
 import {
   NEWS_TYPES,
@@ -113,6 +114,13 @@ export function createMarketNewsService({
       let announced = 0;
       let sent = 0;
       let failed = 0;
+
+      if (!targets.length) {
+        logger.warn(
+          { pending: pending.length },
+          '[Market] Berita dilewati: tidak ada grup dengan news aktif (`groupset news on`)'
+        );
+      }
 
       for (const item of pending) {
         if (!targets.length) {
