@@ -286,6 +286,20 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  // RPG 2.0 Orbital Lift progress. One row per user: next floor to attempt,
+  // Signal balance + last regen timestamp (timestamp-based, restart-safe).
+  // Owned Records live in the existing inventory (orbital_record_*).
+  `
+  CREATE TABLE IF NOT EXISTS orbital_progress (
+    user_id           TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    floor             INTEGER NOT NULL DEFAULT 1,
+    signal            INTEGER NOT NULL DEFAULT 100,
+    signal_updated_at BIGINT  NOT NULL DEFAULT 0,
+    created_at        INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at        INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
   // Economy 2.0 Work sessions + RPG 2.0 Expeditions (migrated from legacy,
   // same schemas). One row per user; claiming flips active -> claimed only
   // after the duration elapsed, so retries grant once.
