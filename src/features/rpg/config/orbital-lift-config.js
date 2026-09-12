@@ -11,7 +11,13 @@ export const ORBITAL_COST_BOSS = 30;
 export const ORBITAL_ENEMY = Object.freeze({
   normalName: 'Void Husk',
   bossName: 'Void Warden',
-  base: Object.freeze({ hp: 120, atk: 10, def: 4, critRate: 0.05, critDmg: 1.5 }),
+  base: Object.freeze({
+    hp: 120,
+    atk: 10,
+    def: 4,
+    critRate: 0.25,
+    critDmg: 1.5,
+  }),
   perFloor: Object.freeze({ hp: 0.1, atk: 0.06, def: 0.05 }),
   bossMult: Object.freeze({ hp: 2.2, atk: 1.6, def: 1.5 }),
   bossSkill: Object.freeze({
@@ -29,9 +35,9 @@ export const ORBITAL_ENEMY = Object.freeze({
 });
 
 export const ORBITAL_REWARD_NORMAL = Object.freeze({
-  coin: Object.freeze({ min: 5000, max: 8000 }),
-  exp: 120,
-  cerelia: Object.freeze({ min: 1, max: 3 }),
+  coin: Object.freeze({ min: 50000, max: 80000 }),
+  exp: 360,
+  cerelia: Object.freeze({ min: 1, max: 4 }),
 });
 
 export const ORBITAL_REWARD_BOSS = Object.freeze({
@@ -41,7 +47,9 @@ export const ORBITAL_REWARD_BOSS = Object.freeze({
 });
 
 export function isBossFloor(floor) {
-  return Number.isInteger(floor) && floor > 0 && floor % ORBITAL_BOSS_INTERVAL === 0;
+  return (
+    Number.isInteger(floor) && floor > 0 && floor % ORBITAL_BOSS_INTERVAL === 0
+  );
 }
 
 export function costForFloor(floor) {
@@ -71,20 +79,72 @@ export function enemyForFloor(floor) {
   };
 }
 
-// Placeholder lore — ganti content per record sesuai kebutuhan nanti.
 export const ORBITAL_RECORDS = Object.freeze(
   [
-    { floor: 10, title: 'Gerbang Bawah', content: '[LORE] Catatan kru lift: lantai 10 ditembus. Sinyal void melemah di sini.' },
-    { floor: 20, title: 'Ekor Kegelapan', content: '[LORE] Lantai 20: bayangan void mulai berbentuk. Jangan menatapnya terlalu lama.' },
-    { floor: 30, title: 'Tangga Sunyi', content: '[LORE] Lantai 30: tidak ada suara selain dengung kabel lift.' },
-    { floor: 40, title: 'Cahaya Retak', content: '[LORE] Lantai 40: cahaya dari atas mulai retak. Ada sesuatu yang turun.' },
-    { floor: 50, title: 'Titik Tengah', content: '[LORE] Lantai 50: separuh jalan. Kru lama meninggalkan pesan ini untukmu.' },
-    { floor: 60, title: 'Badai Statis', content: '[LORE] Lantai 60: badai statis mengacaukan kompas. Percayai instingmu.' },
-    { floor: 70, title: 'Menara Bisikan', content: '[LORE] Lantai 70: bisikan menyebut namamu. Abaikan dan terus naik.' },
-    { floor: 80, title: 'Ambang Tipis', content: '[LORE] Lantai 80: batas antara lift dan void makin tipis.' },
-    { floor: 90, title: 'Napas Terakhir Void', content: '[LORE] Lantai 90: void mengerahkan segalanya. Satu dorongan lagi.' },
-    { floor: 100, title: 'Puncak Orbital', content: '[LORE] Lantai 100: puncak tercapai. Lift berhenti — untuk sekarang.' },
-  ].map((record) => Object.freeze({ ...record, id: `orbital_record_${String(record.floor).padStart(3, '0')}` }))
+    {
+      floor: 10,
+      title: 'Gerbang Bawah',
+      content:
+        '[LORE] Catatan kru lift: lantai 10 ditembus. Sinyal void melemah di sini.',
+    },
+    {
+      floor: 20,
+      title: 'Ekor Kegelapan',
+      content:
+        '[LORE] Lantai 20: bayangan void mulai berbentuk. Jangan menatapnya terlalu lama.',
+    },
+    {
+      floor: 30,
+      title: 'Tangga Sunyi',
+      content: '[LORE] Lantai 30: tidak ada suara selain dengung kabel lift.',
+    },
+    {
+      floor: 40,
+      title: 'Cahaya Retak',
+      content:
+        '[LORE] Lantai 40: cahaya dari atas mulai retak. Ada sesuatu yang turun.',
+    },
+    {
+      floor: 50,
+      title: 'Titik Tengah',
+      content:
+        '[LORE] Lantai 50: separuh jalan. Kru lama meninggalkan pesan ini untukmu.',
+    },
+    {
+      floor: 60,
+      title: 'Badai Statis',
+      content:
+        '[LORE] Lantai 60: badai statis mengacaukan kompas. Percayai instingmu.',
+    },
+    {
+      floor: 70,
+      title: 'Menara Bisikan',
+      content:
+        '[LORE] Lantai 70: bisikan menyebut namamu. Abaikan dan terus naik.',
+    },
+    {
+      floor: 80,
+      title: 'Ambang Tipis',
+      content: '[LORE] Lantai 80: batas antara lift dan void makin tipis.',
+    },
+    {
+      floor: 90,
+      title: 'Napas Terakhir Void',
+      content:
+        '[LORE] Lantai 90: void mengerahkan segalanya. Satu dorongan lagi.',
+    },
+    {
+      floor: 100,
+      title: 'Puncak Orbital',
+      content:
+        '[LORE] Lantai 100: puncak tercapai. Lift berhenti — untuk sekarang.',
+    },
+  ].map((record) =>
+    Object.freeze({
+      ...record,
+      id: `orbital_record_${String(record.floor).padStart(3, '0')}`,
+    })
+  )
 );
 
 export function recordForFloor(floor) {

@@ -32,7 +32,7 @@ export default {
   aliases: ['orbit'],
   category: 'rpg',
   description: 'Naiki Orbital Lift floor demi floor',
-  cooldown: 0,
+  cooldown: 5_000,
 
   async execute(ctx) {
     const [subRaw, arg1] = ctx.args ?? [];
@@ -45,7 +45,6 @@ export default {
             [
               `💀 Kalah di Floor *${result.floor}*.`,
               `Sisa HP: ${F.formatNumber(Math.max(0, result.playerHp))}`,
-              'Signal sudah terpakai. Coba lagi setelah heal.',
             ].join('\n')
           );
         }
@@ -58,7 +57,8 @@ export default {
           `⭐ +${result.rewards.exp} EXP`,
           `🧪 +${result.rewards.cerelia} Cerelia`,
         ];
-        if (result.record) lines.push('', `📜 Record terbuka: *${result.record.title}*`);
+        if (result.record)
+          lines.push('', `📜 Record terbuka: *${result.record.title}*`);
         return ctx.reply(lines.join('\n'));
       }
       if (sub === 'records') {
@@ -74,24 +74,33 @@ export default {
             '',
             ...owned.map((r) => `• \`${r.id}\` — ${r.title} (Lt.${r.floor})`),
             '',
-            'Baca: `.orbital read <id>`',
+            'Baca: `.orbital` read <id>',
           ].join('\n')
         );
       }
       if (sub === 'read') {
-        if (!arg1) return ctx.fail('Pakai: `.orbital read <id>` (lihat `.orbital records`)');
+        if (!arg1)
+          return ctx.fail(
+            'Pakai: `.orbital` read <id> (lihat `.orbital` records)'
+          );
         const record = await orbitalService.readRecord(ctx.sender, arg1);
-        return ctx.reply([`📜 *${record.title}* (Lt.${record.floor})`, '', record.content].join('\n'));
+        return ctx.reply(
+          [
+            `📜 *${record.title}* (Lt.${record.floor})`,
+            '',
+            record.content,
+          ].join('\n')
+        );
       }
       if (sub && sub !== 'status') {
         return ctx.fail(
-          'Pakai: `.orbital`, `.orbital enter`, `.orbital records`, `.orbital read <id>`'
+          'Pakai: `.orbital`, `.orbital` enter, `.orbital` records, `.orbital` read <id>'
         );
       }
       const state = await orbitalService.status(ctx.sender);
       return ctx.reply(statusView(state));
     } catch (err) {
-      return ctx.fail(err.message);
+      await ctx.fail(err.message);
     }
   },
 };

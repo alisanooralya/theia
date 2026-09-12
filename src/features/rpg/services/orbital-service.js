@@ -47,8 +47,13 @@ export function accrueSignal(signal, updatedAt, nowMs = Date.now()) {
     value = Math.min(ORBITAL_SIGNAL_MAX, value + gained);
     updated += gained * ORBITAL_SIGNAL_REGEN_MS;
   }
-  if (value >= ORBITAL_SIGNAL_MAX) return { value, updatedAt: updated, nextInMs: 0 };
-  return { value, updatedAt: updated, nextInMs: updated + ORBITAL_SIGNAL_REGEN_MS - nowMs };
+  if (value >= ORBITAL_SIGNAL_MAX)
+    return { value, updatedAt: updated, nextInMs: 0 };
+  return {
+    value,
+    updatedAt: updated,
+    nextInMs: updated + ORBITAL_SIGNAL_REGEN_MS - nowMs,
+  };
 }
 
 export function createOrbitalService({
@@ -109,7 +114,9 @@ export function createOrbitalService({
 
       const final = await finalsSvc.getFinalStats(userId);
       if (final.currentHp <= 0) {
-        const err = new RangeError('HP kamu 0! Heal dulu sebelum Orbital Lift.');
+        const err = new RangeError(
+          'HP kamu 0! Heal dulu sebelum Orbital Lift.'
+        );
         err.code = 'HP0';
         throw err;
       }
@@ -120,13 +127,19 @@ export function createOrbitalService({
         const row = await orbitalRepo.lock(userId, t);
         const floor = Number(row?.floor ?? 1);
         if (floor > ORBITAL_MAX_FLOOR) {
-          const err = new RangeError('Orbital Lift sudah tamat. Tunggu season berikutnya.');
+          const err = new RangeError(
+            'Orbital Lift sudah tamat. Tunggu season berikutnya.'
+          );
           err.code = 'COMPLETED';
           throw err;
         }
         const boss = isBossFloor(floor);
         const cost = boss ? ORBITAL_COST_BOSS : ORBITAL_COST_NORMAL;
-        const accrued = accrueSignal(Number(row.signal), Number(row.signal_updated_at), nowMs);
+        const accrued = accrueSignal(
+          Number(row.signal),
+          Number(row.signal_updated_at),
+          nowMs
+        );
         if (accrued.value < cost) {
           const err = new RangeError(
             `Signal kurang (punya ${accrued.value}, butuh ${cost}).`
@@ -165,11 +178,15 @@ export function createOrbitalService({
             ORBITAL_REWARD_NORMAL.coin.max,
             random
           );
-          const coin = boss ? coinBase * ORBITAL_REWARD_BOSS.coinMult : coinBase;
+          const coin = boss
+            ? coinBase * ORBITAL_REWARD_BOSS.coinMult
+            : coinBase;
           const exp = boss
             ? ORBITAL_REWARD_NORMAL.exp * ORBITAL_REWARD_BOSS.expMult
             : ORBITAL_REWARD_NORMAL.exp;
-          const cereliaRange = boss ? ORBITAL_REWARD_BOSS.cerelia : ORBITAL_REWARD_NORMAL.cerelia;
+          const cereliaRange = boss
+            ? ORBITAL_REWARD_BOSS.cerelia
+            : ORBITAL_REWARD_NORMAL.cerelia;
           const cerelia = rollInt(cereliaRange.min, cereliaRange.max, random);
           await coinRepo.addCoin(userId, coin, t);
           await grantPlayerExp(playerRepo, userId, exp, t);
@@ -187,7 +204,11 @@ export function createOrbitalService({
 
         await orbitalRepo.save(
           userId,
-          { floor: newFloor, signal: afterSignal, signalUpdatedAt: accrued.updatedAt },
+          {
+            floor: newFloor,
+            signal: afterSignal,
+            signalUpdatedAt: accrued.updatedAt,
+          },
           t
         );
         return {
