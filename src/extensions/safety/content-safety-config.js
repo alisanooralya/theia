@@ -14,8 +14,8 @@
 // ---------------------------------------------------------------------------
 
 export const CONTENT_SAFETY_CONFIG = {
-  apiUrl: 'https://openrouter.ai/api/v1/chat/completions',
-  model: 'nvidia/nemotron-3.5-content-safety:free',
+  apiUrl: 'https://api.fregateway.biz.id/v1/chat/completions',
+  model: 'fregateway/qwen3.8-flash',
   timeoutMs: 15_000,
   // Batasi panjang teks yang dikirim ke classifier agar request tetap ringan.
   maxTextChars: 1000,

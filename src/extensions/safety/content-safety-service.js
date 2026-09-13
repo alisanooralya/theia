@@ -110,10 +110,12 @@ export function parseClassifierOutput(raw) {
 }
 
 /**
- * Parse output teks nemotron:
- *   "User Safety: safe"
+ * Parse output teks nemotron/qwen:
+ *   "User Safety: safe Safety Categories: None"
+ *   "User Safety: unsafe Safety Categories: Profanity"
+ *   "User Safety: unsafe Safety Categories: Sexual, Profanity"
+ *   Atau dengan newline:
  *   "User Safety: unsafe\nSafety Categories: Profanity"
- *   "User Safety: unsafe\nSafety Categories: Sexual, Profanity"
  */
 function parseNemotronText(text) {
   const safetyMatch = text.match(/User Safety:\s*(safe|unsafe)/i);
@@ -124,10 +126,10 @@ function parseNemotronText(text) {
     return { severity: 'none', category: 'safe' };
   }
 
-  // Unsafe — extract categories
+  // Unsafe — extract categories (supports space or newline separator)
   const catMatch = text.match(/Safety Categories:\s*(.+)/i);
   const categories = catMatch
-    ? catMatch[1].split(',').map((c) => c.trim().toLowerCase())
+    ? catMatch[1].split(/[,\s]+(?:dan\s+)?/).map((c) => c.trim().toLowerCase()).filter(Boolean)
     : [];
 
   // Map nemotron categories ke internal categories
@@ -154,7 +156,7 @@ function mapNemotronCategory(categories) {
 
 function resolveApiKey(override) {
   if (typeof override === 'string' && override) return override;
-  return SETTINGS.openrouterApiKey || '';
+  return SETTINGS.fregatewayApiKey || SETTINGS.openrouterApiKey || '';
 }
 
 /**
@@ -211,7 +213,8 @@ export async function classifyContent(
 
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content;
-    const reasoning = data?.choices?.[0]?.message?.reasoning;
+    const reasoning = data?.choices?.[0]?.message?.reasoning 
+                   || data?.choices?.[0]?.message?.reasoning_content;
     
     // Coba parse dari content dulu, lalu fallback ke reasoning
     let parsed = parseClassifierOutput(content);
