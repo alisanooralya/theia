@@ -8,7 +8,7 @@ const SETTINGS = Object.freeze({
   prefix: config.prefix,
   sessionPath: resolve(root, config.sessionPath),
   dbPath: resolve(root, config.dbPath),
-  supabaseDbUrl: process.env.TEST_DATABASE_URL || config.supabaseDbUrl || '',
+  supabaseDbUrl: config.supabaseDbUrl || '',
   logLevel: config.logLevel,
   timezone: config.timezone,
   respondToSelf: !!config.respondToSelf,
