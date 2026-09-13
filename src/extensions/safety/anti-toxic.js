@@ -7,6 +7,10 @@ import { classifyContent } from './content-safety-service.js';
 
 const TOXIC_DAMAGE = 5;
 
+// Rate limiter: cooldown per group agar tidak kena 429.
+const RATE_LIMIT_MS = 2000; // 2 detik antar request per group
+const lastRequestTime = new Map();
+
 // Dependensi modul dibungkus agar bisa di-mock pada test tanpa DB/API.
 // Production selalu memakai nilai default (sistem warns/health existing).
 const deps = {
@@ -53,6 +57,18 @@ export default {
     // Kandidat lokal menentukan apakah pesan layak direview AI.
     // Tanpa kandidat → allow tanpa API request.
     if (!shouldReviewWithAI(lower)) return true;
+
+    // Rate limiter: cek cooldown per group.
+    const now = Date.now();
+    const lastTime = lastRequestTime.get(s.jid) || 0;
+    if (now - lastTime < RATE_LIMIT_MS) {
+      logger.debug(
+        { jid: s.jid, waitMs: RATE_LIMIT_MS - (now - lastTime) },
+        '[AntiToxic] Rate limited, allowing message'
+      );
+      return true; // Allow, jangan spam API
+    }
+    lastRequestTime.set(s.jid, now);
 
     const quotedText = typeof s.quoted?.text === 'string' ? s.quoted.text : '';
     const result = await deps.classify(text, { quotedText });
