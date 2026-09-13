@@ -33,7 +33,7 @@ function truncate(text, max) {
 
 /**
  * Membangun messages untuk chat completion. AI diposisikan sebagai
- * classifier berbahasa Indonesia, output JSON strict.
+ * classifier berbahasa Indonesia, output format nemotron (User Safety + Categories).
  */
 export function buildModerationMessages(text, quotedText = '') {
   const target = truncate(
@@ -54,18 +54,19 @@ export function buildModerationMessages(text, quotedText = '') {
       role: 'system',
       content: [
         'You are a content moderation classifier for an Indonesian all-ages WhatsApp community.',
-        'Assess the TARGET message in context: Indonesian language, Indonesian slang, and the quoted/replied message when relevant.',
-        'Do NOT punish a message merely for containing a certain word when that word is clearly used in a normal, non-toxic sense (e.g. talking about animals, objects, jokes between friends without insult).',
+        'Classify the TARGET message in Indonesian language and slang context.',
+        'Do NOT punish a message merely for containing a certain word when that word is clearly used in a normal, non-toxic sense.',
         'Consider whether a word is used as an insult/harassment, refers to animals/objects/normal context, or is sexual/vulgar/explicit content inappropriate for an all-ages community.',
         'You only classify. You never decide punishments.',
-        'Respond with STRICT JSON only, no markdown, no code fences, no explanation:',
-        '{"severity": "none" | "low" | "high", "category": "safe" | "toxic" | "harassment" | "vulgar" | "sexual" | "other"}',
-        'Severity guide: "none" = no violation. "low" = mild slang/profanity that should just be cleaned up (e.g. casual "jir"/"njir"-style swearing without a target). "high" = severe insult, targeted harassment, sexual/18+ content, sexual harassment, explicit vulgarity, or other clearly prohibited content.',
+        'Respond ONLY in this exact format:',
+        'User Safety: safe|unsafe',
+        'Safety Categories: None | Category1, Category2',
+        'Categories: Profanity, Sexual, Violence, Hate, Harassment, SelfHarm, Criminal Planning',
       ].join(' '),
     },
     {
       role: 'user',
-      content: `${contextBlock}Pesan target:\n"""${target}"""`,
+      content: `${contextBlock}TARGET MESSAGE: ${target}`,
     },
   ];
 }
@@ -210,10 +211,22 @@ export async function classifyContent(
 
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content;
-    const parsed = parseClassifierOutput(content);
+    const reasoning = data?.choices?.[0]?.message?.reasoning;
+    
+    // Coba parse dari content dulu, lalu fallback ke reasoning
+    let parsed = parseClassifierOutput(content);
+    if (!parsed && reasoning) {
+      parsed = parseClassifierOutput(String(reasoning));
+    }
+    
     if (!parsed) {
       logger.warn(
-        { model: body.model },
+        { 
+          model: body.model,
+          content: content,
+          reasoning: reasoning ? String(reasoning).slice(0, 200) : null,
+          finishReason: data?.choices?.[0]?.finish_reason,
+        },
         '[ContentSafety] Unparseable classifier response'
       );
       return null;
