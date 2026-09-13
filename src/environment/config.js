@@ -24,4 +24,8 @@ export default {
   autoread: true,
 
   tiktokApiKey: 'Btz-ZEaRQ',
+
+  // Diisi via environment variable OPENROUTER_API_KEY (lihat settings.js).
+  // Jangan hardcode API key di sini.
+  openrouterApiKey: '',
 };

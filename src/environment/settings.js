@@ -29,6 +29,9 @@ const SETTINGS = Object.freeze({
   sessionId: config.sessionId ?? 'default',
 
   tiktokApiKey: config.tiktokApiKey || '',
+
+  openrouterApiKey:
+    process.env.OPENROUTER_API_KEY || config.openrouterApiKey || '',
 });
 
 export default SETTINGS;
