@@ -2,10 +2,7 @@ import { sql } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
-import {
-  LOW_RE,
-  shouldReviewWithAI,
-} from './content-safety-config.js';
+import { LOW_RE, shouldReviewWithAI } from './content-safety-config.js';
 import { classifyContent } from './content-safety-service.js';
 
 const TOXIC_DAMAGE = 5;
@@ -57,8 +54,7 @@ export default {
     // Tanpa kandidat → allow tanpa API request.
     if (!shouldReviewWithAI(lower)) return true;
 
-    const quotedText =
-      typeof s.quoted?.text === 'string' ? s.quoted.text : '';
+    const quotedText = typeof s.quoted?.text === 'string' ? s.quoted.text : '';
     const result = await deps.classify(text, { quotedText });
 
     // Fail-safe: AI unavailable / response invalid → allow.

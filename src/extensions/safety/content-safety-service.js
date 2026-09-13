@@ -36,7 +36,10 @@ function truncate(text, max) {
  * classifier berbahasa Indonesia, output JSON strict.
  */
 export function buildModerationMessages(text, quotedText = '') {
-  const target = truncate(String(text ?? ''), CONTENT_SAFETY_CONFIG.maxTextChars);
+  const target = truncate(
+    String(text ?? ''),
+    CONTENT_SAFETY_CONFIG.maxTextChars
+  );
   const quoted = truncate(
     String(quotedText ?? ''),
     CONTENT_SAFETY_CONFIG.maxTextChars
@@ -108,7 +111,9 @@ export async function classifyContent(
 ) {
   const key = resolveApiKey(apiKey);
   if (!key) {
-    logger.warn('[ContentSafety] OPENROUTER_API_KEY is not set, skipping AI moderation');
+    logger.warn(
+      '[ContentSafety] OPENROUTER_API_KEY is not set, skipping AI moderation'
+    );
     return null;
   }
 

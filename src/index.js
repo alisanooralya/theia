@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { fileURLToPath } from 'url';
 import { resolve } from 'path';
 import { bootstrap } from '#boot/bootstrap.js';

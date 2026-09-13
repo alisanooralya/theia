@@ -9,10 +9,6 @@ export default {
   sessionPath: './sessions',
   dbPath: './data/database.db',
 
-  // Diisi via environment variable SUPABASE_DB_URL.
-  // Contoh: SUPABASE_DB_URL=postgresql://postgres.xxx:password@host:6543/postgres
-  supabaseDbUrl: process.env.SUPABASE_DB_URL || '',
-
   authBackend: 'sqlite',
   sessionId: 'default',
 
@@ -23,12 +19,4 @@ export default {
   respondToSelf: false,
   ignoreBots: false,
   autoread: true,
-
-  // Diisi via environment variable TIKTOK_API_KEY.
-  // Contoh: TIKTOK_API_KEY=Btz-ZEaRQ
-  tiktokApiKey: process.env.TIKTOK_API_KEY || '',
-
-  // Diisi via environment variable OPENROUTER_API_KEY (lihat settings.js).
-  // Jangan hardcode API key di sini.
-  openrouterApiKey: '',
 };

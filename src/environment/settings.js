@@ -8,7 +8,7 @@ const SETTINGS = Object.freeze({
   prefix: config.prefix,
   sessionPath: resolve(root, config.sessionPath),
   dbPath: resolve(root, config.dbPath),
-  supabaseDbUrl: config.supabaseDbUrl || '',
+  supabaseDbUrl: process.env.SUPABASE_DB_URL || '',
   logLevel: config.logLevel,
   timezone: config.timezone,
   respondToSelf: !!config.respondToSelf,
@@ -28,10 +28,9 @@ const SETTINGS = Object.freeze({
   authBackend: config.authBackend === 'sqlite' ? 'sqlite' : 'file',
   sessionId: config.sessionId ?? 'default',
 
-  tiktokApiKey: config.tiktokApiKey || '',
+  tiktokApiKey: process.env.TIKTOK_API_KEY || '',
 
-  openrouterApiKey:
-    process.env.OPENROUTER_API_KEY || config.openrouterApiKey || '',
+  openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
 });
 
 export default SETTINGS;
