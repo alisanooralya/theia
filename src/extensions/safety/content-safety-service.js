@@ -1,5 +1,5 @@
 /**
- * AI content moderation via OpenRouter (contextual moderation layer).
+ * AI content moderation via Fregateway (contextual moderation layer).
  *
  * Service ini hanya CLASSIFIER: menilai pesan dan mengembalikan severity
  * (`none` | `low` | `high`) + category. AI TIDAK menentukan punishment;
@@ -156,11 +156,11 @@ function mapNemotronCategory(categories) {
 
 function resolveApiKey(override) {
   if (typeof override === 'string' && override) return override;
-  return SETTINGS.fregatewayApiKey || SETTINGS.openrouterApiKey || '';
+  return SETTINGS.fregatewayApiKey || '';
 }
 
 /**
- * Klasifikasi pesan via OpenRouter.
+ * Klasifikasi pesan via Fregateway.
  * @returns {Promise<{severity: string, category: string} | null>}
  *   null = AI unavailable / response invalid → caller harus ALLOW.
  */
@@ -171,7 +171,7 @@ export async function classifyContent(
   const key = resolveApiKey(apiKey);
   if (!key) {
     logger.warn(
-      '[ContentSafety] OPENROUTER_API_KEY is not set, skipping AI moderation'
+      '[ContentSafety] FREGATEWAY_API_KEY is not set, skipping AI moderation'
     );
     return null;
   }
@@ -206,7 +206,7 @@ export async function classifyContent(
       // Hanya status code yang di-log; body/header (termasuk auth) tidak.
       logger.warn(
         { status: res.status, model: body.model },
-        '[ContentSafety] OpenRouter request failed'
+        '[ContentSafety] Fregateway request failed'
       );
       return null;
     }

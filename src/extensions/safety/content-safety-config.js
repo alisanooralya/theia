@@ -3,14 +3,14 @@
  *
  * - Model / API URL / timeout hanya didefinisikan di sini (jangan hardcode
  *   di banyak file).
- * - API key TIDAK ada di sini — diambil dari SETTINGS.openrouterApiKey
- *   (env `OPENROUTER_API_KEY`).
+ * - API key TIDAK ada di sini — diambil dari SETTINGS.fregatewayApiKey
+ *   (env `FREGATEWAY_API_KEY`).
  * - Keyword lokal hanya menentukan apakah sebuah pesan layak direview AI.
  *   Keputusan konteks (none/low/high) ada di tangan AI classifier.
  */
 
 // ---------------------------------------------------------------------------
-// OpenRouter content-safety classifier
+// Fregateway content-safety classifier
 // ---------------------------------------------------------------------------
 
 export const CONTENT_SAFETY_CONFIG = {

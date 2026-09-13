@@ -30,7 +30,6 @@ const SETTINGS = Object.freeze({
 
   tiktokApiKey: process.env.TIKTOK_API_KEY || '',
 
-  openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
   fregatewayApiKey: process.env.FREGATEWAY_API_KEY || '',
 });
 

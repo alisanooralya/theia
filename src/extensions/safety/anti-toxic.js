@@ -31,6 +31,10 @@ export function __resetAntiToxicDeps() {
   deps.classify = classifyContent;
 }
 
+export function __resetRateLimiter() {
+  lastRequestTime.clear();
+}
+
 export default {
   name: 'anti-toxic',
 
