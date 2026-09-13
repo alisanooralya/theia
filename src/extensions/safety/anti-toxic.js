@@ -7,12 +7,9 @@ import { classifyContent } from './content-safety-service.js';
 
 const TOXIC_DAMAGE = 5;
 
-// Rate limiter: cooldown per group agar tidak kena 429.
-const RATE_LIMIT_MS = 2000; // 2 detik antar request per group
+const RATE_LIMIT_MS = 3000;
 const lastRequestTime = new Map();
 
-// Dependensi modul dibungkus agar bisa di-mock pada test tanpa DB/API.
-// Production selalu memakai nilai default (sistem warns/health existing).
 const deps = {
   sql,
   groupModel,
@@ -48,7 +45,6 @@ export default {
     if (!text.trim()) return true;
     const lower = text.toLowerCase();
 
-    // LOW unambiguous: delete only, tanpa request AI.
     if (LOW_RE.test(lower)) {
       return this.handleViolation({
         severity: 'low',
@@ -58,11 +54,8 @@ export default {
       });
     }
 
-    // Kandidat lokal menentukan apakah pesan layak direview AI.
-    // Tanpa kandidat → allow tanpa API request.
     if (!shouldReviewWithAI(lower)) return true;
 
-    // Rate limiter: cek cooldown per group.
     const now = Date.now();
     const lastTime = lastRequestTime.get(s.jid) || 0;
     if (now - lastTime < RATE_LIMIT_MS) {
@@ -70,14 +63,13 @@ export default {
         { jid: s.jid, waitMs: RATE_LIMIT_MS - (now - lastTime) },
         '[AntiToxic] Rate limited, allowing message'
       );
-      return true; // Allow, jangan spam API
+      return true;
     }
     lastRequestTime.set(s.jid, now);
 
     const quotedText = typeof s.quoted?.text === 'string' ? s.quoted.text : '';
     const result = await deps.classify(text, { quotedText });
 
-    // Fail-safe: AI unavailable / response invalid → allow.
     if (!result || result.severity === 'none') return true;
 
     return this.handleViolation({
@@ -88,25 +80,16 @@ export default {
     });
   },
 
-  /**
-   * Satu-satunya punishment pipeline. Semua violation (keyword LOW maupun
-   * hasil AI) masuk ke sini agar tidak ada double delete/warn/kick.
-   * - none → allow
-   * - low → delete message saja
-   * - high → delete + warns existing + health/kick flow existing
-   */
   async handleViolation({ severity, category, s, sock }) {
     if (severity === 'none') return true;
 
     try {
-      // Satu kali delete untuk semua severity.
       try {
         await sock.sendMessage(s.jid, { delete: s.key });
       } catch (err) {
         logger.warn({ err, jid: s.jid }, '[AntiToxic] Delete failed');
       }
 
-      // LOW: delete only — tanpa warn, tanpa pengurangan health.
       if (severity === 'low') {
         logger.info(
           { jid: s.jid, sender: s.sender, category },
@@ -115,7 +98,6 @@ export default {
         return false;
       }
 
-      // HIGH: punishment penuh memakai sistem warns/health existing.
       await deps.sql`
         INSERT INTO warns (jid, group_jid, reason, damage) VALUES (${s.sender}, ${s.jid}, 'Toxic', ${TOXIC_DAMAGE})
       `;

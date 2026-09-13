@@ -3,7 +3,6 @@ import SETTINGS from '#environment/settings.js';
 import { logger } from '#helpers/logger.js';
 
 if (!SETTINGS.supabaseDbUrl) {
-  // Selama test, jangan fatal — cukup warning.
   if (process.env.npm_lifecycle_event === 'test') {
     logger.warn(
       'supabaseDbUrl tidak diset; database features nonaktif selama test'

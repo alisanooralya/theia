@@ -1,17 +1,3 @@
-/**
- * AI content moderation via Fregateway (contextual moderation layer).
- *
- * Service ini hanya CLASSIFIER: menilai pesan dan mengembalikan severity
- * (`none` | `low` | `high`) + category. AI TIDAK menentukan punishment;
- * punishment diputuskan oleh pipeline anti-toxic.
- *
- * Fail-safe: setiap kegagalan (key belum diset, timeout, network error,
- * rate limit, malformed response) mengembalikan `null` — caller harus
- * memperlakukannya sebagai ALLOW, bukan pelanggaran.
- *
- * Keamanan: JANGAN pernah me-log API key atau authorization header.
- */
-
 import SETTINGS from '#environment/settings.js';
 import { logger } from '#helpers/logger.js';
 import { CONTENT_SAFETY_CONFIG } from './content-safety-config.js';
@@ -31,10 +17,6 @@ function truncate(text, max) {
   return text.slice(0, max);
 }
 
-/**
- * Membangun messages untuk chat completion. AI diposisikan sebagai
- * classifier berbahasa Indonesia, output format nemotron (User Safety + Categories).
- */
 export function buildModerationMessages(text, quotedText = '') {
   const target = truncate(
     String(text ?? ''),
@@ -71,20 +53,11 @@ export function buildModerationMessages(text, quotedText = '') {
   ];
 }
 
-/**
- * Parsing defensif output model. Mengembalikan { severity, category }
- * atau null bila tidak valid. Tidak pernah throw untuk input tak valid.
- *
- * Mendukung dua format:
- * 1. JSON: {"severity":"low","category":"vulgar"}
- * 2. Teks nemotron: "User Safety: safe/unsafe\nSafety Categories: ..."
- */
 export function parseClassifierOutput(raw) {
   try {
     if (typeof raw !== 'string' || !raw.trim()) return null;
     let cleaned = raw.trim();
 
-    // --- Format 1: JSON (dari openai/gpt-4o-mini atau model lain) ---
     const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (fenceMatch) cleaned = fenceMatch[1].trim();
     const start = cleaned.indexOf('{');
@@ -98,25 +71,16 @@ export function parseClassifierOutput(raw) {
           return { severity, category };
         }
       } catch {
-        // bukan JSON valid, lanjut ke format teks
+        // fallback ke format teks
       }
     }
 
-    // --- Format 2: Teks nemotron ("User Safety: ...") ---
     return parseNemotronText(cleaned);
   } catch {
     return null;
   }
 }
 
-/**
- * Parse output teks nemotron/qwen:
- *   "User Safety: safe Safety Categories: None"
- *   "User Safety: unsafe Safety Categories: Profanity"
- *   "User Safety: unsafe Safety Categories: Sexual, Profanity"
- *   Atau dengan newline:
- *   "User Safety: unsafe\nSafety Categories: Profanity"
- */
 function parseNemotronText(text) {
   const safetyMatch = text.match(/User Safety:\s*(safe|unsafe)/i);
   if (!safetyMatch) return null;
@@ -126,22 +90,15 @@ function parseNemotronText(text) {
     return { severity: 'none', category: 'safe' };
   }
 
-  // Unsafe — extract categories (supports space or newline separator)
   const catMatch = text.match(/Safety Categories:\s*(.+)/i);
   const categories = catMatch
     ? catMatch[1].split(/[,\s]+(?:dan\s+)?/).map((c) => c.trim().toLowerCase()).filter(Boolean)
     : [];
 
-  // Map nemotron categories ke internal categories
   const category = mapNemotronCategory(categories);
   return { severity: 'low', category };
 }
 
-/**
- * Map nemotron safety categories ke internal categories.
- * Nemotron: Profanity, Sexual, Violence, Hate, Harassment, SelfHarm, Criminal Planning/Confessions
- * Internal: safe, toxic, harassment, vulgar, sexual, other
- */
 function mapNemotronCategory(categories) {
   const joined = categories.join(' ');
 
@@ -150,7 +107,6 @@ function mapNemotronCategory(categories) {
   if (/profanity/i.test(joined)) return 'vulgar';
   if (/violence|criminal|selfharm/i.test(joined)) return 'other';
 
-  // Default untuk unsafe tanpa kategori yang dikenal
   return 'toxic';
 }
 
@@ -159,11 +115,6 @@ function resolveApiKey(override) {
   return SETTINGS.fregatewayApiKey || '';
 }
 
-/**
- * Klasifikasi pesan via Fregateway.
- * @returns {Promise<{severity: string, category: string} | null>}
- *   null = AI unavailable / response invalid → caller harus ALLOW.
- */
 export async function classifyContent(
   text,
   { quotedText = '', fetchImpl, apiKey, model, apiUrl, timeoutMs } = {}
@@ -203,7 +154,6 @@ export async function classifyContent(
     });
 
     if (!res.ok) {
-      // Hanya status code yang di-log; body/header (termasuk auth) tidak.
       logger.warn(
         { status: res.status, model: body.model },
         '[ContentSafety] Fregateway request failed'
@@ -216,7 +166,6 @@ export async function classifyContent(
     const reasoning = data?.choices?.[0]?.message?.reasoning 
                    || data?.choices?.[0]?.message?.reasoning_content;
     
-    // Coba parse dari content dulu, lalu fallback ke reasoning
     let parsed = parseClassifierOutput(content);
     if (!parsed && reasoning) {
       parsed = parseClassifierOutput(String(reasoning));
@@ -246,7 +195,6 @@ export async function classifyContent(
     );
     return parsed;
   } catch (err) {
-    // Timeout (abort), network error, dsb — fail aman tanpa detail sensitif.
     logger.warn(
       { name: err?.name, message: err?.message },
       '[ContentSafety] Classifier request error'
