@@ -100,6 +100,7 @@ export function createGachaService({
               type: 'shopItem',
               itemId,
               itemName: def ? def.name : itemId,
+              emoji: def?.emoji ?? '📦',
               quantity,
             });
           } else {

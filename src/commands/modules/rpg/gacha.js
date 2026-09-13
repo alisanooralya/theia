@@ -37,7 +37,7 @@ function resultLine(result) {
   if (result.type === 'main') return `${result.index}. 🃏 ${result.cardName}`;
   if (result.type === 'shopItem') {
     const qty = result.quantity > 1 ? ` ×${result.quantity}` : '';
-    return `${result.index}. 🧪 ${result.itemName}${qty}`;
+    return `${result.index}. ${result.emoji ?? '📦'} ${result.itemName}${qty}`;
   }
 
   return `${result.index}. ❌ Zonk`;
