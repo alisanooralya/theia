@@ -1,10 +1,18 @@
 import 'dotenv/config';
 
+import dns from 'dns';
 import { fileURLToPath } from 'url';
 import { resolve } from 'path';
 import { bootstrap } from '#boot/bootstrap.js';
 import { logger } from '#helpers/logger.js';
 import { setupShutdown } from '#helpers/shutdown.js';
+
+// Prefer IPv4 untuk menghindari connection reset di environment tertentu.
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch {
+  // Node < 20 tidak punya method ini; abaikan.
+}
 
 const isMain =
   !!process.env.pm_id ||

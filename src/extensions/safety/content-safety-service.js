@@ -73,26 +73,82 @@ export function buildModerationMessages(text, quotedText = '') {
 /**
  * Parsing defensif output model. Mengembalikan { severity, category }
  * atau null bila tidak valid. Tidak pernah throw untuk input tak valid.
+ *
+ * Mendukung dua format:
+ * 1. JSON: {"severity":"low","category":"vulgar"}
+ * 2. Teks nemotron: "User Safety: safe/unsafe\nSafety Categories: ..."
  */
 export function parseClassifierOutput(raw) {
   try {
     if (typeof raw !== 'string' || !raw.trim()) return null;
     let cleaned = raw.trim();
-    // Toleransi model yang membungkus JSON dalam markdown/code fence.
+
+    // --- Format 1: JSON (dari openai/gpt-4o-mini atau model lain) ---
     const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
     if (fenceMatch) cleaned = fenceMatch[1].trim();
     const start = cleaned.indexOf('{');
     const end = cleaned.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) return null;
-    const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    const severity = String(parsed?.severity ?? '').toLowerCase();
-    const category = String(parsed?.category ?? '').toLowerCase();
-    if (!VALID_SEVERITIES.has(severity)) return null;
-    if (!VALID_CATEGORIES.has(category)) return null;
-    return { severity, category };
+    if (start !== -1 && end !== -1 && end > start) {
+      try {
+        const parsed = JSON.parse(cleaned.slice(start, end + 1));
+        const severity = String(parsed?.severity ?? '').toLowerCase();
+        const category = String(parsed?.category ?? '').toLowerCase();
+        if (VALID_SEVERITIES.has(severity) && VALID_CATEGORIES.has(category)) {
+          return { severity, category };
+        }
+      } catch {
+        // bukan JSON valid, lanjut ke format teks
+      }
+    }
+
+    // --- Format 2: Teks nemotron ("User Safety: ...") ---
+    return parseNemotronText(cleaned);
   } catch {
     return null;
   }
+}
+
+/**
+ * Parse output teks nemotron:
+ *   "User Safety: safe"
+ *   "User Safety: unsafe\nSafety Categories: Profanity"
+ *   "User Safety: unsafe\nSafety Categories: Sexual, Profanity"
+ */
+function parseNemotronText(text) {
+  const safetyMatch = text.match(/User Safety:\s*(safe|unsafe)/i);
+  if (!safetyMatch) return null;
+  const isSafe = safetyMatch[1].toLowerCase() === 'safe';
+
+  if (isSafe) {
+    return { severity: 'none', category: 'safe' };
+  }
+
+  // Unsafe — extract categories
+  const catMatch = text.match(/Safety Categories:\s*(.+)/i);
+  const categories = catMatch
+    ? catMatch[1].split(',').map((c) => c.trim().toLowerCase())
+    : [];
+
+  // Map nemotron categories ke internal categories
+  const category = mapNemotronCategory(categories);
+  return { severity: 'low', category };
+}
+
+/**
+ * Map nemotron safety categories ke internal categories.
+ * Nemotron: Profanity, Sexual, Violence, Hate, Harassment, SelfHarm, Criminal Planning/Confessions
+ * Internal: safe, toxic, harassment, vulgar, sexual, other
+ */
+function mapNemotronCategory(categories) {
+  const joined = categories.join(' ');
+
+  if (/sexual/i.test(joined)) return 'sexual';
+  if (/harassment|hate/i.test(joined)) return 'harassment';
+  if (/profanity/i.test(joined)) return 'vulgar';
+  if (/violence|criminal|selfharm/i.test(joined)) return 'other';
+
+  // Default untuk unsafe tanpa kategori yang dikenal
+  return 'toxic';
 }
 
 function resolveApiKey(override) {

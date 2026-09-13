@@ -3,10 +3,17 @@ import SETTINGS from '#environment/settings.js';
 import { logger } from '#helpers/logger.js';
 
 if (!SETTINGS.supabaseDbUrl) {
-  logger.fatal(
-    'supabaseDbUrl belum dikonfigurasi di src/environment/config.js'
-  );
-  process.exit(1);
+  // Selama test, jangan fatal — cukup warning.
+  if (process.env.npm_lifecycle_event === 'test') {
+    logger.warn(
+      'supabaseDbUrl tidak diset; database features nonaktif selama test'
+    );
+  } else {
+    logger.fatal(
+      'supabaseDbUrl belum dikonfigurasi di src/environment/config.js'
+    );
+    process.exit(1);
+  }
 }
 
 export const sql = postgres(SETTINGS.supabaseDbUrl, {
