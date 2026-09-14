@@ -92,7 +92,10 @@ function parseNemotronText(text) {
 
   const catMatch = text.match(/Safety Categories:\s*(.+)/i);
   const categories = catMatch
-    ? catMatch[1].split(/[,\s]+(?:dan\s+)?/).map((c) => c.trim().toLowerCase()).filter(Boolean)
+    ? catMatch[1]
+        .split(/[,\s]+(?:dan\s+)?/)
+        .map((c) => c.trim().toLowerCase())
+        .filter(Boolean)
     : [];
 
   const category = mapNemotronCategory(categories);
@@ -163,17 +166,18 @@ export async function classifyContent(
 
     const data = await res.json();
     const content = data?.choices?.[0]?.message?.content;
-    const reasoning = data?.choices?.[0]?.message?.reasoning 
-                   || data?.choices?.[0]?.message?.reasoning_content;
-    
+    const reasoning =
+      data?.choices?.[0]?.message?.reasoning ||
+      data?.choices?.[0]?.message?.reasoning_content;
+
     let parsed = parseClassifierOutput(content);
     if (!parsed && reasoning) {
       parsed = parseClassifierOutput(String(reasoning));
     }
-    
+
     if (!parsed) {
       logger.warn(
-        { 
+        {
           model: body.model,
           content: content,
           reasoning: reasoning ? String(reasoning).slice(0, 200) : null,
