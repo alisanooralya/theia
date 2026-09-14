@@ -1,4 +1,3 @@
-import { userModel } from '#storage/models/user.js';
 import { pvpService } from '#features/rpg/services/pvp-service.js';
 import {
   PVP_CONFIG,
@@ -10,12 +9,6 @@ import { sleep } from '#helpers/formatter.js';
 import { logger } from '#helpers/logger.js';
 
 const HP_BAR_LEN = 10;
-
-function hpBar(hp, max) {
-  const ratio = max > 0 ? Math.max(0, Math.min(1, hp / max)) : 0;
-  const filled = Math.round(ratio * HP_BAR_LEN);
-  return '█'.repeat(filled) + '░'.repeat(HP_BAR_LEN - filled);
-}
 
 function buildSnapshotText(aNum, aHp, dNum, dHp, round, total, snap) {
   const lines = [
