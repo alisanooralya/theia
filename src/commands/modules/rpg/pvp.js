@@ -8,8 +8,6 @@ import { F } from '#helpers/index.js';
 import { sleep } from '#helpers/formatter.js';
 import { logger } from '#helpers/logger.js';
 
-const HP_BAR_LEN = 10;
-
 function buildSnapshotText(aNum, aHp, dNum, dHp, round, total, snap) {
   const lines = [
     `╭────── ⚔️ DUEL ──────╮`,

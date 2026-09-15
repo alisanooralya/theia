@@ -36,7 +36,7 @@ export default {
           );
         }
       }
-    } catch {}
+    } catch {} // eslint-disable-line no-empty
 
     try {
       const workState = await workSvc.getState(ctx.sender);
@@ -49,7 +49,7 @@ export default {
           lines.push(`• *Work (${jobName})* — ${F.formatDuration(remaining)}`);
         }
       }
-    } catch {}
+    } catch {} // eslint-disable-line no-empty
 
     if (lines.length === 0)
       return ctx.reply(
