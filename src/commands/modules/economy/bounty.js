@@ -100,8 +100,8 @@ export default {
       });
       battled = true;
 
-      const edit = async (text) =>
-        ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key });
+      const edit = async (text, mentions) =>
+        ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key, ...(mentions ? { mentions } : {}) });
 
       if (result.expired) {
         await ctx.clearCooldown();
@@ -110,16 +110,18 @@ export default {
       }
 
       if (result.won) {
+        const targetNum = targetJid.split('@')[0];
         await edit(
           [
             '🎯 *BOUNTY CLEAR*',
             '',
-            `Buronan @${targetJid.split('@')[0]} tertangkap!`,
+            `Buronan @${targetNum} tertangkap!`,
             `⚔️ ${result.rounds} rounds`,
             '',
             '🎁 Reward',
             `🪙 +${F.formatNumber(result.reward)} Coin`,
-          ].join('\n')
+          ].join('\n'),
+          [targetJid]
         );
         return;
       }
