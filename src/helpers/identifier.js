@@ -37,11 +37,6 @@ export async function getPnForLid(sock, lid) {
 
 export const resolveId = (jid) => jidNormalizedUser(jid);
 
-/**
- * Semua identitas bot yang mungkin muncul di pesan (PN dan LID), sudah
- * dinormalisasi. WhatsApp bisa merujuk bot lewat salah satu dari keduanya,
- * tergantung konteks chat dan versi klien pengirim.
- */
 export function getBotJids(sock) {
   return [sock?.user?.id, sock?.user?.lid]
     .filter(Boolean)

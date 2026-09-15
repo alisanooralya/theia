@@ -102,7 +102,11 @@ export default {
       battled = true;
 
       const edit = async (text, mentions) =>
-        ctx.sock.sendMessage(ctx.jid, { text, edit: statusMsg.key, ...(mentions ? { mentions } : {}) });
+        ctx.sock.sendMessage(ctx.jid, {
+          text,
+          edit: statusMsg.key,
+          ...(mentions ? { mentions } : {}),
+        });
 
       if (result.expired) {
         await ctx.clearCooldown();
