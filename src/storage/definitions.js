@@ -53,10 +53,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // RPG 2.0 player/base-stat state. Balance defaults mirror
-  // src/features/rpg/config/stats-config.js (the source of truth);
-  // the model always inserts explicit values, these are a safety net.
-  // current_hp is independent persistent state: no CHECK ties it to max_hp.
   `
   CREATE TABLE IF NOT EXISTS rpg_players (
     user_id     TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
@@ -66,8 +62,8 @@ const STATIC_SCHEMA = [
     current_hp  INTEGER NOT NULL DEFAULT 100 CHECK (current_hp >= 0),
     atk         INTEGER NOT NULL DEFAULT 10 CHECK (atk >= 0),
     def         INTEGER NOT NULL DEFAULT 5 CHECK (def >= 0),
-    crit_rate   DOUBLE PRECISION NOT NULL DEFAULT 0.05 CHECK (crit_rate >= 0),
-    crit_dmg    DOUBLE PRECISION NOT NULL DEFAULT 2.0 CHECK (crit_dmg >= 0),
+    crit_rate   DOUBLE PRECISION NOT NULL DEFAULT 0.25 CHECK (crit_rate >= 0),
+    crit_dmg    DOUBLE PRECISION NOT NULL DEFAULT 1.3 CHECK (crit_dmg >= 0),
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
     updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
@@ -76,10 +72,6 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_cooldowns_expires    ON cooldowns(expires_at)`,
   `CREATE INDEX IF NOT EXISTS idx_warns_jid            ON warns(jid, group_jid)`,
 
-  // RPG 2.0 Card ownership/state. Definitions live in
-  // src/features/rpg/config/card-config.js (config-first); these tables
-  // store per-user state only. One copy per card id per user.
-  // equipped = 1 marks the single active card of that slot per user.
   `
   CREATE TABLE IF NOT EXISTS rpg_main_cards (
     user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
@@ -107,25 +99,11 @@ const STATIC_SCHEMA = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_main_cards_equipped ON rpg_main_cards(user_id) WHERE equipped = 1`,
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_rpg_sign_cards_equipped ON rpg_sign_cards(user_id) WHERE equipped = 1`,
 
-  // Economy Daily state on users (same fields as legacy). Idempotent.
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_streak INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily INTEGER NOT NULL DEFAULT 0`,
-
-  // Economy Crime jail state (same field as legacy). Idempotent.
-  // Epoch seconds; 0 = free. Restriction-only: no income math reads it.
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS prison_until INTEGER NOT NULL DEFAULT 0`,
-
-  // Economy Bounty daily state (same field as legacy). Idempotent.
-  // Epoch seconds of the last successful bounty attempt.
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_bounty INTEGER NOT NULL DEFAULT 0`,
 
-  // RPG 2.0 Shop + Inventory foundation. No coin system existed outside
-  // legacy reference, so this is the minimal RPG-scoped coin store
-  // (same currency: coin). Generic item rows: one per (user, item).
-  // `bank` is the Economy 2.0 Bank balance (same row as coin, so every
-  // deposit/withdraw is a single conditional UPDATE: coin+bank total is
-  // conserved by construction and can never go negative). Storage only:
-  // no interest, fee, limit, or ledger columns.
   `
   CREATE TABLE IF NOT EXISTS rpg_wallets (
     user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
@@ -148,8 +126,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // RPG 2.0 Gacha idempotency keys. First claim wins; retries read back
-  // the stored results instead of granting rewards twice.
   `
   CREATE TABLE IF NOT EXISTS rpg_gacha_requests (
     request_key TEXT    PRIMARY KEY,
@@ -159,8 +135,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // RPG 2.0 Domain run ledger. One row per execution key: retries read
-  // back the stored outcome instead of granting rewards twice.
   `
   CREATE TABLE IF NOT EXISTS rpg_domain_runs (
     request_key TEXT    PRIMARY KEY,
@@ -171,10 +145,7 @@ const STATIC_SCHEMA = [
     created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
   )
   `,
-  // Economy 2.0 Market tables (migrated from legacy, same schema).
-  // Price engine state, hourly-tick bookkeeping, bounded price history,
-  // per-user holdings (quantity + average-cost basis), and trade ledger.
-  // market_portfolio.jid references users(jid): holdings die with the user.
+
   `
   CREATE TABLE IF NOT EXISTS market_commodities (
     id            TEXT    PRIMARY KEY,
@@ -240,9 +211,6 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_market_portfolio_jid ON market_portfolio(jid)`,
   `CREATE INDEX IF NOT EXISTS idx_market_trades_jid ON market_trades(jid, id DESC)`,
 
-  // Economy 2.0 Market News table (migrated from legacy, same schema).
-  // Optional layer over Market: spawned per tick, announced once to
-  // news-enabled groups, pressure applied through the price engine.
   `
   CREATE TABLE IF NOT EXISTS market_news (
     id            BIGSERIAL PRIMARY KEY,
@@ -268,12 +236,8 @@ const STATIC_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_market_news_announce ON market_news(announce_status, id)`,
   `CREATE INDEX IF NOT EXISTS idx_market_news_type_tick ON market_news(type, start_tick DESC)`,
 
-  // Group opt-in flag for automatic Market News delivery (default off).
   `ALTER TABLE groups ADD COLUMN IF NOT EXISTS news INTEGER NOT NULL DEFAULT 0`,
 
-  // Economy 2.0 Farming plots. One row per user (single land, no
-  // upgrades): empty land is crop_id = '' with quantity = 0. Maturity is
-  // timestamp-based (planted_at/mature_at in ms), so restarts are safe.
   `
   CREATE TABLE IF NOT EXISTS farm_plots (
     user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
@@ -286,9 +250,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // RPG 2.0 Orbital Lift progress. One row per user: next floor to attempt,
-  // Signal balance + last regen timestamp (timestamp-based, restart-safe).
-  // Owned Records live in the existing inventory (orbital_record_*).
   `
   CREATE TABLE IF NOT EXISTS orbital_progress (
     user_id           TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
@@ -300,9 +261,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // Economy 2.0 Work sessions + RPG 2.0 Expeditions (migrated from legacy,
-  // same schemas). One row per user; claiming flips active -> claimed only
-  // after the duration elapsed, so retries grant once.
   `
   CREATE TABLE IF NOT EXISTS work_sessions (
     jid         TEXT    PRIMARY KEY REFERENCES users(jid) ON DELETE CASCADE,
@@ -334,9 +292,6 @@ const STATIC_SCHEMA = [
   )
   `,
 
-  // RPG 2.0 PvP sessions + streaks on players. One row per challenge;
-  // the partial unique indexes enforce "a player has at most one active
-  // battle as challenger or target" at the database level.
   `
   CREATE TABLE IF NOT EXISTS rpg_pvp_sessions (
     id            TEXT    PRIMARY KEY,
@@ -356,17 +311,12 @@ const STATIC_SCHEMA = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_pvp_pending_challenger ON rpg_pvp_sessions(challenger) WHERE status IN ('pending','accepted','running')`,
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_pvp_pending_target ON rpg_pvp_sessions(target) WHERE status IN ('pending','accepted','running')`,
 
-  // Idempotent fix for tables created with the older NOT NULL DEFAULT ''
-  // confirm_msg_id (UNIQUE '' collided when two challenges had no message yet).
   `ALTER TABLE rpg_pvp_sessions ALTER COLUMN confirm_msg_id DROP DEFAULT`,
   `ALTER TABLE rpg_pvp_sessions ALTER COLUMN confirm_msg_id DROP NOT NULL`,
-
-  // PvP streak state on players (legacy kept win/loss/win_streak on stats).
   `ALTER TABLE rpg_players ADD COLUMN IF NOT EXISTS pvp_wins INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE rpg_players ADD COLUMN IF NOT EXISTS pvp_losses INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE rpg_players ADD COLUMN IF NOT EXISTS pvp_win_streak INTEGER NOT NULL DEFAULT 0`,
 
-  // Economy 2.0 Redeem codes (migrated from legacy, same schema).
   `
   CREATE TABLE IF NOT EXISTS redeem_codes (
     code        TEXT    PRIMARY KEY,
@@ -388,11 +338,7 @@ const STATIC_SCHEMA = [
 
   `CREATE INDEX IF NOT EXISTS idx_redeem_code_users_code ON redeem_code_users(code)`,
   `CREATE INDEX IF NOT EXISTS idx_redeem_code_users_jid ON redeem_code_users(jid)`,
-  // Crime -> Bounty wanted system. One active bounty per owner at most
-  // (partial unique index). Bounty coin is escrowed in the row itself: it
-  // never enters the wallet until claimed (hunter) or expired (owner), so
-  // reserved coin cannot be spent. Snapshot is TEXT JSON so reads stay
-  // byte-stable; timestamps are ms epoch (server time, restart-safe).
+
   `
   CREATE TABLE IF NOT EXISTS crime_bounties (
     id              BIGSERIAL PRIMARY KEY,
