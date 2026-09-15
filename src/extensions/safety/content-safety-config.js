@@ -143,7 +143,7 @@ export const CONTEXTUAL_RE = new RegExp(
   'i'
 );
 
-export function shouldReviewWithAI(lowerText) {
+export function shouldReview(lowerText) {
   if (CONTEXTUAL_RE.test(lowerText)) return true;
   if (REVIEW_KEYWORD_RE.test(lowerText)) return true;
   return REVIEW_PATTERNS.some((re) => re.test(lowerText));

@@ -2,19 +2,14 @@ import { sql } from '#storage/connection.js';
 import { groupModel } from '#storage/models/index.js';
 import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
-import { LOW_RE, shouldReviewWithAI } from './content-safety-config.js';
-import { classifyContent } from './content-safety-service.js';
+import { LOW_RE, shouldReview } from './content-safety-config.js';
 
 const TOXIC_DAMAGE = 5;
-
-const RATE_LIMIT_MS = 3000;
-const lastRequestTime = new Map();
 
 const deps = {
   sql,
   groupModel,
   getHealth,
-  classify: classifyContent,
 };
 
 export function __setAntiToxicDeps(overrides = {}) {
@@ -25,11 +20,6 @@ export function __resetAntiToxicDeps() {
   deps.sql = sql;
   deps.groupModel = groupModel;
   deps.getHealth = getHealth;
-  deps.classify = classifyContent;
-}
-
-export function __resetRateLimiter() {
-  lastRequestTime.clear();
 }
 
 export default {
@@ -54,27 +44,11 @@ export default {
       });
     }
 
-    if (!shouldReviewWithAI(lower)) return true;
-
-    const now = Date.now();
-    const lastTime = lastRequestTime.get(s.jid) || 0;
-    if (now - lastTime < RATE_LIMIT_MS) {
-      logger.debug(
-        { jid: s.jid, waitMs: RATE_LIMIT_MS - (now - lastTime) },
-        '[AntiToxic] Rate limited, allowing message'
-      );
-      return true;
-    }
-    lastRequestTime.set(s.jid, now);
-
-    const quotedText = typeof s.quoted?.text === 'string' ? s.quoted.text : '';
-    const result = await deps.classify(text, { quotedText });
-
-    if (!result || result.severity === 'none') return true;
+    if (!shouldReview(lower)) return true;
 
     return this.handleViolation({
-      severity: result.severity,
-      category: result.category,
+      severity: 'high',
+      category: 'toxic',
       s,
       sock,
     });
