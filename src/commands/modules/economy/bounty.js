@@ -44,11 +44,12 @@ async function showBoard(ctx) {
   for (const b of board) {
     const remaining = Math.max(0, b.expires_at - nowMs);
     const displayName = b.owner_name || b.owner_id.split('@')[0];
+    const num = b.owner_id.split('@')[0];
     builder.makeRow(
       `${b.crime_name || b.crime_id || 'crime'}`,
       `👤 ${displayName} — ${F.formatNumber(b.bounty_coin)} Coin`,
       `${snapshotStatsLine(b.snapshot)} • ⏳ ${formatBountyRemaining(remaining)}`,
-      `.bounty hunt ${b.owner_id}`
+      `.bounty hunt ${num}`
     );
   }
 
