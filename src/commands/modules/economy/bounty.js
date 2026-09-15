@@ -11,14 +11,12 @@ import {
 function resolveTarget(ctx) {
   const mentioned = ctx.mentions?.[0];
   if (mentioned) return mentioned;
-  const quoted = ctx.quoted?.sender;
-  if (quoted && !quoted.endsWith('@g.us')) return quoted;
+
   const raw = ctx.args[1] ?? ctx.args[0];
   if (!raw) return null;
-  // JID (12345@s.whatsapp.net or 12345@lid) — return as-is
   if (raw.includes('@')) return raw;
-  // Phone number only — convert to JID
   if (/^\d+$/.test(raw)) return phoneToJid(raw);
+
   return null;
 }
 
@@ -77,15 +75,15 @@ export default {
       return ctx.fail(
         [
           'Usage:',
-          '- `.bounty` — lihat Bounty Board',
-          '- `.bounty` hunt @tag — buru buronan',
+          '`.bounty` — lihat Bounty Board',
+          '`.bounty` hunt @tag — buru buronan',
         ].join('\n')
       );
     }
 
     const targetJid = resolveTarget(ctx);
     if (!targetJid) {
-      return ctx.fail('Usage: `.bounty` hunt @tag or reply pesan target');
+      return ctx.fail('Usage: `.bounty` hunt @tag');
     }
     if (targetJid === ctx.sender) {
       return ctx.fail('❌ Tidak bisa memburu diri sendiri.');
