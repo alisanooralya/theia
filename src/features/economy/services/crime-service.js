@@ -74,10 +74,7 @@ export function createCrimeService({
       return Math.max(0, until - nowSec);
     },
 
-    async bountyLock(
-      userId,
-      { nowMs = Date.now(), pushName = '' } = {}
-    ) {
+    async bountyLock(userId, { nowMs = Date.now(), pushName = '' } = {}) {
       await ensureAll(userId, pushName);
       const active = await bountyRepo.findActiveByOwner(userId);
       if (!active) return null;
@@ -143,31 +140,37 @@ export function createCrimeService({
         const createdAt = nowMs;
         const expiresAt = bountyExpiresAt(createdAt);
 
-        const created = await db.begin(async (tx) => {
-          const stillLocked = await bountyRepo.findActiveByOwner(userId, tx, true);
-          if (stillLocked) throw bountyLockError(stillLocked);
-          if (split.walletCoin > 0) {
-            await coinRepo.addCoin(userId, split.walletCoin, tx);
-          }
-          const row = await bountyRepo.create(
-            {
-              ownerId: userId,
-              crimeId: crime.id,
-              crimeName: crime.name,
-              coinReward: reward,
-              bountyPercent: split.percent,
-              bountyCoin: split.bountyCoin,
-              snapshot,
-              createdAt,
-              expiresAt,
-            },
-            tx
-          );
-          return row;
-        }).catch((err) => {
-          if (err?.code === '23505') throw bountyLockError(null);
-          throw err;
-        });
+        const created = await db
+          .begin(async (tx) => {
+            const stillLocked = await bountyRepo.findActiveByOwner(
+              userId,
+              tx,
+              true
+            );
+            if (stillLocked) throw bountyLockError(stillLocked);
+            if (split.walletCoin > 0) {
+              await coinRepo.addCoin(userId, split.walletCoin, tx);
+            }
+            const row = await bountyRepo.create(
+              {
+                ownerId: userId,
+                crimeId: crime.id,
+                crimeName: crime.name,
+                coinReward: reward,
+                bountyPercent: split.percent,
+                bountyCoin: split.bountyCoin,
+                snapshot,
+                createdAt,
+                expiresAt,
+              },
+              tx
+            );
+            return row;
+          })
+          .catch((err) => {
+            if (err?.code === '23505') throw bountyLockError(null);
+            throw err;
+          });
 
         logger.info(
           { user: userId, crime: crime.id, reward, bounty: created.id },

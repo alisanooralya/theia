@@ -148,10 +148,7 @@ export default {
     } catch (err) {
       if (err.code === 'BOUNTY_ACTIVE') {
         if (!rolled) await ctx.clearCooldown();
-        const remainingMs = Math.max(
-          0,
-          (err.expiresAt ?? 0) - Date.now()
-        );
+        const remainingMs = Math.max(0, (err.expiresAt ?? 0) - Date.now());
         return ctx.reply(
           [
             '🚨 *KAMU MASIH BURONAN!*',

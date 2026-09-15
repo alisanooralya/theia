@@ -113,9 +113,7 @@ export function createBountyService({
       { nowMs = Date.now(), random = Math.random, pushName = '' } = {}
     ) {
       if (hunterId === targetId) {
-        const err = new RangeError(
-          'Tidak bisa memburu diri sendiri.'
-        );
+        const err = new RangeError('Tidak bisa memburu diri sendiri.');
         err.code = 'SELF_HUNT';
         throw err;
       }
@@ -143,9 +141,7 @@ export function createBountyService({
       return db.begin(async (tx) => {
         const bounty = await bountyRepo.findActiveByOwner(targetId, tx, true);
         if (!bounty) {
-          const err = new RangeError(
-            'Target tidak memiliki bounty aktif.'
-          );
+          const err = new RangeError('Target tidak memiliki bounty aktif.');
           err.code = 'NO_BOUNTY';
           throw err;
         }
@@ -217,9 +213,7 @@ export function createBountyService({
 
         const claimed = await bountyRepo.claim(bounty.id, hunterId, nowMs, tx);
         if (!claimed) {
-          const err = new RangeError(
-            'Bounty sudah diselesaikan orang lain.'
-          );
+          const err = new RangeError('Bounty sudah diselesaikan orang lain.');
           err.code = 'ALREADY_CLAIMED';
           throw err;
         }

@@ -47,7 +47,7 @@ async function showBoard(ctx) {
       ''
     );
   }
-  lines.push('Buruan dengan `.bounty hunt @tag`');
+  lines.push('Buruan dengan `.bounty` hunt @tag');
   return ctx.reply(lines.join('\n').trimEnd(), { mentions });
 }
 
@@ -62,28 +62,17 @@ export default {
   async execute(ctx) {
     const sub = ctx.args[0]?.toLowerCase();
 
-    if (!sub || sub === 'board' || sub === 'list') {
+    if (!sub || sub === 'list') {
       return showBoard(ctx);
-    }
-
-    if (LEGACY_DIFFICULTY.has(sub)) {
-      return ctx.fail(
-        [
-          'Sistem Bounty sudah dirombak.',
-          'Tidak ada lagi difficulty easy/medium/hard.',
-          '',
-          'Buronan muncul otomatis dari Crime yang berhasil.',
-          'Ketik `.bounty` untuk Bounty Board.',
-          'Buruan dengan `.bounty hunt @tag`.',
-        ].join('\n')
-      );
     }
 
     if (sub !== 'hunt') {
       return ctx.fail(
-        ['Usage:', '- `.bounty` — lihat Bounty Board', '- `.bounty hunt @tag` — buru buronan'].join(
-          '\n'
-        )
+        [
+          'Usage:',
+          '- `.bounty` — lihat Bounty Board',
+          '- `.bounty` hunt @tag — buru buronan',
+        ].join('\n')
       );
     }
 
@@ -152,10 +141,10 @@ export default {
         error.code === 'HP0'
       ) {
         if (!battled) await ctx.clearCooldown();
-        return ctx.reply(`❌ ${error.message}`);
+        return ctx.fail(error.message);
       }
       if (error.code === 'ALREADY_CLAIMED') {
-        return ctx.reply(`❌ ${error.message}`);
+        return ctx.fail(error.message);
       }
       if (error.code === 'SELF_HUNT') {
         await ctx.clearCooldown();
