@@ -14,8 +14,11 @@ function resolveTarget(ctx) {
   const quoted = ctx.quoted?.sender;
   if (quoted && !quoted.endsWith('@g.us')) return quoted;
   const raw = ctx.args[1] ?? ctx.args[0];
-  if (raw && raw.includes('@')) return phoneToJid(raw);
-  if (raw && /^\d+$/.test(raw)) return phoneToJid(raw);
+  if (!raw) return null;
+  // JID (12345@s.whatsapp.net or 12345@lid) — return as-is
+  if (raw.includes('@')) return raw;
+  // Phone number only — convert to JID
+  if (/^\d+$/.test(raw)) return phoneToJid(raw);
   return null;
 }
 
@@ -44,12 +47,11 @@ async function showBoard(ctx) {
   for (const b of board) {
     const remaining = Math.max(0, b.expires_at - nowMs);
     const displayName = b.owner_name || b.owner_id.split('@')[0];
-    const num = b.owner_id.split('@')[0];
     builder.makeRow(
       `${b.crime_name || b.crime_id || 'crime'}`,
       `👤 ${displayName} — ${F.formatNumber(b.bounty_coin)} Coin`,
       `${snapshotStatsLine(b.snapshot)} • ⏳ ${formatBountyRemaining(remaining)}`,
-      `.bounty hunt ${num}`
+      `.bounty hunt ${b.owner_id}`
     );
   }
 
