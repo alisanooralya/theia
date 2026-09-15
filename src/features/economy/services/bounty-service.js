@@ -119,9 +119,6 @@ export function createBountyService({
       }
       await ensureAll(hunterId, pushName);
 
-      // Lazy expiry in its own transaction so the refund commits even
-      // though the hunt itself is rejected below. Throwing after a write
-      // inside the main transaction would roll the refund back.
       const pre = await bountyRepo.findActiveByOwner(targetId);
       if (pre && pre.expires_at <= nowMs) {
         await db.begin(async (tx) => {
@@ -146,8 +143,6 @@ export function createBountyService({
           throw err;
         }
         if (bounty.expires_at <= nowMs) {
-          // Lost the race with expiry: settle refund in this same
-          // transaction and return normally so it commits.
           const expired = await bountyRepo.expire(bounty.id, nowMs, tx);
           if (expired) {
             await coinRepo.addCoin(targetId, expired.bounty_coin, tx);

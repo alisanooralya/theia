@@ -78,20 +78,8 @@ export default {
     }
 
     const crime = getCrime(sub);
-    if (!crime)
-      return ctx.fail(
-        [
-          'Kriminal tidak ditemukan.',
-          '',
-          'Pilihan yang tersedia:',
-          ...CRIMES.map((c) => `- \`.crime ${c.id}\` — ${c.name}`),
-          '',
-          'Atau ketik `.crime` untuk daftar lengkap.',
-        ].join('\n')
-      );
+    if (!crime) return ctx.fail('Kriminal tidak ditemukan.');
 
-    // Cooldown dipasang saat aksi benar-benar dijalankan, lalu dilepas lagi
-    // kalau aksinya gagal jalan sebelum hasil ditentukan.
     await ctx.applyCooldown();
 
     let rolled = false;
@@ -104,7 +92,6 @@ export default {
       const title = `${crime.emoji} *${crime.name.toUpperCase()}*`;
 
       if (result.outcome === 'success' || result.outcome === 'jackpot') {
-        // Crime berhasil dikunci oleh active Bounty, bukan cooldown 3 jam.
         await ctx.clearCooldown();
         const label = result.outcome === 'jackpot' ? 'JACKPOT!' : 'Berhasil!';
         const pct = Math.round(result.bountyPercent * 100);
@@ -114,8 +101,7 @@ export default {
           `🪙 +${F.formatNumber(result.reward)} Coin\n\n` +
           `💰 Masuk wallet: +${F.formatNumber(result.walletCoin)} Coin\n` +
           `🎯 Bounty (${pct}%): ${F.formatNumber(result.bountyCoin)} Coin (reserved)\n` +
-          `🚨 Kamu menjadi BURONAN selama ${formatBountyRemaining(remainingMs)}!\n` +
-          `User lain bisa memburumu via \`.bounty hunt @tag\`.`;
+          `🚨 Kamu menjadi BURONAN selama ${formatBountyRemaining(remainingMs)}!\n`;
         if (result.outcome === 'jackpot')
           text += `\n🎰 *JACKPOT!* Keberuntungan besar!`;
         await sendResult(ctx, firstMsg.key, text);

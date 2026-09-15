@@ -75,16 +75,14 @@ export default {
         [
           'Usage:',
           '- `.bounty` — lihat Bounty Board',
-          '- `.bounty hunt @tag` — buru buronan',
+          '- `.bounty` hunt @tag — buru buronan',
         ].join('\n')
       );
     }
 
     const targetJid = resolveTarget(ctx);
     if (!targetJid) {
-      return ctx.fail(
-        'Usage: `.bounty hunt @tag`, reply pesan target, atau `.bounty hunt <nomor>`'
-      );
+      return ctx.fail('Usage: `.bounty` hunt @tag or reply pesan target');
     }
     if (targetJid === ctx.sender) {
       return ctx.fail('❌ Tidak bisa memburu diri sendiri.');
@@ -117,7 +115,7 @@ export default {
             '🎯 *BOUNTY CLEAR*',
             '',
             `Buronan @${targetJid.split('@')[0]} tertangkap!`,
-            `⚔️ ${result.rounds} round${result.rounds > 1 ? 's' : ''}`,
+            `⚔️ ${result.rounds} rounds`,
             '',
             '🎁 Reward',
             `🪙 +${F.formatNumber(result.reward)} Coin`,
