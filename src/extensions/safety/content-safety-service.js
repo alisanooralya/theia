@@ -99,7 +99,10 @@ function parseNemotronText(text) {
     : [];
 
   const category = mapNemotronCategory(categories);
-  return { severity: 'low', category };
+  // Vulgar/profanity alone is low (delete only), everything else that is
+  // marked unsafe is high (delete + health damage).
+  const severity = category === 'vulgar' ? 'low' : 'high';
+  return { severity, category };
 }
 
 function mapNemotronCategory(categories) {
@@ -199,10 +202,21 @@ export async function classifyContent(
     );
     return parsed;
   } catch (err) {
-    logger.warn(
-      { name: err?.name, message: err?.message },
-      '[ContentSafety] Classifier request error'
-    );
+    const isAbort =
+      err?.name === 'AbortError' ||
+      /aborted/i.test(String(err?.message ?? '')) ||
+      /abort/i.test(String(err?.cause?.message ?? ''));
+    if (isAbort) {
+      logger.debug(
+        { timeoutMs: timeout, model: body.model },
+        '[ContentSafety] Classifier request timed out, skipping AI moderation'
+      );
+    } else {
+      logger.warn(
+        { name: err?.name, message: err?.message },
+        '[ContentSafety] Classifier request error'
+      );
+    }
     return null;
   } finally {
     clearTimeout(timer);

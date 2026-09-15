@@ -84,8 +84,10 @@ export default {
     if (severity === 'none') return true;
 
     try {
+      let deleted = false;
       try {
         await sock.sendMessage(s.jid, { delete: s.key });
+        deleted = true;
       } catch (err) {
         logger.warn({ err, jid: s.jid }, '[AntiToxic] Delete failed');
       }
@@ -94,6 +96,14 @@ export default {
         logger.info(
           { jid: s.jid, sender: s.sender, category },
           '[AntiToxic] Low severity message removed'
+        );
+        return false;
+      }
+
+      if (!deleted) {
+        logger.info(
+          { jid: s.jid, sender: s.sender, category },
+          '[AntiToxic] High severity but delete failed, skipping penalty'
         );
         return false;
       }
