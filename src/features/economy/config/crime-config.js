@@ -1,4 +1,4 @@
-export const CRIME_COOLDOWN_MS = 60 * 60 * 1000;
+export const CRIME_COOLDOWN_MS = 3 * 60 * 60 * 1000;
 
 export const CRIMES = [
   {

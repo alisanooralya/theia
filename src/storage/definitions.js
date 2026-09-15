@@ -388,6 +388,34 @@ const STATIC_SCHEMA = [
 
   `CREATE INDEX IF NOT EXISTS idx_redeem_code_users_code ON redeem_code_users(code)`,
   `CREATE INDEX IF NOT EXISTS idx_redeem_code_users_jid ON redeem_code_users(jid)`,
+  // Crime -> Bounty wanted system. One active bounty per owner at most
+  // (partial unique index). Bounty coin is escrowed in the row itself: it
+  // never enters the wallet until claimed (hunter) or expired (owner), so
+  // reserved coin cannot be spent. Snapshot is TEXT JSON so reads stay
+  // byte-stable; timestamps are ms epoch (server time, restart-safe).
+  `
+  CREATE TABLE IF NOT EXISTS crime_bounties (
+    id              BIGSERIAL PRIMARY KEY,
+    owner_id        TEXT    NOT NULL REFERENCES users(jid) ON DELETE CASCADE,
+    crime_id        TEXT    NOT NULL DEFAULT '',
+    crime_name      TEXT    NOT NULL DEFAULT '',
+    coin_reward     INTEGER NOT NULL CHECK (coin_reward > 0),
+    bounty_percent  DOUBLE PRECISION NOT NULL CHECK (bounty_percent >= 0),
+    bounty_coin     INTEGER NOT NULL CHECK (bounty_coin > 0),
+    snapshot        TEXT    NOT NULL DEFAULT '{}',
+    status          TEXT    NOT NULL DEFAULT 'active'
+                    CHECK (status IN ('active','claimed','expired')),
+    claimed_by      TEXT,
+    claimed_at      BIGINT  NOT NULL DEFAULT 0,
+    created_at      BIGINT  NOT NULL DEFAULT 0,
+    expires_at      BIGINT  NOT NULL DEFAULT 0,
+    updated_at      INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `CREATE UNIQUE INDEX IF NOT EXISTS uq_crime_bounties_active_owner ON crime_bounties(owner_id) WHERE status = 'active'`,
+  `CREATE INDEX IF NOT EXISTS idx_crime_bounties_status_expires ON crime_bounties(status, expires_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_crime_bounties_active_coin ON crime_bounties(bounty_coin DESC) WHERE status = 'active'`,
 ];
 
 export async function createSchema() {

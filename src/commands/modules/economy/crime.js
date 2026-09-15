@@ -8,6 +8,7 @@ import {
   formatRemaining,
   getCrime,
 } from '#features/economy/config/crime-config.js';
+import { formatBountyRemaining } from '#features/economy/config/bounty-config.js';
 
 function crimeMenu(ctx) {
   const builder = new Button(ctx.sock)
@@ -59,6 +60,23 @@ export default {
     const sub = ctx.args[0]?.toLowerCase();
     if (!sub) return crimeMenu(ctx);
 
+    const lock = await crimeService.bountyLock(ctx.sender, {
+      pushName: ctx.pushName,
+    });
+    if (lock) {
+      const remainingMs = Math.max(0, lock.expires_at - Date.now());
+      return ctx.reply(
+        [
+          '🚨 *KAMU MASIH BURONAN!*',
+          '',
+          `Bounty 🪙 ${F.formatNumber(lock.bounty_coin)} Coin masih aktif.`,
+          `⏳ Sisa: ${formatBountyRemaining(remainingMs)}`,
+          '',
+          'Kamu tidak bisa melakukan Crime sampai bounty selesai (ditangkap) atau expired.',
+        ].join('\n')
+      );
+    }
+
     const crime = getCrime(sub);
     if (!crime)
       return ctx.fail(
@@ -86,8 +104,18 @@ export default {
       const title = `${crime.emoji} *${crime.name.toUpperCase()}*`;
 
       if (result.outcome === 'success' || result.outcome === 'jackpot') {
+        // Crime berhasil dikunci oleh active Bounty, bukan cooldown 3 jam.
+        await ctx.clearCooldown();
         const label = result.outcome === 'jackpot' ? 'JACKPOT!' : 'Berhasil!';
-        let text = `${title}\n\n${label} Kamu mendapatkan\n🪙 +${F.formatNumber(result.reward)} Coin`;
+        const pct = Math.round(result.bountyPercent * 100);
+        const remainingMs = Math.max(0, result.expiresAt - Date.now());
+        let text =
+          `${title}\n\n${label} Total hasil\n` +
+          `🪙 +${F.formatNumber(result.reward)} Coin\n\n` +
+          `💰 Masuk wallet: +${F.formatNumber(result.walletCoin)} Coin\n` +
+          `🎯 Bounty (${pct}%): ${F.formatNumber(result.bountyCoin)} Coin (reserved)\n` +
+          `🚨 Kamu menjadi BURONAN selama ${formatBountyRemaining(remainingMs)}!\n` +
+          `User lain bisa memburumu via \`.bounty hunt @tag\`.`;
         if (result.outcome === 'jackpot')
           text += `\n🎰 *JACKPOT!* Keberuntungan besar!`;
         await sendResult(ctx, firstMsg.key, text);
@@ -118,6 +146,23 @@ export default {
       const text = `${title}\n\nGagal melakukan aksi.\nUntungnya kamu berhasil kabur. 💨`;
       await sendResult(ctx, firstMsg.key, text);
     } catch (err) {
+      if (err.code === 'BOUNTY_ACTIVE') {
+        if (!rolled) await ctx.clearCooldown();
+        const remainingMs = Math.max(
+          0,
+          (err.expiresAt ?? 0) - Date.now()
+        );
+        return ctx.reply(
+          [
+            '🚨 *KAMU MASIH BURONAN!*',
+            '',
+            err.bounty
+              ? `Bounty 🪙 ${F.formatNumber(err.bounty.bounty_coin)} Coin masih aktif.`
+              : 'Bounty masih aktif.',
+            `⏳ Sisa: ${formatBountyRemaining(remainingMs)}`,
+          ].join('\n')
+        );
+      }
       if (!rolled) await ctx.clearCooldown();
       await ctx.fail(err.message);
     }
