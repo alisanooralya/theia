@@ -20,7 +20,9 @@ export const sql = postgres(SETTINGS.supabaseDbUrl, {
   idle_timeout: 20,
   connect_timeout: 10,
   prepare: false,
-  ssl: { rejectUnauthorized: false },
+  ssl: SETTINGS.supabaseDbUrl?.includes('sslmode=disable')
+    ? false
+    : { rejectUnauthorized: false },
   onnotice: (notice) => {
     const severity = notice?.severity ?? '';
     if (severity === 'NOTICE' || severity === 'INFO') return;
