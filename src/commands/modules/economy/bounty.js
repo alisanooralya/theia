@@ -1,3 +1,4 @@
+import { Button } from '#messages/builder.js';
 import { F } from '#helpers/index.js';
 import { phoneToJid } from '#helpers/identifier.js';
 import { bountyService } from '#features/economy/services/bounty-service.js';
@@ -6,8 +7,6 @@ import {
   formatBountyRemaining,
   snapshotStatsLine,
 } from '#features/economy/config/bounty-config.js';
-
-const LEGACY_DIFFICULTY = new Set(['easy', 'medium', 'hard']);
 
 function resolveTarget(ctx) {
   const mentioned = ctx.mentions?.[0];
@@ -32,23 +31,28 @@ async function showBoard(ctx) {
       ].join('\n')
     );
   }
+
+  const builder = new Button(ctx.sock)
+    .setTitle('🎯 BOUNTY BOARD')
+    .setSubtitle('Buru buronan untuk hadiah Coin')
+    .setBody('Pilih buronan yang ingin kamu kejar')
+    .setFooter('Tap buronan untuk langsung mengejar')
+    .addSelection('🎯 Pilih Buronan')
+    .makeSection('Buronan Aktif');
+
   const nowMs = Date.now();
-  const lines = ['🎯 *BOUNTY BOARD*', ''];
-  const mentions = [];
   for (const b of board) {
     const remaining = Math.max(0, b.expires_at - nowMs);
     const num = b.owner_id.split('@')[0];
-    mentions.push(b.owner_id);
-    lines.push(
-      `👤 @${num} • ${b.crime_name || b.crime_id || 'crime'}`,
-      `🪙 Bounty: ${F.formatNumber(b.bounty_coin)} Coin`,
-      `⏳ Sisa: ${formatBountyRemaining(remaining)}`,
-      `📊 ${snapshotStatsLine(b.snapshot)}`,
-      ''
+    builder.makeRow(
+      `${b.crime_name || b.crime_id || 'crime'}`,
+      `👤 @${num} — ${F.formatNumber(b.bounty_coin)} Coin`,
+      `${snapshotStatsLine(b.snapshot)} • ⏳ ${formatBountyRemaining(remaining)}`,
+      `.bounty hunt @${num}`
     );
   }
-  lines.push('Buruan dengan `.bounty` hunt @tag');
-  return ctx.reply(lines.join('\n').trimEnd(), { mentions });
+
+  return builder.send(ctx.jid);
 }
 
 export default {
@@ -71,7 +75,7 @@ export default {
         [
           'Usage:',
           '- `.bounty` — lihat Bounty Board',
-          '- `.bounty` hunt @tag — buru buronan',
+          '- `.bounty hunt @tag` — buru buronan',
         ].join('\n')
       );
     }
