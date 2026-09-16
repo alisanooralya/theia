@@ -141,24 +141,24 @@ export const MAIN_CARDS = Object.freeze({
     'lena',
     'Lena',
     'Archer',
-    { hp: 196, atk: 123, def: 13 },
-    { hp: 21, atk: 12, def: 0.5 },
+    { hp: 184, atk: 119, def: 10 },
+    { hp: 19, atk: 11.5, def: 0.3 },
     skill(
       'Starfall Volley',
       'A rain of starlight arrows over the target area.',
       25,
       75,
-      [{ stat: 'atk', mode: 'pct', value: 0.12 }],
-      [{ stat: 'atk', mode: 'pct', value: 0.28 }],
-      10000
+      [{ stat: 'atk', mode: 'pct', value: 0.09 }],
+      [{ stat: 'atk', mode: 'pct', value: 0.2 }],
+      12000
     ),
     skill(
       'Star Fragment',
       'Hardens body and guard, reducing damage taken in battle.',
       50,
       100,
-      [{ stat: 'def', mode: 'pct', value: 0.1 }],
-      [{ stat: 'def', mode: 'pct', value: 0.25 }]
+      [{ stat: 'def', mode: 'pct', value: 0.06 }],
+      [{ stat: 'def', mode: 'pct', value: 0.15 }]
     )
   ),
   ameris: mainCard(
