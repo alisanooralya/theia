@@ -14,19 +14,19 @@ export const EXPEDITIONS = {
       short: {
         name: 'Short',
         durationMs: 1 * HOUR_MS,
-        coin: [8000, 12000],
+        coin: [10000, 14000],
         exp: [0, 0],
       },
       long: {
         name: 'Long',
         durationMs: 4 * HOUR_MS,
-        coin: [18000, 28000],
+        coin: [30000, 40000],
         exp: [0, 0],
       },
       extended: {
         name: 'Extended',
         durationMs: 8 * HOUR_MS,
-        coin: [35000, 50000],
+        coin: [75000, 100000],
         exp: [0, 0],
       },
     },
