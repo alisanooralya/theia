@@ -41,7 +41,6 @@ class UserModel {
     return banned;
   }
 
-  /** Daily/Streak state for Economy Daily (locked reads for claims). */
   async getDaily(jid, client = sql, forUpdate = false) {
     const rows = await client.unsafe(
       `SELECT jid, daily_streak, last_daily FROM users WHERE jid = $1${forUpdate ? ' FOR UPDATE' : ''}`,
@@ -56,7 +55,6 @@ class UserModel {
     `;
   }
 
-  /** Jail state for Economy Crime (epoch seconds; 0 = free). */
   async getPrisonUntil(jid, client = sql) {
     const rows =
       await client`SELECT prison_until FROM users WHERE jid = ${jid}`;

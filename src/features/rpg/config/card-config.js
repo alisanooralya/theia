@@ -150,7 +150,7 @@ export const MAIN_CARDS = Object.freeze({
       75,
       [{ stat: 'atk', mode: 'pct', value: 0.09 }],
       [{ stat: 'atk', mode: 'pct', value: 0.2 }],
-      12000
+      10000
     ),
     skill(
       'Star Fragment',

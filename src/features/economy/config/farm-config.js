@@ -1,8 +1,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const FARM_LANDS = 3;
-export const FARM_PLOT_CAPACITY = 1;
-export const FARM_SEEDS_PER_PLANT = 1;
+export const FARM_PLOT_CAPACITY = 4;
+export const FARM_SEEDS_PER_PLANT = 4;
 
 export const FARM_DEMAND = Object.freeze({
   LOW: { id: 'LOW', label: 'LOW', emoji: '📉', modifier: 0.7, weight: 0.25 },
@@ -13,7 +13,7 @@ export const FARM_DEMAND = Object.freeze({
     modifier: 1.0,
     weight: 0.5,
   },
-  HIGH: { id: 'HIGH', label: 'HIGH', emoji: '📈', modifier: 1.4, weight: 0.25 },
+  HIGH: { id: 'HIGH', label: 'HIGH', emoji: '📈', modifier: 1.5, weight: 0.25 },
 });
 
 export const FARM_DEMAND_PERIOD_MS = 24 * 60 * 60 * 1000;
@@ -28,7 +28,7 @@ export const FARM_CROPS = Object.freeze({
     harvestId: 'corn',
     harvestName: 'Jagung',
     growthMs: 3 * DAY_MS,
-    basePrice: 2600,
+    basePrice: 3000,
     aliases: ['jagung', 'corn'],
   },
   tomato: {
@@ -39,8 +39,8 @@ export const FARM_CROPS = Object.freeze({
     seedName: 'Bibit Tomat',
     harvestId: 'tomato',
     harvestName: 'Tomat',
-    growthMs: 4 * DAY_MS,
-    basePrice: 3200,
+    growthMs: 3 * DAY_MS,
+    basePrice: 3500,
     aliases: ['tomat', 'tomato'],
   },
   carrot: {
@@ -52,7 +52,7 @@ export const FARM_CROPS = Object.freeze({
     harvestId: 'carrot',
     harvestName: 'Wortel',
     growthMs: 4 * DAY_MS,
-    basePrice: 3800,
+    basePrice: 4000,
     aliases: ['wortel', 'carrot'],
   },
   potato: {
@@ -63,8 +63,8 @@ export const FARM_CROPS = Object.freeze({
     seedName: 'Bibit Kentang',
     harvestId: 'potato',
     harvestName: 'Kentang',
-    growthMs: 5 * DAY_MS,
-    basePrice: 5000,
+    growthMs: 4 * DAY_MS,
+    basePrice: 5300,
     aliases: ['kentang', 'potato'],
   },
   pumpkin: {
@@ -76,7 +76,7 @@ export const FARM_CROPS = Object.freeze({
     harvestId: 'pumpkin',
     harvestName: 'Labu',
     growthMs: 5 * DAY_MS,
-    basePrice: 6200,
+    basePrice: 6700,
     aliases: ['labu', 'pumpkin'],
   },
 });
