@@ -1,8 +1,8 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export const FARM_LANDS = 1;
-export const FARM_PLOT_CAPACITY = 4;
-export const FARM_SEEDS_PER_PLANT = 4;
+export const FARM_LANDS = 3;
+export const FARM_PLOT_CAPACITY = 1;
+export const FARM_SEEDS_PER_PLANT = 1;
 
 export const FARM_DEMAND = Object.freeze({
   LOW: { id: 'LOW', label: 'LOW', emoji: '📉', modifier: 0.7, weight: 0.25 },
