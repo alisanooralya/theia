@@ -389,6 +389,11 @@ export function createCardService({
         const def = requireDefinition(signRow.card_id);
         sign = enrichCard(signRow, 'sign');
         sign.signCompatible = main ? isSignCompatible(def, main.cardId) : false;
+        // Incompatible Sign grants no battle stats; only its collection
+        // entry remains. Previously atk/def applied even when passive off.
+        if (!sign.signCompatible) {
+          sign.stats = { ...sign.stats, atk: 0, def: 0 };
+        }
       }
       return {
         main: main

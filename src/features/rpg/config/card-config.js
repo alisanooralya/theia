@@ -202,7 +202,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Last Stand',
-      'Sturdy resolve that reduces damage taken in battle.',
+      'Sturdy resolve that increases Max HP at battle start.',
       50,
       100,
       [{ stat: 'hp', mode: 'pct', value: 0.1 }],
@@ -256,11 +256,28 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 2.1, def: 0.9 },
     {
       name: 'Bulwark Heart',
-      description: 'Signature resonance: reduces damage taken.',
+      description: 'Signature resonance: increases Max HP at battle start.',
       effects: [{ stat: 'hp', mode: 'pct', value: 0.1 }],
     }
   ),
 });
+
+// MAIN_MILESTONES is enforced: every main card must follow the shared
+// unlock/upgrade schedule so future cards cannot drift silently.
+for (const def of Object.values(MAIN_CARDS)) {
+  const [unlockActive, unlockPassive, upgradeActive, upgradePassive] =
+    MAIN_MILESTONES;
+  if (
+    def.active.unlockLevel !== unlockActive.level ||
+    def.passive.unlockLevel !== unlockPassive.level ||
+    def.active.upgradeLevel !== upgradeActive.level ||
+    def.passive.upgradeLevel !== upgradePassive.level
+  ) {
+    throw new RangeError(
+      `main card ${def.id} must follow MAIN_MILESTONES (active ${unlockActive.level}/${upgradeActive.level}, passive ${unlockPassive.level}/${upgradePassive.level})`
+    );
+  }
+}
 
 export function maxLevelFor(kind) {
   if (kind === 'main') return MAIN_MAX_LEVEL;

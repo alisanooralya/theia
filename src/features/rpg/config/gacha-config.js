@@ -8,6 +8,12 @@ export const GACHA_CONFIG = Object.freeze({
   animationDelayMs: 1600,
 });
 
+// Consolation for pulling an already-owned Main Card (was plain zonk).
+export const GACHA_DUPLICATE_COMPENSATION = Object.freeze({
+  itemId: 'cerelia',
+  quantity: 5,
+});
+
 const rateTotal =
   GACHA_CONFIG.rates.mainCard +
   GACHA_CONFIG.rates.zonk +

@@ -4,23 +4,25 @@ import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
 import { GACHA_CONFIG } from '#features/rpg/config/gacha-config.js';
 import {
   cardArtPath,
-  CARD_IMAGE_MAP,
+  MAIN_CARDS,
 } from '#features/rpg/config/card-config.js';
 import {
   gachaService,
   makeRequestKey,
 } from '#features/rpg/services/gacha-service.js';
 
-function bannerData() {
-  const testId = Object.keys(CARD_IMAGE_MAP)[1];
+function bannerData(random = Math.random) {
+  // Rotate the featured card instead of hardcoding Lena, so new Main Cards
+  // appear automatically once added to MAIN_CARDS.
+  const defs = Object.values(MAIN_CARDS);
+  const def = defs[Math.min(defs.length - 1, Math.floor(random() * defs.length))];
   return {
-    name: 'Lena',
-    subtitle: 'Archer',
-    eraLabel: 'Star Cluster Chief Scrivener',
-    rateUpText: 'NEW CARD RELEASED',
-    description:
-      "Nice to meet you! The captain has told me a lot about you. Apparently, you're an incredibly awesome mate. I have a feeling that we'll experience amazing things together beyond what I've read in books! Looking forward to working with you from now on, f-friend!",
-    artPath: cardArtPath(testId),
+    name: def.name,
+    subtitle: def.role,
+    eraLabel: `${def.role} • Featured`,
+    rateUpText: 'FEATURED CARD',
+    description: `Active: ${def.active.name} • Passive: ${def.passive.name}. Pull dari .gacha untuk mendapatkan Main Card!`,
+    artPath: cardArtPath(def.id),
   };
 }
 
@@ -35,6 +37,12 @@ export function parseGachaArgs(args) {
 
 function resultLine(result) {
   if (result.type === 'main') return `${result.index}. 🃏 ${result.cardName}`;
+  if (result.type === 'duplicate') {
+    const comp = result.compensation
+      ? ` (+${result.compensation.quantity} ${result.compensation.itemId})`
+      : '';
+    return `${result.index}. 🔁 ${result.cardName} (duplicate${comp})`;
+  }
   if (result.type === 'shopItem') {
     const qty = result.quantity > 1 ? ` ×${result.quantity}` : '';
     return `${result.index}. ${result.emoji ?? '📦'} ${result.itemName}${qty}`;
@@ -49,10 +57,17 @@ export function formatGachaResult(outcome) {
   const mains = {};
   const items = {};
   let zonk = 0;
+  let duplicates = 0;
   for (const result of outcome.results) {
     if (result.type === 'main')
       mains[result.cardName] = (mains[result.cardName] ?? 0) + 1;
-    else if (result.type === 'shopItem') {
+    else if (result.type === 'duplicate') {
+      duplicates += 1;
+      if (result.compensation) {
+        const key = result.compensation.itemId;
+        items[key] = (items[key] ?? 0) + result.compensation.quantity;
+      }
+    } else if (result.type === 'shopItem') {
       items[result.itemName] = (items[result.itemName] ?? 0) + result.quantity;
     } else zonk += 1;
   }
@@ -61,6 +76,7 @@ export function formatGachaResult(outcome) {
     lines.push(`• ${name} ×${qty}`);
   for (const [name, qty] of Object.entries(items))
     lines.push(`• ${name} ×${qty}`);
+  if (duplicates > 0) lines.push(`• Duplicate ×${duplicates}`);
   if (zonk > 0) lines.push(`• Zonk ×${zonk}`);
   return lines.join('\n');
 }

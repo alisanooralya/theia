@@ -44,6 +44,7 @@ export function createProfileService({ finalStatsService, cardService } = {}) {
         critDmg: final.critDmg,
         main: main
           ? {
+              cardId: main.cardId,
               name: main.definition.name,
               level: main.level,
               active: {

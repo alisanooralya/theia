@@ -182,7 +182,7 @@ export function createBountyService({
               atk: snap.atk,
               def: snap.def,
               critRate: snap.critRate ?? 0,
-              critDmg: snap.critDmg ?? 2.0,
+              critDmg: snap.critDmg ?? 1.5,
             },
           },
           playerSkills: hunterSkills,

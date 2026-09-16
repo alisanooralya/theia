@@ -23,7 +23,9 @@ function snapStats(stats, label) {
       throw new RangeError(`${label} needs numeric ${key}`);
   }
   s.critRate = Number.isFinite(s.critRate) ? s.critRate : 0;
-  s.critDmg = Number.isFinite(s.critDmg) ? s.critDmg : 2.0;
+  // Default critDmg 1.5 matches boss convention (domain/orbital) and stays
+  // close to player base 1.3; previously 2.0 spiked crits on missing values.
+  s.critDmg = Number.isFinite(s.critDmg) ? s.critDmg : 1.5;
   return Object.freeze({ ...s });
 }
 
@@ -176,6 +178,26 @@ function collectMods(side, trigger) {
 function applyTriggerEffects(state, owner, trigger) {
   const side = owner === 'player' ? state.player : state.enemy;
   const foe = owner === 'player' ? state.enemy : state.player;
+  // Battle-start stat modifiers (e.g. HP passive -> bigger Max HP pool).
+  // Applied once at createBattle; stats objects are frozen so replace them.
+  if (trigger === 'battle_start') {
+    let mult = 1;
+    let flat = 0;
+    for (const p of side.activeEffects) {
+      if (p.trigger !== 'battle_start') continue;
+      const m = p.modifiers ?? {};
+      if (m.maxHpMult) mult *= m.maxHpMult;
+      if (m.maxHpBonus) flat += m.maxHpBonus;
+    }
+    if (mult !== 1 || flat !== 0) {
+      const bonus = Math.round(side.stats.maxHp * (mult - 1)) + Math.round(flat);
+      if (bonus !== 0) {
+        const maxHp = Math.max(1, side.stats.maxHp + bonus);
+        side.stats = { ...side.stats, maxHp };
+        side.hp = Math.min(maxHp, side.hp + Math.max(0, bonus));
+      }
+    }
+  }
   for (const p of side.activeEffects) {
     if (p.trigger !== trigger) continue;
     assertTrigger(trigger);
@@ -332,15 +354,18 @@ export function battleSkillsFromEffects(activeEffects = []) {
   const passives = [];
   for (const entry of activeEffects) {
     if (entry.source === 'main-active') {
-      let atkPct = 0;
+      // Any pct stat (atk/def/hp) contributes to the skill damage
+      // multiplier; any add stat contributes flat bonus. Previously only
+      // atk was read, so Daisy (def-scaling active) silently hit for 1.0x.
+      let pct = 0;
       let flat = 0;
       for (const fx of entry.effects ?? []) {
-        if (fx.stat === 'atk' && fx.mode === 'pct') atkPct += fx.value;
-        if (fx.stat === 'atk' && fx.mode === 'add') flat += fx.value;
+        if (fx.mode === 'pct') pct += fx.value;
+        if (fx.mode === 'add') flat += fx.value;
       }
       active = {
         name: entry.name,
-        multiplier: 1 + atkPct,
+        multiplier: 1 + pct,
         flatBonus: flat,
         defIgnore: 0,
         cooldownSec: (entry.cooldownMs ?? 0) / 1000,
@@ -388,7 +413,6 @@ function translateStatEffect(entry, fx) {
           }
         : { ...base, trigger: 'attack', modifiers: { flatBonus: fx.value } };
     case 'def':
-    case 'hp':
       return {
         ...base,
         trigger: 'defend',
@@ -396,6 +420,12 @@ function translateStatEffect(entry, fx) {
           guardMult: fx.mode === 'pct' ? 1 - fx.value : 1 - fx.value / 100,
         },
       };
+    case 'hp':
+      // HP passive = bigger Max HP pool at battle start (distinct from DEF
+      // guard). Previously hp collapsed into guardMult, identical to def.
+      return fx.mode === 'pct'
+        ? { ...base, trigger: 'battle_start', modifiers: { maxHpMult: 1 + fx.value } }
+        : { ...base, trigger: 'battle_start', modifiers: { maxHpBonus: fx.value } };
     default:
       throw new RangeError(
         `cannot translate skill stat for battle: ${fx.stat}`

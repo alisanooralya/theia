@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { sql } from '#storage/connection.js';
 import {
   GACHA_CONFIG,
+  GACHA_DUPLICATE_COMPENSATION,
   gachaCost,
   rollPull,
   rollMainCard,
@@ -78,8 +79,22 @@ export function createGachaService({
           const outcome = rollPull(random);
           if (outcome === 'main') {
             const cardId = rollMainCard(random);
+            const cardName = MAIN_CARDS[cardId]?.name ?? cardId;
             if (owned.has(cardId)) {
-              results.push({ index: i + 1, type: 'zonk' });
+              // Duplicate: no second copy, grant consolation instead of zonk.
+              await invSvc.addItem(
+                userId,
+                GACHA_DUPLICATE_COMPENSATION.itemId,
+                GACHA_DUPLICATE_COMPENSATION.quantity,
+                tx
+              );
+              results.push({
+                index: i + 1,
+                type: 'duplicate',
+                cardId,
+                cardName,
+                compensation: { ...GACHA_DUPLICATE_COMPENSATION },
+              });
               continue;
             }
             const granted = await cardSvc.grantCard(userId, cardId, tx);
