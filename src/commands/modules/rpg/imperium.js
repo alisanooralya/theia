@@ -3,7 +3,7 @@ import { imperiumService } from '#features/rpg/services/imperium-service.js';
 import { Button } from '#messages/builder.js';
 
 export const IMPERIUM_USAGE =
-  'Pakai: `.imperium`, `.imperium <1-5>`, `.imperium pick <A/B/C>`';
+  'Pakai: `.imperium`, `.imperium` <1-5>, `.imperium` pick <A/B/C>';
 
 export const IMPERIUM_REVEAL_DELAY_MS = 3_000;
 
@@ -31,7 +31,6 @@ function diffLine(d) {
 
 export function statusBody(s) {
   return [
-    '👑 *IMPERIUM*',
     `📅 Week: *${s.weekId}* • 🃏 Weekly: *${s.weeklyCard.name}* (${s.weeklyCard.role})`,
     `⭐ Level: *${s.level}* (min. ${s.minLevel})${s.canEnter ? '' : ' ⛔'}`,
     '',
@@ -40,7 +39,7 @@ export function statusBody(s) {
 }
 
 export function statusView(s) {
-  return [statusBody(s), '', 'Mulai: `.imperium <1-5>`'].join('\n');
+  return [statusBody(s), '', 'Mulai: `.imperium` <1-5>'].join('\n');
 }
 
 export function diffMenuRows(s) {
@@ -119,7 +118,7 @@ export async function sendDiffMenu(ctx, s) {
 
 export async function sendFateMenu(ctx, start) {
   const msg = await ctx.reply(
-    `${fateBody(start)}\n\nPilih: \`.imperium pick <A/B/C>\``
+    `${fateBody(start)}\n\nPilih: \`.imperium\` pick <A/B/C>`
   );
   rememberFateKey(ctx.sender, msg?.key);
   return msg;
