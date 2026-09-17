@@ -888,7 +888,11 @@ describe('imperium luuk balance', async () => {
   function battleStatus(mainLevel, signLevel, diff, fateId, roll) {
     const final = luukFinal(mainLevel, signLevel);
     const fate = IMPERIUM_FATES.find((f) => f.id === fateId);
-    const built = applyFateToBattle(fate, luukSkills(mainLevel, signLevel), getImperiumBoss(diff));
+    const built = applyFateToBattle(
+      fate,
+      luukSkills(mainLevel, signLevel),
+      getImperiumBoss(diff)
+    );
     const state = createBattle({
       playerStats: { ...final, currentHp: final.maxHp },
       enemy: built.enemy,
@@ -907,7 +911,11 @@ describe('imperium luuk balance', async () => {
     for (const d of [1, 2]) {
       for (const f of IMPERIUM_FATES) {
         for (const r of ROLLS) {
-          assert.equal(battleStatus(25, 10, d, f.id, r), 'WIN', `d${d} ${f.id}`);
+          assert.equal(
+            battleStatus(25, 10, d, f.id, r),
+            'WIN',
+            `d${d} ${f.id}`
+          );
         }
       }
     }
@@ -931,7 +939,9 @@ describe('imperium luuk balance', async () => {
 
   it('luuk max tetap bisa menang diff 5 walau kena curse', () => {
     for (const f of curses) {
-      const wins = ROLLS.filter((r) => battleStatus(100, 50, 5, f.id, r) === 'WIN').length;
+      const wins = ROLLS.filter(
+        (r) => battleStatus(100, 50, 5, f.id, r) === 'WIN'
+      ).length;
       assert.ok(wins >= 1, `curse ${f.id} unwinnable`);
     }
   });

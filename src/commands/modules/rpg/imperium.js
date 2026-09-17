@@ -31,7 +31,6 @@ function diffLine(d) {
 
 export function statusBody(s) {
   return [
-    '👑 *IMPERIUM*',
     `📅 Week: *${s.weekId}* • 🃏 Weekly: *${s.weeklyCard.name}* (${s.weeklyCard.role})`,
     `⭐ Level: *${s.level}* (min. ${s.minLevel})${s.canEnter ? '' : ' ⛔'}`,
     '',
@@ -69,22 +68,22 @@ export function fateBody(start) {
 
 export function fateRevealView(r) {
   const title = r.fate.kind === 'blessing' ? '✨ *BLESSING*' : '☠️ *CURSE*';
-  return [title, `${r.fate.icon} *${r.fate.name}*`, r.fate.reveal].join('\n');
+  return [
+    title,
+    '',
+    `${r.fate.icon} *${r.fate.name}*`,
+    r.fate.reveal,
+    '_Sedang melawan Boss..._',
+  ].join('\n');
 }
 
-// Edit #2 (atau single reply bila tidak ada key): reveal + result win/lose.
 export function revealView(r) {
-  return [fateRevealView(r), '', ...revealResultLines(r)].join('\n');
+  return [revealResultLines(r)].join('\n');
 }
 
 function revealResultLines(r) {
   if (!r.won) {
-    return [
-      `💀 Kalah di Diff *${r.diff}* vs *${r.bossName}*.`,
-      '❤️ HP Profile tidak berkurang.',
-      '',
-      'Retry: mulai lagi `.imperium ' + r.diff + '`',
-    ];
+    return [`💀 Kalah di Diff *${r.diff}* vs *${r.bossName}*.`];
   }
 
   return [
@@ -103,7 +102,7 @@ export async function sendDiffMenu(ctx, s) {
   if (!rows.length) return ctx.reply(statusView(s));
   try {
     const builder = new Button(ctx.sock)
-      .setTitle('👑 IMPERIUM')
+      .setTitle('👑 *IMPERIUM*')
       .setBody(statusBody(s))
       .setFooter('Pilih Diff untuk mulai')
       .addSelection('⚔️ Pilih Diff');
@@ -119,7 +118,7 @@ export async function sendDiffMenu(ctx, s) {
 
 export async function sendFateMenu(ctx, start) {
   const msg = await ctx.reply(
-    `${fateBody(start)}\n\nPilih: \`.imperium pick <A/B/C>\``
+    `${fateBody(start)}\n\nPilih: \`.imperium\` pick <A/B/C>`
   );
   rememberFateKey(ctx.sender, msg?.key);
   return msg;
@@ -164,7 +163,7 @@ export async function executeImperium(
     if (sub === 'pick') {
       const [slot] = rest;
       if (!slot || rest.length > 1) {
-        return ctx.fail('Pakai: `.imperium pick <A/B/C>`');
+        return ctx.fail('Pakai: `.imperium` pick <A/B/C>');
       }
       const result = await service.pick(ctx.sender, slot);
       return sendPickResult(ctx, result, { sleepFn });
