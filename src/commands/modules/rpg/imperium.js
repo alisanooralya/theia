@@ -5,6 +5,28 @@ import { Button } from '#messages/builder.js';
 export const IMPERIUM_USAGE =
   'Pakai: `.imperium`, `.imperium <1-5>`, `.imperium pick <A/B/C>`';
 
+// Delay antara reveal fate dan result battle (alur: edit reveal -> delay -> edit result).
+export const IMPERIUM_REVEAL_DELAY_MS = 3_000;
+
+// Key pesan fate menu per user (ephemeral UI state, bukan progress mingguan).
+// Dipakai agar pick bisa meng-edit chat fate yang sama. Hilang saat restart
+// -> fallback kirim pesan baru. Tidak menyentuh state mingguan di database.
+const fateMsgKeys = new Map();
+
+export function rememberFateKey(sender, key) {
+  if (key?.id) fateMsgKeys.set(sender, key);
+}
+
+export function takeFateKey(sender) {
+  const key = fateMsgKeys.get(sender) ?? null;
+  fateMsgKeys.delete(sender);
+  return key;
+}
+
+export function clearFateKeys() {
+  fateMsgKeys.clear();
+}
+
 function diffLine(d) {
   const mark = d.cleared ? '✅' : d.unlocked ? '🔓' : '🔒';
   const state = d.cleared ? 'Clear' : d.unlocked ? 'Open' : 'Locked';
@@ -52,20 +74,27 @@ export function fateBody(start) {
   ].join('\n');
 }
 
-export function revealView(r) {
+// Edit #1 saat pick: chat fate menu berubah menjadi pilihan yang didapat.
+export function fateRevealView(r) {
   const title = r.fate.kind === 'blessing' ? '✨ *BLESSING*' : '☠️ *CURSE*';
-  const head = [title, `${r.fate.icon} *${r.fate.name}*`, r.fate.reveal, ''];
+  return [title, `${r.fate.icon} *${r.fate.name}*`, r.fate.reveal].join('\n');
+}
+
+// Edit #2 (atau single reply bila tidak ada key): reveal + result win/lose.
+export function revealView(r) {
+  return [fateRevealView(r), '', ...revealResultLines(r)].join('\n');
+}
+
+function revealResultLines(r) {
   if (!r.won) {
     return [
-      ...head,
       `💀 Kalah di Diff *${r.diff}* vs *${r.bossName}*.`,
       '❤️ HP Profile tidak berkurang.',
       '',
       'Retry: mulai lagi `.imperium ' + r.diff + '`',
-    ].join('\n');
+    ];
   }
   return [
-    ...head,
     `🏆 *DIFF ${r.diff} CLEAR!* ${r.bossName} tumbang.`,
     '',
     '🎁 Reward',
@@ -73,7 +102,7 @@ export function revealView(r) {
     `⭐ +${F.formatNumber(r.rewards.exp)} EXP`,
     `🧪 +${F.formatNumber(r.rewards.cerelia)} Cerelia`,
     ...(r.leveledUp ? ['', '⭐ *Level Up!*'] : []),
-  ].join('\n');
+  ];
 }
 
 export async function sendDiffMenu(ctx, s) {
@@ -97,18 +126,19 @@ export async function sendDiffMenu(ctx, s) {
 
 // Pilihan fate dikirim sebagai teks biasa (bukan Button) karena pesan
 // interaktif tidak mendukung edit; user memilih dengan ketik pick A/B/C.
+// Key pesan disimpan agar pick nanti meng-edit chat ini (bukan kirim baru).
 export async function sendFateMenu(ctx, start) {
-  return ctx.reply(`${fateBody(start)}\n\nPilih: \`.imperium pick <A/B/C>\``);
+  const msg = await ctx.reply(
+    `${fateBody(start)}\n\nPilih: \`.imperium pick <A/B/C>\``
+  );
+  rememberFateKey(ctx.sender, msg?.key);
+  return msg;
 }
 
-// Hasil pick: edit pesan fate bila ada quoted key (tap tombol),
-// fallback reply pesan baru bila diketik manual / edit gagal.
-export async function sendPickResult(ctx, result) {
-  const text = revealView(result);
-  const editKey = ctx.quoted?.key;
-  if (editKey?.id) {
+async function editOrReply(ctx, key, text) {
+  if (key?.id) {
     try {
-      await ctx.sock.sendMessage(ctx.jid, { text, edit: editKey });
+      await ctx.sock.sendMessage(ctx.jid, { text, edit: key });
       return { edited: true };
     } catch {
       // fallback ke reply di bawah
@@ -118,7 +148,24 @@ export async function sendPickResult(ctx, result) {
   return { edited: false };
 }
 
-export async function executeImperium(ctx, { service = imperiumService } = {}) {
+// Alur pick: edit chat fate menu -> reveal pilihan, delay beberapa detik,
+// edit chat yang sama -> result win/lose. Tanpa key (mis. restart / ketik
+// manual tanpa menu) kirim sekali sebagai pesan baru.
+export async function sendPickResult(ctx, result, { sleepFn = F.sleep } = {}) {
+  const key = takeFateKey(ctx.sender) ?? ctx.quoted?.key ?? null;
+  if (!key?.id) {
+    await ctx.reply(revealView(result));
+    return { edited: false };
+  }
+  await editOrReply(ctx, key, fateRevealView(result));
+  await sleepFn(IMPERIUM_REVEAL_DELAY_MS);
+  return editOrReply(ctx, key, revealView(result));
+}
+
+export async function executeImperium(
+  ctx,
+  { service = imperiumService, sleepFn = F.sleep } = {}
+) {
   const [subRaw, ...rest] = ctx.args ?? [];
   const sub = (subRaw ?? '').toLowerCase();
   try {
@@ -133,7 +180,7 @@ export async function executeImperium(ctx, { service = imperiumService } = {}) {
         return ctx.fail('Pakai: `.imperium pick <A/B/C>`');
       }
       const result = await service.pick(ctx.sender, slot);
-      return sendPickResult(ctx, result);
+      return sendPickResult(ctx, result, { sleepFn });
     }
     if (/^[1-5]$/.test(sub) && rest.length === 0) {
       const start = await service.start(ctx.sender, Number(sub));
@@ -141,7 +188,7 @@ export async function executeImperium(ctx, { service = imperiumService } = {}) {
     }
     if (/^[abc]$/.test(sub) && rest.length === 0) {
       const result = await service.pick(ctx.sender, sub);
-      return sendPickResult(ctx, result);
+      return sendPickResult(ctx, result, { sleepFn });
     }
     return ctx.fail(IMPERIUM_USAGE);
   } catch (err) {

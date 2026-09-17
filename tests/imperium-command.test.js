@@ -1,16 +1,23 @@
 // UI flow .imperium: list diff (Button single_select), quick reply fate,
 // edit pesan fate saat blessing/curse dipilih. Service di-stub; sock di-mock.
-import { describe, it } from 'node:test';
+import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  IMPERIUM_REVEAL_DELAY_MS,
   IMPERIUM_USAGE,
+  clearFateKeys,
   diffMenuRows,
   executeImperium,
   fateBody,
+  fateRevealView,
   sendPickResult,
   statusBody,
 } from '#commands/modules/rpg/imperium.js';
+
+beforeEach(() => {
+  clearFateKeys();
+});
 
 function mockCtx(args = [], { quoted = null, sendMessageImpl = null } = {}) {
   const calls = { replies: [], sends: [], fails: [], relayed: [] };
@@ -143,22 +150,77 @@ describe('imperium fate via teks + pick manual', () => {
     assert.equal(fateBody({ diff: 2, bossName: 'X' }).includes('Savage Echo'), false);
   });
 
-  it('pick dengan quote pesan fate -> edit pesan (teks biasa bisa diedit)', async () => {
+  it('pick dengan quote pesan fate -> edit 2x (reveal lalu result)', async () => {
     const fateKey = { remoteJid: 'room@g.us', id: 'fate1' };
+    const sleeps = [];
     const { ctx, calls } = mockCtx(['pick', 'A'], { quoted: { key: fateKey } });
-    await executeImperium(ctx, { service: stubService });
-    assert.equal(calls.sends.length, 1);
+    await executeImperium(ctx, {
+      service: stubService,
+      sleepFn: async (ms) => sleeps.push(ms),
+    });
+    assert.equal(calls.sends.length, 2);
     assert.deepEqual(calls.sends[0].content.edit, fateKey);
+    assert.deepEqual(calls.sends[1].content.edit, fateKey);
     assert.ok(calls.sends[0].content.text.includes('BLESSING'));
+    assert.ok(!calls.sends[0].content.text.includes('CLEAR'));
+    assert.ok(calls.sends[1].content.text.includes('CLEAR'));
+    assert.deepEqual(sleeps, [IMPERIUM_REVEAL_DELAY_MS]);
     assert.equal(calls.replies.length, 0);
   });
 
-  it('pick diketik manual (tanpa quote) -> reply pesan baru', async () => {
+  it('alur penuh: fate menu -> pick -> edit reveal -> delay -> edit result', async () => {
+    const sleeps = [];
+    const sleepFn = async (ms) => sleeps.push(ms);
+    const m1 = mockCtx(['2']);
+    await executeImperium(m1.ctx, { service: stubService, sleepFn });
+    assert.equal(m1.calls.replies.length, 1);
+    const m2 = mockCtx(['pick', 'A']);
+    const out = await executeImperium(m2.ctx, { service: stubService, sleepFn });
+    assert.deepEqual(out, { edited: true });
+    assert.equal(m2.calls.sends.length, 2);
+    assert.deepEqual(m2.calls.sends[0].content.edit, { id: 'reply1' });
+    assert.deepEqual(m2.calls.sends[1].content.edit, { id: 'reply1' });
+    assert.equal(m2.calls.sends[0].content.text, fateRevealView(await stubService.pick()));
+    assert.ok(m2.calls.sends[1].content.text.includes('CLEAR'));
+    assert.deepEqual(sleeps, [IMPERIUM_REVEAL_DELAY_MS]);
+    assert.equal(m2.calls.replies.length, 0);
+  });
+
+  it('alur kalah: edit reveal curse lalu edit result lose', async () => {
+    const loseService = {
+      ...stubService,
+      pick: async () => ({
+        won: false,
+        status: 'LOSE',
+        weekId: '2026-W38',
+        diff: 2,
+        bossName: 'Husk Knight',
+        fate: { kind: 'curse', name: 'Apex Hunger', icon: '👹', reveal: 'ATK Boss meningkat.' },
+        rounds: 5,
+        playerHp: 0,
+        enemyHp: 10,
+        rewards: null,
+      }),
+    };
+    const sleeps = [];
+    const sleepFn = async (ms) => sleeps.push(ms);
+    await executeImperium(mockCtx(['2']).ctx, { service: loseService, sleepFn });
+    const { ctx, calls } = mockCtx(['pick', 'B']);
+    await executeImperium(ctx, { service: loseService, sleepFn });
+    assert.equal(calls.sends.length, 2);
+    assert.ok(calls.sends[0].content.text.includes('CURSE'));
+    assert.ok(!calls.sends[0].content.text.includes('Kalah'));
+    assert.ok(calls.sends[1].content.text.includes('Kalah'));
+    assert.deepEqual(sleeps, [IMPERIUM_REVEAL_DELAY_MS]);
+  });
+
+  it('pick diketik manual tanpa menu (tanpa key) -> sekali reply full', async () => {
     const { ctx, calls } = mockCtx(['pick', 'B']);
     const out = await sendPickResult(ctx, await stubService.pick());
     assert.deepEqual(out, { edited: false });
     assert.equal(calls.sends.length, 0);
     assert.equal(calls.replies.length, 1);
+    assert.ok(calls.replies[0].includes('CLEAR'));
   });
 
   it('edit gagal -> fallback reply', async () => {
@@ -169,9 +231,11 @@ describe('imperium fate via teks + pick manual', () => {
         throw new Error('edit failed');
       },
     });
-    const out = await sendPickResult(ctx, await stubService.pick());
+    const out = await sendPickResult(ctx, await stubService.pick(), { sleepFn: async () => {} });
     assert.deepEqual(out, { edited: false });
-    assert.equal(calls.replies.length, 1);
+    assert.equal(calls.replies.length, 2);
+    assert.ok(calls.replies[0].includes('BLESSING'));
+    assert.ok(calls.replies[1].includes('CLEAR'));
   });
 
   it('argumen invalid -> usage', async () => {
