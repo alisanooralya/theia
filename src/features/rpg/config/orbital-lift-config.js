@@ -1,4 +1,4 @@
-export const ORBITAL_MAX_FLOOR = 100;
+export const ORBITAL_MAX_FLOOR = 200;
 export const ORBITAL_BOSS_INTERVAL = 10;
 
 export const ORBITAL_SIGNAL_MAX = 100;
@@ -18,7 +18,7 @@ export const ORBITAL_ENEMY = Object.freeze({
     critRate: 0.25,
     critDmg: 1.5,
   }),
-  perFloor: Object.freeze({ hp: 0.1, atk: 0.06, def: 0.05 }),
+  perFloor: Object.freeze({ hp: 0.12, atk: 0.07, def: 0.06 }),
   bossMult: Object.freeze({ hp: 2.2, atk: 1.6, def: 1.5 }),
   bossSkill: Object.freeze({
     active: Object.freeze({
