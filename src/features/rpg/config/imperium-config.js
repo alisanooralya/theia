@@ -100,12 +100,19 @@ function imperiumBoss({
   critDmg = 1.5,
   behavior = 'basic',
   skills = null,
+  // Penguat Boss Affix (curse) khusus Diff ini. 1 = normal.
+  // Diff 5 memakai 2: kutukan berlipat ganda sehingga curse = kalah pasti
+  // walau player memakai Weekly Card max, blessing tetap bisa menang.
+  affixMult = 1,
 }) {
   if (!Number.isInteger(diff) || diff < 1 || diff > IMPERIUM_DIFF_COUNT) {
     throw new RangeError(`imperium boss needs diff 1..${IMPERIUM_DIFF_COUNT}`);
   }
   if (!id || !name) throw new RangeError('imperium boss needs id and name');
   if (maxHp <= 0) throw new RangeError(`imperium boss ${id} needs maxHp > 0`);
+  if (!Number.isFinite(affixMult) || affixMult <= 0) {
+    throw new RangeError(`imperium boss ${id} needs affixMult > 0`);
+  }
   return Object.freeze({
     diff,
     id,
@@ -113,6 +120,7 @@ function imperiumBoss({
     stats: Object.freeze({ maxHp, atk, def, critRate, critDmg }),
     behavior,
     skills,
+    affixMult,
   });
 }
 
@@ -173,10 +181,11 @@ export const IMPERIUM_BOSSES = Object.freeze({
     id: 'imperium_tyrant',
     name: 'Imperium Tyrant',
     maxHp: 22000,
-    atk: 135,
+    atk: 155,
     def: 72,
     behavior: 'skill_based',
     skills: bossSkill('Tyrant Rend', 1.7, 5),
+    affixMult: 5,
   }),
 });
 

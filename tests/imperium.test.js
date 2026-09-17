@@ -937,12 +937,12 @@ describe('imperium luuk balance', async () => {
     }
   });
 
-  it('luuk max tetap bisa menang diff 5 walau kena curse', () => {
+  it('diff 5: luuk max + curse = kalah pasti (affix diperkuat)', () => {
+    const rolls = [0.0, 0.2, 0.5, 0.8, 0.99];
     for (const f of curses) {
-      const wins = ROLLS.filter(
-        (r) => battleStatus(100, 50, 5, f.id, r) === 'WIN'
-      ).length;
-      assert.ok(wins >= 1, `curse ${f.id} unwinnable`);
+      for (const r of rolls) {
+        assert.equal(battleStatus(100, 50, 5, f.id, r), 'LOSE', `d5 ${f.id}`);
+      }
     }
   });
 });

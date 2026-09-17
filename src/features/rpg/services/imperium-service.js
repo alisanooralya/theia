@@ -108,7 +108,7 @@ export function applyFateToBattle(fate, playerSkills, boss) {
       effects: [],
     });
   }
-  const mult = fate?.boss ?? {};
+  const mult = amplifyBossMult(fate?.boss, boss?.affixMult ?? 1);
   const stats = {
     maxHp: Math.max(1, Math.round(boss.stats.maxHp * (mult.hpMult ?? 1))),
     atk: Math.max(0, Math.round(boss.stats.atk * (mult.atkMult ?? 1))),
@@ -152,6 +152,24 @@ export function applyFateToBattle(fate, playerSkills, boss) {
     };
   }
   return { playerSkills: nextSkills, enemy, enemySkills };
+}
+
+// Perkuat efek Boss Affix (curse) sesuai affixMult boss (default 1 =
+// tidak berubah). Pengali >1 (hp/atk/def/skill) dan guard <1 diamplifikasi
+// menjauhi 1. Blessing (player) tidak tersentuh.
+function amplifyBossMult(mult, amp) {
+  const base = mult ?? {};
+  if (!(amp > 1)) return base;
+  const out = { ...base };
+  for (const key of ['hpMult', 'atkMult', 'defMult', 'skillMult']) {
+    if (Number.isFinite(out[key]) && out[key] > 1) {
+      out[key] = 1 + (out[key] - 1) * amp;
+    }
+  }
+  if (Number.isFinite(out.guardMult) && out.guardMult < 1) {
+    out.guardMult = Math.max(0.01, 1 - (1 - out.guardMult) * amp);
+  }
+  return out;
 }
 
 export function createImperiumService({
