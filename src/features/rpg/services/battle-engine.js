@@ -16,6 +16,64 @@ function assertTrigger(trigger) {
   }
 }
 
+const CONDITION_SIDES = Object.freeze(['self', 'enemy']);
+const CONDITION_KEYS = Object.freeze(['hp', 'maxHp', 'atk', 'def']);
+const CONDITION_OPS = Object.freeze(['>', '>=', '<', '<=', '==']);
+
+function assertCondition(condition) {
+  if (!condition) return;
+  for (const operand of [condition.left, condition.right]) {
+    if (!CONDITION_SIDES.includes(operand?.side)) {
+      throw new RangeError(`unsupported condition side: ${operand?.side}`);
+    }
+    if (!CONDITION_KEYS.includes(operand?.key)) {
+      throw new RangeError(`unsupported condition key: ${operand?.key}`);
+    }
+  }
+  if (!CONDITION_OPS.includes(condition.op)) {
+    throw new RangeError(`unsupported condition op: ${condition.op}`);
+  }
+}
+
+function resolveOperand(operand, ctx) {
+  const side = operand.side === 'enemy' ? ctx.foe : ctx.self;
+  if (!side) throw new RangeError('condition needs battle context');
+  switch (operand.key) {
+    case 'hp':
+      return side.hp;
+    case 'maxHp':
+      return side.stats.maxHp;
+    case 'atk':
+      return side.stats.atk;
+    case 'def':
+      return side.stats.def;
+    default:
+      throw new RangeError(`unsupported condition key: ${operand.key}`);
+  }
+}
+
+function conditionMet(condition, ctx) {
+  if (!condition) return true;
+  if (!ctx) return false;
+  assertCondition(condition);
+  const left = resolveOperand(condition.left, ctx);
+  const right = resolveOperand(condition.right, ctx);
+  switch (condition.op) {
+    case '>':
+      return left > right;
+    case '>=':
+      return left >= right;
+    case '<':
+      return left < right;
+    case '<=':
+      return left <= right;
+    case '==':
+      return left === right;
+    default:
+      throw new RangeError(`unsupported condition op: ${condition.op}`);
+  }
+}
+
 function snapStats(stats, label) {
   const s = { ...stats };
   for (const key of ['maxHp', 'atk', 'def']) {
@@ -78,6 +136,7 @@ export function createBattle({
     ...(enemySkills?.passives ?? []),
   ]) {
     assertTrigger(p.trigger);
+    assertCondition(p.condition);
   }
   const state = {
     battleId: battleId ?? `battle_${Date.now()}_${battleSeq}`,
@@ -150,7 +209,7 @@ export function autoSkillAction(state) {
     : 'basic_attack';
 }
 
-function collectMods(side, trigger) {
+function collectMods(side, trigger, ctx = null) {
   const mods = {
     damageMult: 1,
     flatBonus: 0,
@@ -163,6 +222,14 @@ function collectMods(side, trigger) {
   for (const p of side.activeEffects) {
     if (p.trigger !== trigger) continue;
     assertTrigger(p.trigger);
+    if (
+      p.expiresRound !== undefined &&
+      Number.isFinite(ctx?.round) &&
+      ctx.round > p.expiresRound
+    ) {
+      continue;
+    }
+    if (!conditionMet(p.condition, ctx)) continue;
     const m = p.modifiers ?? {};
     if (m.damageMult) mods.damageMult *= m.damageMult;
     if (m.flatBonus) mods.flatBonus += m.flatBonus;
@@ -226,6 +293,7 @@ function resolveAction(skills, cooldowns, round, wanted) {
       multiplier: skills.multiplier ?? 1,
       flatBonus: skills.flatBonus ?? 0,
       defIgnore: skills.defIgnore ?? 0,
+      buffs: skills.buffs ?? [],
       cooldownSec: skills.cooldownSec,
     };
   }
@@ -235,6 +303,7 @@ function resolveAction(skills, cooldowns, round, wanted) {
     multiplier: 1,
     flatBonus: 0,
     defIgnore: 0,
+    buffs: [],
     cooldownSec: 0,
   };
 }
@@ -247,8 +316,16 @@ function takeTurn(state, side, skillsKey, action, roll) {
   next.turn = side === 'player' ? 'PLAYER' : 'ENEMY';
 
   const resolved = resolveAction(skills, me.cooldowns, next.round, action);
-  const atk = collectMods(me, 'attack');
-  const guard = collectMods(target, 'defend');
+  const atk = collectMods(me, 'attack', {
+    self: me,
+    foe: target,
+    round: next.round,
+  });
+  const guard = collectMods(target, 'defend', {
+    self: target,
+    foe: me,
+    round: next.round,
+  });
 
   const { damage, isCrit } = calculateDamage({
     atk: me.stats.atk,
@@ -265,6 +342,13 @@ function takeTurn(state, side, skillsKey, action, roll) {
 
   if (resolved.action === 'skill') {
     me.cooldowns.skill = skillReadyRound(next.round, resolved.cooldownSec);
+    for (const buff of resolved.buffs ?? []) {
+      me.activeEffects.push({
+        ...buff,
+        modifiers: { ...(buff.modifiers ?? {}) },
+        expiresRound: next.round + (buff.durationRounds ?? 1),
+      });
+    }
   }
 
   const entry = {
@@ -358,9 +442,28 @@ export function battleSkillsFromEffects(activeEffects = []) {
       // Any pct stat (atk/def/hp) contributes to the skill damage
       // multiplier; any add stat contributes flat bonus. Previously only
       // atk was read, so Daisy (def-scaling active) silently hit for 1.0x.
+      // defIgnore is armor penetration instead: instant on the skill hit,
+      // or a timed basic-attack buff when durationSec is set (virtual time
+      // via cooldownRounds, same as cooldowns).
       let pct = 0;
       let flat = 0;
+      let defIgnore = 0;
+      const buffs = [];
       for (const fx of entry.effects ?? []) {
+        if (fx.stat === 'defIgnore' && fx.mode === 'pct') {
+          if (fx.durationSec != null) {
+            buffs.push({
+              name: entry.name,
+              source: 'active-buff',
+              trigger: 'attack',
+              modifiers: { defIgnore: fx.value },
+              durationRounds: cooldownRounds(fx.durationSec / 1000),
+            });
+          } else {
+            defIgnore += fx.value;
+          }
+          continue;
+        }
         if (fx.mode === 'pct') pct += fx.value;
         if (fx.mode === 'add') flat += fx.value;
       }
@@ -368,7 +471,8 @@ export function battleSkillsFromEffects(activeEffects = []) {
         name: entry.name,
         multiplier: 1 + pct,
         flatBonus: flat,
-        defIgnore: 0,
+        defIgnore,
+        buffs,
         cooldownSec: (entry.cooldownMs ?? 0) / 1000,
         unlocked: true,
         upgraded: !!entry.upgraded,
@@ -386,13 +490,21 @@ export function battleSkillsFromEffects(activeEffects = []) {
 }
 
 function translateStatEffect(entry, fx) {
+  if (fx.condition) assertCondition(fx.condition);
   const base = {
     name: entry.name,
     source: entry.source,
     modifiers: {},
     effects: [],
+    ...(fx.condition ? { condition: fx.condition } : {}),
   };
   switch (fx.stat) {
+    case 'defIgnore':
+      return {
+        ...base,
+        trigger: 'attack',
+        modifiers: { defIgnore: fx.value },
+      };
     case 'critRate':
       return {
         ...base,

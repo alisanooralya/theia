@@ -98,6 +98,7 @@ export const CARD_IMAGE_MAP = Object.freeze({
   lena: 'lena.webp',
   ameris: 'ameris.webp',
   daisy: 'daisy.webp',
+  luuk: 'luuk.webp',
 });
 
 export function cardArtFile(cardId) {
@@ -209,6 +210,52 @@ export const MAIN_CARDS = Object.freeze({
       [{ stat: 'hp', mode: 'pct', value: 0.25 }]
     )
   ),
+  luuk: mainCard(
+    'luuk',
+    'Luuk',
+    'Attacker',
+    { hp: 233, atk: 110, def: 9 },
+    { hp: 22.4, atk: 10, def: 0.6 },
+    skill(
+      'Savage Rend',
+      'A savage rend that exposes the enemy guard to basic attacks.',
+      25,
+      75,
+      [{ stat: 'defIgnore', mode: 'pct', value: 0.2, durationSec: 2000 }],
+      [{ stat: 'defIgnore', mode: 'pct', value: 0.35, durationSec: 2000 }],
+      8000
+    ),
+    skill(
+      'Predatory Instinct',
+      'When the enemy ATK is higher, reduce damage taken in battle.',
+      50,
+      100,
+      [
+        {
+          stat: 'def',
+          mode: 'pct',
+          value: 0.1,
+          condition: {
+            left: { side: 'enemy', key: 'atk' },
+            op: '>',
+            right: { side: 'self', key: 'atk' },
+          },
+        },
+      ],
+      [
+        {
+          stat: 'def',
+          mode: 'pct',
+          value: 0.2,
+          condition: {
+            left: { side: 'enemy', key: 'atk' },
+            op: '>',
+            right: { side: 'self', key: 'atk' },
+          },
+        },
+      ]
+    )
+  ),
 });
 
 export const SIGN_CARDS = Object.freeze({
@@ -258,6 +305,29 @@ export const SIGN_CARDS = Object.freeze({
       name: 'Bulwark Heart',
       description: 'Signature resonance: increases Max HP at battle start.',
       effects: [{ stat: 'hp', mode: 'pct', value: 0.1 }],
+    }
+  ),
+  luuk_sign: signCard(
+    'luuk_sign',
+    'Luuk Sign',
+    'luuk',
+    { atk: 40, def: 15 },
+    { atk: 2.7, def: 1.0 },
+    {
+      name: 'Blood Scent',
+      description: 'Signature resonance: hungrier strikes against healthier prey.',
+      effects: [
+        {
+          stat: 'atk',
+          mode: 'pct',
+          value: 0.1,
+          condition: {
+            left: { side: 'enemy', key: 'hp' },
+            op: '>',
+            right: { side: 'self', key: 'hp' },
+          },
+        },
+      ],
     }
   ),
 });
