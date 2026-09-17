@@ -826,8 +826,118 @@ dbDescribe('imperium integration (local pg)', async () => {
   });
 });
 
-// ---------- REGRESI (existing tidak tersentuh) ----------
+// ---------- BALANCE: user Luuk asli bisa menang (engine + card asli, no db) ----------
 
+describe('imperium luuk balance', async () => {
+  const cardCfg = await import('#features/rpg/config/card-config.js');
+  const skillEngine = await import('#features/rpg/services/skill-engine.js');
+  const statsCfg = await import('#features/rpg/config/stats-config.js');
+
+  function luukFinal(mainLevel, signLevel) {
+    const m = cardCfg.cardStatsAtLevel(cardCfg.MAIN_CARDS.luuk, mainLevel);
+    const s = cardCfg.cardStatsAtLevel(cardCfg.SIGN_CARDS.luuk_sign, signLevel);
+    const base = statsCfg.RPG_STATS_CONFIG;
+    return {
+      maxHp: base.startingMaxHp + m.hp,
+      atk: base.startingAtk + m.atk + s.atk,
+      def: base.startingDef + m.def + s.def,
+      critRate: base.startingCritRate,
+      critDmg: base.startingCritDmg,
+    };
+  }
+
+  function luukSkills(mainLevel, signLevel) {
+    const def = cardCfg.MAIN_CARDS.luuk;
+    const st = skillEngine.mainSkillState(def, mainLevel);
+    const fx = [];
+    if (st.active.unlocked) {
+      fx.push({
+        source: 'main-active',
+        cardId: 'luuk',
+        name: def.active.name,
+        upgraded: st.active.upgraded,
+        cooldownMs: st.active.cooldownMs,
+        effects: st.active.effects,
+      });
+    }
+    if (st.passive.unlocked) {
+      fx.push({
+        source: 'main-passive',
+        cardId: 'luuk',
+        name: def.passive.name,
+        upgraded: st.passive.upgraded,
+        cooldownMs: null,
+        effects: st.passive.effects,
+      });
+    }
+    const signDef = cardCfg.SIGN_CARDS.luuk_sign;
+    const sp = skillEngine.signPassiveState(signDef, 'luuk');
+    if (sp.active) {
+      fx.push({
+        source: 'sign-passive',
+        cardId: 'luuk_sign',
+        name: signDef.passive.name,
+        upgraded: false,
+        cooldownMs: null,
+        effects: sp.effects,
+      });
+    }
+    return battleSkillsFromEffects(fx);
+  }
+
+  function battleStatus(mainLevel, signLevel, diff, fateId, roll) {
+    const final = luukFinal(mainLevel, signLevel);
+    const fate = IMPERIUM_FATES.find((f) => f.id === fateId);
+    const built = applyFateToBattle(fate, luukSkills(mainLevel, signLevel), getImperiumBoss(diff));
+    const state = createBattle({
+      playerStats: { ...final, currentHp: final.maxHp },
+      enemy: built.enemy,
+      playerSkills: built.playerSkills,
+      enemySkills: built.enemySkills,
+      battleId: 'balance-test',
+    });
+    return simulateBattle(state, autoSkillAction, () => roll).status;
+  }
+
+  const ROLLS = [0.2, 0.5, 0.8];
+  const blessings = IMPERIUM_FATES.filter((f) => f.kind === 'blessing');
+  const curses = IMPERIUM_FATES.filter((f) => f.kind === 'curse');
+
+  it('luuk modest (main25/sign10) menang diff 1-2 dengan fate apa pun', () => {
+    for (const d of [1, 2]) {
+      for (const f of IMPERIUM_FATES) {
+        for (const r of ROLLS) {
+          assert.equal(battleStatus(25, 10, d, f.id, r), 'WIN', `d${d} ${f.id}`);
+        }
+      }
+    }
+  });
+
+  it('luuk decent (main50/sign25) menang diff 4 dengan blessing', () => {
+    for (const f of blessings) {
+      for (const r of ROLLS) {
+        assert.equal(battleStatus(50, 25, 4, f.id, r), 'WIN', f.id);
+      }
+    }
+  });
+
+  it('luuk max (main100/sign50) menang diff 5 dengan blessing', () => {
+    for (const f of blessings) {
+      for (const r of ROLLS) {
+        assert.equal(battleStatus(100, 50, 5, f.id, r), 'WIN', f.id);
+      }
+    }
+  });
+
+  it('luuk max tetap bisa menang diff 5 walau kena curse', () => {
+    for (const f of curses) {
+      const wins = ROLLS.filter((r) => battleStatus(100, 50, 5, f.id, r) === 'WIN').length;
+      assert.ok(wins >= 1, `curse ${f.id} unwinnable`);
+    }
+  });
+});
+
+// ---------- REGRESI (existing tidak tersentuh) ----------
 describe('imperium regression', async () => {
   const { isBossFloor, enemyForFloor } =
     await import('#features/rpg/config/orbital-lift-config.js');
