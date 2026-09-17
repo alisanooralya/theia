@@ -8,18 +8,15 @@ import {
   makeRequestKey,
 } from '#features/rpg/services/gacha-service.js';
 
-function bannerData(random = Math.random) {
-  // Rotate the featured card instead of hardcoding Lena, so new Main Cards
-  // appear automatically once added to MAIN_CARDS.
-  const defs = Object.values(MAIN_CARDS);
-  const def =
-    defs[Math.min(defs.length - 1, Math.floor(random() * defs.length))];
+function bannerData() {
+  const def = MAIN_CARDS.luuk;
   return {
     name: def.name,
     subtitle: def.role,
     eraLabel: `${def.role} • Featured`,
-    rateUpText: 'FEATURED CARD',
-    description: `Active: ${def.active.name} • Passive: ${def.passive.name}. Pull dari .gacha untuk mendapatkan Main Card!`,
+    rateUpText: 'RILIS KARTU BARU',
+    description:
+      'Aku telah mengucapkan selamat tinggal pada diriku yang terkubur di bawah tanah beku. Saat salju mencair... kita akan bertemu lagi di antara mekarnya bunga musim semi.',
     artPath: cardArtPath(def.id),
   };
 }
