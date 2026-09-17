@@ -7,8 +7,7 @@
   "scripts": {
     "start": "node --watch src/index.js",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "test": "node --import dotenv/config --test tests/*.test.mjs"
+    "lint:fix": "eslint . --fix"
   },
   "imports": {
     "#environment/*": "./src/environment/*",
