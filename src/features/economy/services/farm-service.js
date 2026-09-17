@@ -7,6 +7,7 @@ import { farmModel } from '../models/farm.model.js';
 import {
   FARM_DEMAND,
   FARM_DEMAND_PERIOD_MS,
+  FARM_LANDS,
   FARM_PLOT_CAPACITY,
   FARM_SEEDS_PER_PLANT,
   getFarmCrop,
@@ -153,10 +154,12 @@ export function createFarmService({
           err.code = 'OCCUPIED';
           throw err;
         }
+        const totalSeeds = FARM_LANDS * FARM_SEEDS_PER_PLANT;
+        const totalYield = FARM_LANDS * FARM_PLOT_CAPACITY;
         const seeds = await inventoryRepo.getQuantity(userId, crop.seedId, t);
-        if (seeds < FARM_SEEDS_PER_PLANT) {
+        if (seeds < totalSeeds) {
           const err = new RangeError(
-            `${crop.seedName} kurang (punya ${seeds}, butuh ${FARM_SEEDS_PER_PLANT}).`
+            `${crop.seedName} kurang (punya ${seeds}, butuh ${totalSeeds}).`
           );
           err.code = 'NO_SEEDS';
           throw err;
@@ -164,7 +167,7 @@ export function createFarmService({
         await inventoryRepo.remove(
           userId,
           crop.seedId,
-          FARM_SEEDS_PER_PLANT,
+          totalSeeds,
           t
         );
         const matureAt = nowMs + crop.growthMs;
@@ -172,13 +175,13 @@ export function createFarmService({
           userId,
           {
             cropId: crop.id,
-            quantity: FARM_PLOT_CAPACITY,
+            quantity: totalYield,
             plantedAt: nowMs,
             matureAt,
           },
           t
         );
-        return { crop, quantity: FARM_PLOT_CAPACITY, matureAt };
+        return { crop, quantity: totalYield, matureAt };
       });
     },
 

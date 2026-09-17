@@ -1,6 +1,6 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export const FARM_LANDS = 3;
+export const FARM_LANDS = 4;
 export const FARM_PLOT_CAPACITY = 4;
 export const FARM_SEEDS_PER_PLANT = 4;
 
