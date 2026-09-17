@@ -131,23 +131,19 @@ describe('imperium diff list (Button single_select)', () => {
   });
 });
 
-describe('imperium fate quick reply + edit', () => {
-  it('.imperium 2 mengirim chat fate dengan 3 quick reply (tetap blind)', async () => {
+describe('imperium fate via teks + pick manual', () => {
+  it('.imperium 2 mengirim chat fate teks (tetap blind) + hint pick', async () => {
     const { ctx, calls } = mockCtx(['2']);
     await executeImperium(ctx, { service: stubService });
-    const msg = interactiveMessage(calls);
-    const replies = msg.nativeFlowMessage.buttons.filter((b) => b.name === 'quick_reply');
-    assert.equal(replies.length, 3);
-    assert.deepEqual(
-      replies.map((b) => JSON.parse(b.buttonParamsJson).id),
-      ['.imperium pick A', '.imperium pick B', '.imperium pick C']
-    );
-    assert.ok(!msg.body.text.includes('Savage Echo'));
-    assert.ok(msg.body.text.includes('CHOOSE YOUR FATE'));
+    assert.equal(calls.relayed.length, 0);
+    assert.equal(calls.replies.length, 1);
+    assert.ok(calls.replies[0].includes('CHOOSE YOUR FATE'));
+    assert.ok(calls.replies[0].includes('.imperium pick <A/B/C>'));
+    assert.ok(!calls.replies[0].includes('Savage Echo'));
     assert.equal(fateBody({ diff: 2, bossName: 'X' }).includes('Savage Echo'), false);
   });
 
-  it('pick via tap (ada quoted key) -> edit pesan fate', async () => {
+  it('pick dengan quote pesan fate -> edit pesan (teks biasa bisa diedit)', async () => {
     const fateKey = { remoteJid: 'room@g.us', id: 'fate1' };
     const { ctx, calls } = mockCtx(['pick', 'A'], { quoted: { key: fateKey } });
     await executeImperium(ctx, { service: stubService });

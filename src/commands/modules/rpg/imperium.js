@@ -95,19 +95,10 @@ export async function sendDiffMenu(ctx, s) {
   }
 }
 
+// Pilihan fate dikirim sebagai teks biasa (bukan Button) karena pesan
+// interaktif tidak mendukung edit; user memilih dengan ketik pick A/B/C.
 export async function sendFateMenu(ctx, start) {
-  try {
-    const builder = new Button(ctx.sock)
-      .setTitle(`👑 IMPERIUM — DIFF ${start.diff}`)
-      .setBody(fateBody(start))
-      .setFooter('Buta: efek baru terlihat setelah dipilih')
-      .addReply('A ❓', '.imperium pick A')
-      .addReply('B ❓', '.imperium pick B')
-      .addReply('C ❓', '.imperium pick C');
-    return await builder.send(ctx.jid);
-  } catch {
-    return ctx.reply(`${fateBody(start)}\n\nPilih: \`.imperium pick <A/B/C>\``);
-  }
+  return ctx.reply(`${fateBody(start)}\n\nPilih: \`.imperium pick <A/B/C>\``);
 }
 
 // Hasil pick: edit pesan fate bila ada quoted key (tap tombol),
