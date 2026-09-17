@@ -2,10 +2,7 @@ import { F } from '#helpers/index.js';
 import { Button } from '#messages/builder.js';
 import { renderGachaBanner } from '#features/rpg/gacha-banner.js';
 import { GACHA_CONFIG } from '#features/rpg/config/gacha-config.js';
-import {
-  cardArtPath,
-  MAIN_CARDS,
-} from '#features/rpg/config/card-config.js';
+import { cardArtPath, MAIN_CARDS } from '#features/rpg/config/card-config.js';
 import {
   gachaService,
   makeRequestKey,
@@ -15,7 +12,8 @@ function bannerData(random = Math.random) {
   // Rotate the featured card instead of hardcoding Lena, so new Main Cards
   // appear automatically once added to MAIN_CARDS.
   const defs = Object.values(MAIN_CARDS);
-  const def = defs[Math.min(defs.length - 1, Math.floor(random() * defs.length))];
+  const def =
+    defs[Math.min(defs.length - 1, Math.floor(random() * defs.length))];
   return {
     name: def.name,
     subtitle: def.role,

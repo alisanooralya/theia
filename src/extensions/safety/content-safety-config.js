@@ -5,7 +5,20 @@ export const CONTENT_SAFETY_CONFIG = {
   maxTextChars: 1000,
 };
 
-export const LOW_KEYWORDS = ['jir', 'njir', 'bjir', 'wanjir', 'wanjirr'];
+export const LOW_KEYWORDS = [
+  'jir',
+  'njir',
+  'bjir',
+  'wanjir',
+  'wanjirr',
+  'buset',
+  'anjay',
+  'amjai',
+  'amjay',
+  'anjai',
+  'njai',
+  'njay',
+];
 
 export const CONTEXTUAL_KEYWORDS = [
   'anjing',
@@ -59,10 +72,6 @@ export const REVIEW_KEYWORDS = [
   'anjg',
   'ajg',
   'anj',
-  'anjay',
-  'anjai',
-  'njai',
-  'njay',
   'jing',
   'jink',
   'kontol',

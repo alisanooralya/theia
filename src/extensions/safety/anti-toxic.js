@@ -75,8 +75,7 @@ export default {
         return false;
       }
 
-      const damage =
-        severity === 'low' ? LOW_TOXIC_DAMAGE : HIGH_TOXIC_DAMAGE;
+      const damage = severity === 'low' ? LOW_TOXIC_DAMAGE : HIGH_TOXIC_DAMAGE;
 
       await deps.sql`
         INSERT INTO warns (jid, group_jid, reason, damage) VALUES (${s.sender}, ${s.jid}, 'Toxic', ${damage})

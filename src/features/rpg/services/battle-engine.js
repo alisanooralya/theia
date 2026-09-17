@@ -190,7 +190,8 @@ function applyTriggerEffects(state, owner, trigger) {
       if (m.maxHpBonus) flat += m.maxHpBonus;
     }
     if (mult !== 1 || flat !== 0) {
-      const bonus = Math.round(side.stats.maxHp * (mult - 1)) + Math.round(flat);
+      const bonus =
+        Math.round(side.stats.maxHp * (mult - 1)) + Math.round(flat);
       if (bonus !== 0) {
         const maxHp = Math.max(1, side.stats.maxHp + bonus);
         side.stats = { ...side.stats, maxHp };
@@ -424,8 +425,16 @@ function translateStatEffect(entry, fx) {
       // HP passive = bigger Max HP pool at battle start (distinct from DEF
       // guard). Previously hp collapsed into guardMult, identical to def.
       return fx.mode === 'pct'
-        ? { ...base, trigger: 'battle_start', modifiers: { maxHpMult: 1 + fx.value } }
-        : { ...base, trigger: 'battle_start', modifiers: { maxHpBonus: fx.value } };
+        ? {
+            ...base,
+            trigger: 'battle_start',
+            modifiers: { maxHpMult: 1 + fx.value },
+          }
+        : {
+            ...base,
+            trigger: 'battle_start',
+            modifiers: { maxHpBonus: fx.value },
+          };
     default:
       throw new RangeError(
         `cannot translate skill stat for battle: ${fx.stat}`
