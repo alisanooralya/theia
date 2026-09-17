@@ -236,10 +236,9 @@ export function createImperiumService({
       assertDiff(diff);
       const weekId = weekIdFor(nowMs);
       await ensureAll(userId, weekId, db);
-      const [player, prog, final] = await Promise.all([
+      const [player, prog] = await Promise.all([
         players.get(userId, db),
         progress.getProgress(userId, weekId, db),
-        finals.getFinalStats(userId),
       ]);
       if (Number(player?.level ?? 1) < minLevel) {
         throw fail(
@@ -247,9 +246,8 @@ export function createImperiumService({
           'LEVEL_GATE'
         );
       }
-      if (final.currentHp <= 0) {
-        throw fail('HP kamu 0! Heal dulu sebelum Imperium.', 'HP0');
-      }
+      // Imperium selalu mulai dengan HP penuh dari snapshot (maxHp).
+      // currentHp Profile tidak dipakai dan tidak diubah oleh battle Imperium.
       const clearedMask = Number(prog?.cleared ?? 0);
       if (isDiffCleared(clearedMask, diff)) {
         throw fail(`Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`, 'ALREADY_CLEARED');
@@ -281,10 +279,10 @@ export function createImperiumService({
       const weekId = weekIdFor(nowMs);
       await ensureAll(userId, weekId, db);
 
+      // Snapshot stat player. Hanya maxHp yang dibawa dari Profile;
+      // battle selalu dimulai dengan HP penuh dan tidak menulis balik
+      // currentHp ke Profile/database.
       const final = await finals.getFinalStats(userId);
-      if (final.currentHp <= 0) {
-        throw fail('HP kamu 0! Heal dulu sebelum Imperium.', 'HP0');
-      }
       const activeEffects = await cards.getActiveEffects(userId);
       const baseSkills = battleSkillsFromEffects(activeEffects);
 
@@ -322,7 +320,7 @@ export function createImperiumService({
         const state = createBattle({
           playerStats: {
             maxHp: final.maxHp,
-            currentHp: Math.max(0, final.currentHp),
+            currentHp: final.maxHp,
             atk: final.atk,
             def: final.def,
             critRate: final.critRate,
@@ -335,8 +333,6 @@ export function createImperiumService({
         });
         const end = simulateBattle(state, autoSkillAction, random);
         const won = end.status === 'WIN';
-
-        await players.setCurrentHp(userId, end.player.hp, t);
 
         const fateView = {
           kind: fate.kind,

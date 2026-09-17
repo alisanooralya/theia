@@ -42,9 +42,9 @@ function revealView(r) {
     return [
       ...head,
       `💀 Kalah di Diff *${r.diff}* vs *${r.bossName}*.`,
-      `Sisa HP: ${F.formatNumber(Math.max(0, r.playerHp))}`,
+      '❤️ HP Profile tidak berkurang.',
       '',
-      'Retry: `.imperium pick` tidak berlaku — mulai lagi `.imperium ' + r.diff + '`',
+      'Retry: mulai lagi `.imperium ' + r.diff + '`',
     ].join('\n');
   }
   return [

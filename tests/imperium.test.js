@@ -286,8 +286,9 @@ describe('imperium retry', () => {
     const lose = await svc.pick('u8', 'A', { nowMs: now, random: () => 0.5 });
     assert.equal(lose.won, false);
     assert.equal(lose.rewards, null);
-    // heal (mekanisme existing) lalu retry diff yang sama
-    store.player.current_hp = store.player.max_hp;
+    // tanpa heal & profil HP 0 pun retry diff yang sama tetap bisa
+    // (battle selalu mulai full dari snapshot maxHp)
+    store.player.current_hp = 0;
     const retry = await svc.start('u8', 4, { nowMs: now, random: () => 0.1 });
     assert.equal(retry.diff, 4);
   });
@@ -371,6 +372,63 @@ describe('imperium blessing & curse', () => {
     const base = { active: null, passives: [] };
     applyFateToBattle(IMPERIUM_FATES[0], base, getImperiumBoss(1));
     assert.equal(base.passives.length, 0);
+  });
+});
+
+// ---------- FULL-HP SNAPSHOT (tanpa currentHp profile) ----------
+
+describe('imperium full-hp snapshot', () => {
+  it('kalah diff 1 -> HP profile tidak berubah', async () => {
+    const { svc, store } = makeFakes({ bossFor: strongBoss });
+    await svc.status('ufull1');
+    store.player.current_hp = 1234;
+    const now = Date.now();
+    await svc.start('ufull1', 1, { nowMs: now, random: () => 0 });
+    const lose = await svc.pick('ufull1', 'A', { nowMs: now, random: () => 0.5 });
+    assert.equal(lose.won, false);
+    assert.equal(store.player.current_hp, 1234);
+  });
+
+  it('battle selalu mulai full maxHp walau HP profile sekarat', async () => {
+    const { svc, store } = makeFakes();
+    await svc.status('ufull2');
+    store.player.current_hp = 1;
+    const now = Date.now();
+    await svc.start('ufull2', 1, { nowMs: now, random: () => 0 });
+    const win = await svc.pick('ufull2', 'A', { nowMs: now, random: () => 0.5 });
+    assert.equal(win.won, true);
+    // one-shot kill tanpa damage balasan -> HP akhir battle == HP awal battle
+    assert.equal(win.playerHp, store.player.max_hp);
+    assert.equal(store.player.current_hp, 1);
+  });
+
+  it('retry diff mulai full lagi, bukan sisa HP battle sebelumnya', async () => {
+    const { svc, store } = makeFakes({ bossFor: strongBoss });
+    await svc.status('ufull3');
+    const now = Date.now();
+    await svc.start('ufull3', 1, { nowMs: now, random: () => 0 });
+    const lose = await svc.pick('ufull3', 'A', { nowMs: now, random: () => 0.5 });
+    assert.equal(lose.won, false);
+    assert.equal(lose.playerHp, 0);
+    // profil tidak tersentuh; retry langsung tanpa heal
+    assert.equal(store.player.current_hp, store.player.max_hp);
+    const retry = await svc.start('ufull3', 1, { nowMs: now, random: () => 0.7 });
+    assert.equal(retry.diff, 1);
+    assert.deepEqual(retry.slots, ['A', 'B', 'C']);
+  });
+
+  it('clear lalu lanjut diff berikutnya -> HP full lagi, tanpa carryover', async () => {
+    const { svc, store } = makeFakes();
+    await svc.status('ufull4');
+    store.player.current_hp = 1;
+    const now = Date.now();
+    const r1 = await clearDiff(svc, 'ufull4', 1, now);
+    assert.equal(r1.won, true);
+    assert.equal(r1.playerHp, store.player.max_hp);
+    const r2 = await clearDiff(svc, 'ufull4', 2, now);
+    assert.equal(r2.won, true);
+    assert.equal(r2.playerHp, store.player.max_hp);
+    assert.equal(store.player.current_hp, 1);
   });
 });
 
@@ -643,15 +701,31 @@ dbDescribe('imperium integration (local pg)', async () => {
     assert.equal((await rpgCoinModel.getBalance(id)) - before, FAKE_REWARDS[1].coin);
   });
 
-  it('retry kalah di db: pending hangus, start ulang diff sama', async () => {
+  it('battle db mulai full maxHp walau HP profile rendah', async () => {
+    const svc = mkSvc();
+    const id = await prepUser('fulldb');
+    await rpgPlayerModel.setCurrentHp(id, 1);
+    const maxHp = (await rpgPlayerModel.get(id)).max_hp;
+    const now = Date.now();
+    await svc.start(id, 1, { nowMs: now, random: () => 0 });
+    const win = await svc.pick(id, 'A', { nowMs: now, random: () => 0.5 });
+    assert.equal(win.won, true);
+    // weak boss mati 1 hit tanpa damage balasan -> HP akhir battle == HP awal battle
+    assert.equal(win.playerHp, maxHp);
+    assert.equal((await rpgPlayerModel.get(id)).current_hp, 1);
+  });
+
+  it('retry kalah di db: profil HP utuh, pending hangus, start ulang diff sama', async () => {
     const svc = mkSvc(2);
     const id = await prepUser('retrydb');
     const now = Date.now();
+    const hpBefore = (await rpgPlayerModel.get(id)).current_hp;
     await svc.start(id, 2, { nowMs: now, random: () => 0 });
     const lose = await svc.pick(id, 'A', { nowMs: now, random: () => 0.5 });
     assert.equal(lose.won, false);
+    assert.equal((await rpgPlayerModel.get(id)).current_hp, hpBefore);
     assert.equal(await imperiumModel.getPending(id), null);
-    await rpgPlayerModel.setCurrentHp(id, 999999);
+    // retry langsung tanpa heal, battle mulai full lagi
     const retry = await svc.start(id, 2, { nowMs: now, random: () => 0.7 });
     assert.equal(retry.diff, 2);
     assert.deepEqual(retry.slots, ['A', 'B', 'C']);
