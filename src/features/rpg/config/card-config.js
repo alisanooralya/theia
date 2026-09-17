@@ -122,7 +122,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 24, atk: 11.8, def: 0.4 },
     skill(
       'Lollipop Crash',
-      'A crushing blow that deals increased damage to the enemy.',
+      'A crushing blow that deals increased damage to the enemy.\nDeals +10% DMG (+25% upgraded).',
       25,
       75,
       [{ stat: 'atk', mode: 'pct', value: 0.1 }],
@@ -131,7 +131,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Sugar Rush',
-      'Landing hits sharpens critical precision.',
+      'Landing hits sharpens critical precision.\n+5% Crit Rate (+12% upgraded).',
       50,
       100,
       [{ stat: 'critRate', mode: 'add', value: 0.05 }],
@@ -146,7 +146,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 19, atk: 11.5, def: 0.3 },
     skill(
       'Starfall Volley',
-      'A rain of starlight arrows over the target area.',
+      'A rain of starlight arrows over the target area.\nDeals +9% DMG (+20% upgraded).',
       25,
       75,
       [{ stat: 'atk', mode: 'pct', value: 0.09 }],
@@ -155,7 +155,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Star Fragment',
-      'Hardens body and guard, reducing damage taken in battle.',
+      'Hardens body and guard, reducing damage taken in battle.\nTake 6% less DMG (15% upgraded).',
       50,
       100,
       [{ stat: 'def', mode: 'pct', value: 0.06 }],
@@ -170,7 +170,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 22, atk: 12, def: 0.4 },
     skill(
       'Choco Barrage',
-      'Rapid cocoa-charged strikes in quick succession.',
+      'Rapid cocoa-charged strikes in quick succession.\nDeals +8% DMG (+20% upgraded).',
       25,
       75,
       [{ stat: 'atk', mode: 'pct', value: 0.08 }],
@@ -179,7 +179,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Critical Support',
-      'Empowers critical damage in battle.',
+      'Empowers critical damage in battle.\nCrit DMG +0.5x (+1.0x upgraded).',
       50,
       100,
       [{ stat: 'critDmg', mode: 'add', value: 0.5 }],
@@ -194,7 +194,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 26, atk: 9, def: 0.7 },
     skill(
       'Guardian Slam',
-      'A shield-first slam that strikes the enemy.',
+      'A shield-first slam that strikes the enemy.\nDeals +15% DMG (+35% upgraded).',
       25,
       75,
       [{ stat: 'def', mode: 'pct', value: 0.15 }],
@@ -203,7 +203,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Last Stand',
-      'Sturdy resolve that increases Max HP at battle start.',
+      'Sturdy resolve that increases Max HP at battle start.\nMax HP +10% (+25% upgraded).',
       50,
       100,
       [{ stat: 'hp', mode: 'pct', value: 0.1 }],
@@ -218,7 +218,7 @@ export const MAIN_CARDS = Object.freeze({
     { hp: 22.4, atk: 10, def: 0.6 },
     skill(
       'Savage Rend',
-      'A savage rend that exposes the enemy guard to basic attacks.',
+      'A savage rend that exposes the enemy guard to basic attacks.\nBasic Attacks ignore 10% DEF for 2s (25% upgraded).',
       25,
       75,
       [{ stat: 'defIgnore', mode: 'pct', value: 0.1, durationSec: 2000 }],
@@ -227,7 +227,7 @@ export const MAIN_CARDS = Object.freeze({
     ),
     skill(
       'Predatory Instinct',
-      'When the enemy ATK is higher, reduce damage taken in battle.',
+      'When the enemy ATK is higher, reduce damage taken in battle.\nTake 8% less DMG (15% upgraded).',
       50,
       100,
       [
@@ -267,7 +267,8 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 2.6, def: 0.9 },
     {
       name: 'Lollipop Drive',
-      description: 'Signature resonance: attacks hit noticeably harder.',
+      description:
+        'Signature resonance: attacks hit noticeably harder.\nDeal +10% more DMG.',
       effects: [{ stat: 'atk', mode: 'pct', value: 0.1 }],
     }
   ),
@@ -279,7 +280,8 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 2.6, def: 0.8 },
     {
       name: 'Eagle Eye String',
-      description: 'Signature resonance: shots find weak points.',
+      description:
+        'Signature resonance: shots find weak points.\n+5% Crit Rate.',
       effects: [{ stat: 'critRate', mode: 'add', value: 0.05 }],
     }
   ),
@@ -291,7 +293,8 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 2.4, def: 0.9 },
     {
       name: 'Cocoa Guard',
-      description: 'Signature resonance: a sweet, sturdy barrier.',
+      description:
+        'Signature resonance: a sweet, sturdy barrier.\nTake 10% less DMG.',
       effects: [{ stat: 'def', mode: 'pct', value: 0.1 }],
     }
   ),
@@ -303,7 +306,8 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 2.1, def: 0.9 },
     {
       name: 'Bulwark Heart',
-      description: 'Signature resonance: increases Max HP at battle start.',
+      description:
+        'Signature resonance: increases Max HP at battle start.\nMax HP +10%.',
       effects: [{ stat: 'hp', mode: 'pct', value: 0.1 }],
     }
   ),
@@ -316,7 +320,7 @@ export const SIGN_CARDS = Object.freeze({
     {
       name: 'Blood Scent',
       description:
-        'Signature resonance: hungrier strikes against healthier prey.',
+        'Signature resonance: hungrier strikes against healthier prey.\nDeal +10% more DMG when enemy current HP is higher.',
       effects: [
         {
           stat: 'atk',
