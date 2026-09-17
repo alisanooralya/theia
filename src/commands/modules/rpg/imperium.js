@@ -72,8 +72,20 @@ export function fateRevealView(r) {
   return [title, `${r.fate.icon} *${r.fate.name}*`, r.fate.reveal].join('\n');
 }
 
+// Edit #2 (atau single reply bila tidak ada key): reveal + result win/lose.
+export function revealView(r) {
+  return [fateRevealView(r), '', ...revealResultLines(r)].join('\n');
+}
+
 function revealResultLines(r) {
-  if (!r.won) return `💀 Kalah di Diff *${r.diff}* vs *${r.bossName}*.`;
+  if (!r.won) {
+    return [
+      `💀 Kalah di Diff *${r.diff}* vs *${r.bossName}*.`,
+      '❤️ HP Profile tidak berkurang.',
+      '',
+      'Retry: mulai lagi `.imperium ' + r.diff + '`',
+    ];
+  }
 
   return [
     `🏆 *DIFF ${r.diff} CLEAR!* ${r.bossName} tumbang.`,
@@ -129,12 +141,12 @@ async function editOrReply(ctx, key, text) {
 export async function sendPickResult(ctx, result, { sleepFn = F.sleep } = {}) {
   const key = takeFateKey(ctx.sender) ?? ctx.quoted?.key ?? null;
   if (!key?.id) {
-    await ctx.reply(revealResultLines(result));
+    await ctx.reply(revealView(result));
     return { edited: false };
   }
   await editOrReply(ctx, key, fateRevealView(result));
   await sleepFn(IMPERIUM_REVEAL_DELAY_MS);
-  return editOrReply(ctx, key, revealResultLines(result));
+  return editOrReply(ctx, key, revealView(result));
 }
 
 export async function executeImperium(
