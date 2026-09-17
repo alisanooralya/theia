@@ -221,8 +221,8 @@ export const MAIN_CARDS = Object.freeze({
       'A savage rend that exposes the enemy guard to basic attacks.',
       25,
       75,
-      [{ stat: 'defIgnore', mode: 'pct', value: 0.2, durationSec: 2000 }],
-      [{ stat: 'defIgnore', mode: 'pct', value: 0.35, durationSec: 2000 }],
+      [{ stat: 'defIgnore', mode: 'pct', value: 0.1, durationSec: 2000 }],
+      [{ stat: 'defIgnore', mode: 'pct', value: 0.25, durationSec: 2000 }],
       8000
     ),
     skill(
@@ -234,7 +234,7 @@ export const MAIN_CARDS = Object.freeze({
         {
           stat: 'def',
           mode: 'pct',
-          value: 0.1,
+          value: 0.08,
           condition: {
             left: { side: 'enemy', key: 'atk' },
             op: '>',
@@ -246,7 +246,7 @@ export const MAIN_CARDS = Object.freeze({
         {
           stat: 'def',
           mode: 'pct',
-          value: 0.2,
+          value: 0.15,
           condition: {
             left: { side: 'enemy', key: 'atk' },
             op: '>',
@@ -315,7 +315,8 @@ export const SIGN_CARDS = Object.freeze({
     { atk: 2.7, def: 1.0 },
     {
       name: 'Blood Scent',
-      description: 'Signature resonance: hungrier strikes against healthier prey.',
+      description:
+        'Signature resonance: hungrier strikes against healthier prey.',
       effects: [
         {
           stat: 'atk',
@@ -332,8 +333,6 @@ export const SIGN_CARDS = Object.freeze({
   ),
 });
 
-// MAIN_MILESTONES is enforced: every main card must follow the shared
-// unlock/upgrade schedule so future cards cannot drift silently.
 for (const def of Object.values(MAIN_CARDS)) {
   const [unlockActive, unlockPassive, upgradeActive, upgradePassive] =
     MAIN_MILESTONES;

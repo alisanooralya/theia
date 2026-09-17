@@ -164,12 +164,7 @@ export function createFarmService({
           err.code = 'NO_SEEDS';
           throw err;
         }
-        await inventoryRepo.remove(
-          userId,
-          crop.seedId,
-          totalSeeds,
-          t
-        );
+        await inventoryRepo.remove(userId, crop.seedId, totalSeeds, t);
         const matureAt = nowMs + crop.growthMs;
         await farmRepo.setPlanting(
           userId,
