@@ -58,11 +58,41 @@ function stubStatus() {
     canEnter: true,
     weeklyCard: { id: 'luuk', name: 'Luuk', role: 'Attacker' },
     diffs: [
-      { diff: 1, bossName: 'Husk Squire', cleared: true, unlocked: true, reward: REWARD },
-      { diff: 2, bossName: 'Husk Knight', cleared: false, unlocked: true, reward: REWARD },
-      { diff: 3, bossName: 'Rend Caller', cleared: false, unlocked: true, reward: REWARD },
-      { diff: 4, bossName: 'Apex Revenant', cleared: false, unlocked: false, reward: REWARD },
-      { diff: 5, bossName: 'Imperium Tyrant', cleared: false, unlocked: false, reward: REWARD },
+      {
+        diff: 1,
+        bossName: 'Husk Squire',
+        cleared: true,
+        unlocked: true,
+        reward: REWARD,
+      },
+      {
+        diff: 2,
+        bossName: 'Husk Knight',
+        cleared: false,
+        unlocked: true,
+        reward: REWARD,
+      },
+      {
+        diff: 3,
+        bossName: 'Rend Caller',
+        cleared: false,
+        unlocked: true,
+        reward: REWARD,
+      },
+      {
+        diff: 4,
+        bossName: 'Apex Revenant',
+        cleared: false,
+        unlocked: false,
+        reward: REWARD,
+      },
+      {
+        diff: 5,
+        bossName: 'Imperium Tyrant',
+        cleared: false,
+        unlocked: false,
+        reward: REWARD,
+      },
     ],
   };
 }
@@ -72,7 +102,12 @@ const stubService = {
     return stubStatus();
   },
   async start(_userId, diff) {
-    return { weekId: '2026-W38', diff, bossName: `Boss ${diff}`, slots: ['A', 'B', 'C'] };
+    return {
+      weekId: '2026-W38',
+      diff,
+      bossName: `Boss ${diff}`,
+      slots: ['A', 'B', 'C'],
+    };
   },
   async pick() {
     return {
@@ -81,7 +116,12 @@ const stubService = {
       weekId: '2026-W38',
       diff: 2,
       bossName: 'Husk Knight',
-      fate: { kind: 'blessing', name: 'Savage Echo', icon: '🩸', reveal: 'Efek rahasia terungkap.' },
+      fate: {
+        kind: 'blessing',
+        name: 'Savage Echo',
+        icon: '🩸',
+        reveal: 'Efek rahasia terungkap.',
+      },
       rounds: 3,
       playerHp: 100,
       enemyHp: 0,
@@ -113,7 +153,9 @@ describe('imperium diff list (Button single_select)', () => {
     const { ctx, calls } = mockCtx([]);
     await executeImperium(ctx, { service: stubService });
     const msg = interactiveMessage(calls);
-    const select = msg.nativeFlowMessage.buttons.find((b) => b.name === 'single_select');
+    const select = msg.nativeFlowMessage.buttons.find(
+      (b) => b.name === 'single_select'
+    );
     assert.ok(select);
     const params = JSON.parse(select.buttonParamsJson);
     assert.equal(params.sections.length, 1);
@@ -131,7 +173,9 @@ describe('imperium diff list (Button single_select)', () => {
       diffs: stubStatus().diffs.map((d) => ({ ...d, cleared: true })),
     };
     const { ctx, calls } = mockCtx([]);
-    await executeImperium(ctx, { service: { ...stubService, status: async () => allClear } });
+    await executeImperium(ctx, {
+      service: { ...stubService, status: async () => allClear },
+    });
     assert.equal(calls.relayed.length, 0);
     assert.equal(calls.replies.length, 1);
     assert.ok(calls.replies[0].includes('Clear'));
@@ -147,7 +191,10 @@ describe('imperium fate via teks + pick manual', () => {
     assert.ok(calls.replies[0].includes('CHOOSE YOUR FATE'));
     assert.ok(calls.replies[0].includes('.imperium pick <A/B/C>'));
     assert.ok(!calls.replies[0].includes('Savage Echo'));
-    assert.equal(fateBody({ diff: 2, bossName: 'X' }).includes('Savage Echo'), false);
+    assert.equal(
+      fateBody({ diff: 2, bossName: 'X' }).includes('Savage Echo'),
+      false
+    );
   });
 
   it('pick dengan quote pesan fate -> edit 2x (reveal lalu result)', async () => {
@@ -175,12 +222,18 @@ describe('imperium fate via teks + pick manual', () => {
     await executeImperium(m1.ctx, { service: stubService, sleepFn });
     assert.equal(m1.calls.replies.length, 1);
     const m2 = mockCtx(['pick', 'A']);
-    const out = await executeImperium(m2.ctx, { service: stubService, sleepFn });
+    const out = await executeImperium(m2.ctx, {
+      service: stubService,
+      sleepFn,
+    });
     assert.deepEqual(out, { edited: true });
     assert.equal(m2.calls.sends.length, 2);
     assert.deepEqual(m2.calls.sends[0].content.edit, { id: 'reply1' });
     assert.deepEqual(m2.calls.sends[1].content.edit, { id: 'reply1' });
-    assert.equal(m2.calls.sends[0].content.text, fateRevealView(await stubService.pick()));
+    assert.equal(
+      m2.calls.sends[0].content.text,
+      fateRevealView(await stubService.pick())
+    );
     assert.ok(m2.calls.sends[1].content.text.includes('CLEAR'));
     assert.deepEqual(sleeps, [IMPERIUM_REVEAL_DELAY_MS]);
     assert.equal(m2.calls.replies.length, 0);
@@ -195,7 +248,12 @@ describe('imperium fate via teks + pick manual', () => {
         weekId: '2026-W38',
         diff: 2,
         bossName: 'Husk Knight',
-        fate: { kind: 'curse', name: 'Apex Hunger', icon: '👹', reveal: 'ATK Boss meningkat.' },
+        fate: {
+          kind: 'curse',
+          name: 'Apex Hunger',
+          icon: '👹',
+          reveal: 'ATK Boss meningkat.',
+        },
         rounds: 5,
         playerHp: 0,
         enemyHp: 10,
@@ -204,7 +262,10 @@ describe('imperium fate via teks + pick manual', () => {
     };
     const sleeps = [];
     const sleepFn = async (ms) => sleeps.push(ms);
-    await executeImperium(mockCtx(['2']).ctx, { service: loseService, sleepFn });
+    await executeImperium(mockCtx(['2']).ctx, {
+      service: loseService,
+      sleepFn,
+    });
     const { ctx, calls } = mockCtx(['pick', 'B']);
     await executeImperium(ctx, { service: loseService, sleepFn });
     assert.equal(calls.sends.length, 2);
@@ -231,7 +292,9 @@ describe('imperium fate via teks + pick manual', () => {
         throw new Error('edit failed');
       },
     });
-    const out = await sendPickResult(ctx, await stubService.pick(), { sleepFn: async () => {} });
+    const out = await sendPickResult(ctx, await stubService.pick(), {
+      sleepFn: async () => {},
+    });
     assert.deepEqual(out, { edited: false });
     assert.equal(calls.replies.length, 2);
     assert.ok(calls.replies[0].includes('BLESSING'));

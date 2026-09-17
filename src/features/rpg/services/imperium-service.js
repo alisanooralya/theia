@@ -30,7 +30,11 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 export function weekIdFor(nowMs = Date.now()) {
   const d = new Date(nowMs);
   const dayIdx = (d.getUTCDay() + 6) % 7; // Mon=0..Sun=6
-  const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dayIdx);
+  const monday = Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate() - dayIdx
+  );
   const thursday = monday + 3 * 24 * 60 * 60 * 1000;
   const year = new Date(thursday).getUTCFullYear();
   const jan4 = new Date(Date.UTC(year, 0, 4));
@@ -65,7 +69,8 @@ export function isDiffUnlocked(diff, clearedMask) {
 // menampilkan slot (A/B/C) sebelum pick — tanpa nama/angka efek.
 export function rollFateChoices(pool = IMPERIUM_FATES, random = Math.random) {
   const list = [...pool];
-  if (list.length < 3) throw new RangeError('imperium fate pool needs >= 3 entries');
+  if (list.length < 3)
+    throw new RangeError('imperium fate pool needs >= 3 entries');
   for (let i = list.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
     [list[i], list[j]] = [list[j], list[i]];
@@ -74,7 +79,9 @@ export function rollFateChoices(pool = IMPERIUM_FATES, random = Math.random) {
 }
 
 export function parseSlot(raw) {
-  const s = String(raw ?? '').trim().toUpperCase();
+  const s = String(raw ?? '')
+    .trim()
+    .toUpperCase();
   return s === 'A' || s === 'B' || s === 'C' ? s : null;
 }
 
@@ -109,7 +116,12 @@ export function applyFateToBattle(fate, playerSkills, boss) {
     critRate: boss.stats.critRate,
     critDmg: boss.stats.critDmg,
   };
-  const enemy = { id: boss.id, name: boss.name, stats, behavior: boss.behavior };
+  const enemy = {
+    id: boss.id,
+    name: boss.name,
+    stats,
+    behavior: boss.behavior,
+  };
   let enemySkills = null;
   if (boss.skills) {
     enemySkills = {
@@ -169,7 +181,11 @@ export function createImperiumService({
     if (config.weeklyCard) return config.weeklyCard;
     if (config.weeklyCardId) {
       const def = getMainCard(config.weeklyCardId);
-      if (!def) throw fail(`unknown imperium weekly card: ${config.weeklyCardId}`, 'BAD_CONFIG');
+      if (!def)
+        throw fail(
+          `unknown imperium weekly card: ${config.weeklyCardId}`,
+          'BAD_CONFIG'
+        );
       return def;
     }
     return getWeeklyCardDef();
@@ -177,7 +193,10 @@ export function createImperiumService({
 
   function assertDiff(diff) {
     if (!Number.isInteger(diff) || diff < 1 || diff > diffCount) {
-      throw fail(`Pilih Diff 1–${diffCount}. Contoh: .imperium 1`, 'INVALID_DIFF');
+      throw fail(
+        `Pilih Diff 1–${diffCount}. Contoh: .imperium 1`,
+        'INVALID_DIFF'
+      );
     }
   }
 
@@ -232,7 +251,11 @@ export function createImperiumService({
     },
 
     // Langkah 1: pilih Diff -> generate 3 pilihan blind (A/B/C).
-    async start(userId, diff, { nowMs = Date.now(), random = Math.random } = {}) {
+    async start(
+      userId,
+      diff,
+      { nowMs = Date.now(), random = Math.random } = {}
+    ) {
       assertDiff(diff);
       const weekId = weekIdFor(nowMs);
       await ensureAll(userId, weekId, db);
@@ -250,7 +273,10 @@ export function createImperiumService({
       // currentHp Profile tidak dipakai dan tidak diubah oleh battle Imperium.
       const clearedMask = Number(prog?.cleared ?? 0);
       if (isDiffCleared(clearedMask, diff)) {
-        throw fail(`Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`, 'ALREADY_CLEARED');
+        throw fail(
+          `Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`,
+          'ALREADY_CLEARED'
+        );
       }
       if (!isDiffUnlocked(diff, clearedMask)) {
         throw fail(
@@ -261,7 +287,8 @@ export function createImperiumService({
         );
       }
       const boss = bossFor(diff);
-      if (!boss) throw fail(`Boss Diff ${diff} belum dikonfigurasi.`, 'NO_BOSS');
+      if (!boss)
+        throw fail(`Boss Diff ${diff} belum dikonfigurasi.`, 'NO_BOSS');
       const choices = rollFateChoices(fatePool, random);
       await progress.savePending(userId, weekId, diff, choices, db);
       return {
@@ -273,7 +300,11 @@ export function createImperiumService({
     },
 
     // Langkah 2: pick A/B/C -> reveal fate -> battle via battle-engine.
-    async pick(userId, slotRaw, { nowMs = Date.now(), random = Math.random } = {}) {
+    async pick(
+      userId,
+      slotRaw,
+      { nowMs = Date.now(), random = Math.random } = {}
+    ) {
       const slot = parseSlot(slotRaw);
       if (!slot) throw fail('Pilih: .imperium pick A / B / C', 'INVALID_SLOT');
       const weekId = weekIdFor(nowMs);
@@ -290,7 +321,11 @@ export function createImperiumService({
         await progress.ensureProgress(userId, weekId, t);
         await progress.lockProgress(userId, weekId, t);
         const pending = await progress.consumePending(userId, t);
-        if (!pending) throw fail('Tidak ada pilihan aktif. Mulai dulu: .imperium <1-5>', 'NO_PENDING');
+        if (!pending)
+          throw fail(
+            'Tidak ada pilihan aktif. Mulai dulu: .imperium <1-5>',
+            'NO_PENDING'
+          );
 
         let choices;
         try {
@@ -301,22 +336,37 @@ export function createImperiumService({
         if (!Array.isArray(choices)) choices = [];
         const chosen = choices.find((c) => c.slot === slot);
         if (pending.week_id !== weekId || Number(pending.diff) < 1 || !chosen) {
-          throw fail('Pilihan kedaluwarsa. Mulai lagi: .imperium <1-5>', 'STALE');
+          throw fail(
+            'Pilihan kedaluwarsa. Mulai lagi: .imperium <1-5>',
+            'STALE'
+          );
         }
         const diff = Number(pending.diff);
         const fate = fateFor(chosen.fateId);
-        if (!fate) throw fail('Pilihan kedaluwarsa. Mulai lagi: .imperium <1-5>', 'STALE');
+        if (!fate)
+          throw fail(
+            'Pilihan kedaluwarsa. Mulai lagi: .imperium <1-5>',
+            'STALE'
+          );
 
         const prog = await progress.getProgress(userId, weekId, t);
         const clearedMask = Number(prog?.cleared ?? 0);
         if (isDiffCleared(clearedMask, diff)) {
-          throw fail(`Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`, 'ALREADY_CLEARED');
+          throw fail(
+            `Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`,
+            'ALREADY_CLEARED'
+          );
         }
         const boss = bossFor(diff);
         const reward = rewardFor(diff);
-        if (!boss || !reward) throw fail(`Diff ${diff} belum dikonfigurasi.`, 'NO_BOSS');
+        if (!boss || !reward)
+          throw fail(`Diff ${diff} belum dikonfigurasi.`, 'NO_BOSS');
 
-        const { playerSkills, enemy, enemySkills } = applyFateToBattle(fate, baseSkills, boss);
+        const { playerSkills, enemy, enemySkills } = applyFateToBattle(
+          fate,
+          baseSkills,
+          boss
+        );
         const state = createBattle({
           playerStats: {
             maxHp: final.maxHp,
@@ -356,9 +406,17 @@ export function createImperiumService({
           };
         }
 
-        const saved = await progress.markCleared(userId, weekId, clearedBit(diff), t);
+        const saved = await progress.markCleared(
+          userId,
+          weekId,
+          clearedBit(diff),
+          t
+        );
         if (!saved) {
-          throw fail(`Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`, 'ALREADY_CLEARED');
+          throw fail(
+            `Diff ${diff} sudah clear minggu ini. Reward hanya sekali.`,
+            'ALREADY_CLEARED'
+          );
         }
         await coins.addCoin(userId, reward.coin, t);
         const grown = await grantPlayerExp(players, userId, reward.exp, t);

@@ -1,22 +1,13 @@
 import { getMainCard } from './card-config.js';
 
-// Imperium: weekly endgame challenge (5 difficulties).
-//
-// WEEKLY ROTATION (tanpa ubah logic/service):
-// 1. Ganti IMPERIUM_WEEKLY_CARD_ID ke Main Card ID existing yang valid
-//    (lihat MAIN_CARDS di card-config.js: girgas, lena, ameris, daisy, luuk).
-// 2. Sesuaikan IMPERIUM_FATES supaya bertema Weekly Card tersebut.
-// 3. Tune IMPERIUM_BOSSES / IMPERIUM_REWARDS bila perlu.
-// Service memvalidasi Weekly Card via getMainCard (source of truth tetap
-// card-config.js; tidak ada duplikasi data Main Card di sini).
-
 export const IMPERIUM_MIN_LEVEL = 16;
 export const IMPERIUM_DIFF_COUNT = 5;
 
 export const IMPERIUM_WEEKLY_CARD_ID = 'luuk';
 
 function fate(entry) {
-  if (!entry?.id || !entry?.name) throw new RangeError('fate needs id and name');
+  if (!entry?.id || !entry?.name)
+    throw new RangeError('fate needs id and name');
   if (entry.kind !== 'blessing' && entry.kind !== 'curse') {
     throw new RangeError(`fate ${entry.id} needs kind blessing|curse`);
   }
@@ -32,13 +23,6 @@ function fate(entry) {
   });
 }
 
-// Pool Blessing/Curse minggu ini. Semua entry bertema Weekly Card (Luuk:
-// Savage Rend = Basic Attack ignore DEF, Predatory Instinct = defensif saat
-// ATK musuh lebih tinggi, Blood Scent = bonus saat HP musuh lebih tinggi).
-// - player: passive tempel ke playerSkills.passives (format battle-engine:
-//   { trigger: 'attack'|'defend'|'battle_start', modifiers: {...} }).
-// - boss: { hpMult, atkMult, defMult, guardMult, skillMult } — pengali stat
-//   boss / guard passive / penguat active skill boss (format battle-engine).
 export const IMPERIUM_FATES = Object.freeze([
   fate({
     id: 'savage-echo',
@@ -196,7 +180,6 @@ export const IMPERIUM_BOSSES = Object.freeze({
   }),
 });
 
-// Reward flat per Diff (sekali klaim per Diff per minggu). Atomic via transaksi.
 export const IMPERIUM_REWARDS = Object.freeze({
   1: Object.freeze({ coin: 60000, exp: 500, cerelia: 5 }),
   2: Object.freeze({ coin: 80000, exp: 700, cerelia: 8 }),
@@ -207,7 +190,10 @@ export const IMPERIUM_REWARDS = Object.freeze({
 
 export function getWeeklyCardDef() {
   const def = getMainCard(IMPERIUM_WEEKLY_CARD_ID);
-  if (!def) throw new RangeError(`unknown imperium weekly card: ${IMPERIUM_WEEKLY_CARD_ID}`);
+  if (!def)
+    throw new RangeError(
+      `unknown imperium weekly card: ${IMPERIUM_WEEKLY_CARD_ID}`
+    );
   return def;
 }
 

@@ -112,7 +112,11 @@ function makeFakes({ level = 16, bossFor = weakBoss } = {}) {
       const key = `${userId}|${weekId}`;
       if (!progress.map) progress.map = store.progress;
       if (!store.progress.has(key)) {
-        store.progress.set(key, { user_id: userId, week_id: weekId, cleared: 0 });
+        store.progress.set(key, {
+          user_id: userId,
+          week_id: weekId,
+          cleared: 0,
+        });
       }
       return store.progress.get(key);
     },
@@ -130,7 +134,12 @@ function makeFakes({ level = 16, bossFor = weakBoss } = {}) {
       return { ...row };
     },
     async savePending(userId, weekId, diff, choices) {
-      const row = { user_id: userId, week_id: weekId, diff, choices: JSON.stringify(choices) };
+      const row = {
+        user_id: userId,
+        week_id: weekId,
+        diff,
+        choices: JSON.stringify(choices),
+      };
       store.pending.set(userId, row);
       return row;
     },
@@ -176,14 +185,28 @@ function makeFakes({ level = 16, bossFor = weakBoss } = {}) {
         };
       },
     },
-    cards: { async getActiveEffects() { return []; } },
-    db: { async begin(fn) { return fn({}); } },
+    cards: {
+      async getActiveEffects() {
+        return [];
+      },
+    },
+    db: {
+      async begin(fn) {
+        return fn({});
+      },
+    },
     config: {
       minLevel: 16,
       diffCount: 5,
       weeklyCardId: 'luuk',
       fates: IMPERIUM_FATES,
-      bosses: { 1: bossFor(1), 2: bossFor(2), 3: bossFor(3), 4: bossFor(4), 5: bossFor(5) },
+      bosses: {
+        1: bossFor(1),
+        2: bossFor(2),
+        3: bossFor(3),
+        4: bossFor(4),
+        5: bossFor(5),
+      },
       rewards: FAKE_REWARDS,
     },
   });
@@ -279,7 +302,9 @@ describe('imperium difficulty unlock', () => {
 
 describe('imperium retry', () => {
   it('8. kalah diff 4 -> bisa retry diff 4 (tidak dipaksa ke diff 1)', async () => {
-    const { svc, store } = makeFakes({ bossFor: (d) => (d === 4 ? strongBoss(d) : weakBoss(d)) });
+    const { svc, store } = makeFakes({
+      bossFor: (d) => (d === 4 ? strongBoss(d) : weakBoss(d)),
+    });
     const now = Date.now();
     for (const d of [1, 2, 3]) await clearDiff(svc, 'u8', d, now);
     await svc.start('u8', 4, { nowMs: now, random: () => 0 });
@@ -310,7 +335,10 @@ describe('imperium blessing & curse', () => {
   it('10. selalu tepat 3 pilihan', () => {
     const choices = rollFateChoices(IMPERIUM_FATES, () => 0.3);
     assert.equal(choices.length, 3);
-    assert.deepEqual(choices.map((c) => c.slot), ['A', 'B', 'C']);
+    assert.deepEqual(
+      choices.map((c) => c.slot),
+      ['A', 'B', 'C']
+    );
     assert.equal(new Set(choices.map((c) => c.fateId)).size, 3);
   });
 
@@ -326,7 +354,12 @@ describe('imperium blessing & curse', () => {
   it('12. efek tidak terlihat sebelum selection (blind)', async () => {
     const { svc } = makeFakes();
     const start = await svc.start('u12', 1, { random: () => 0 });
-    assert.deepEqual(Object.keys(start).sort(), ['bossName', 'diff', 'slots', 'weekId']);
+    assert.deepEqual(Object.keys(start).sort(), [
+      'bossName',
+      'diff',
+      'slots',
+      'weekId',
+    ]);
     const leaked = JSON.stringify(start);
     for (const f of IMPERIUM_FATES) {
       assert.ok(!leaked.includes(f.id), `leak fate id ${f.id}`);
@@ -349,11 +382,15 @@ describe('imperium blessing & curse', () => {
     const out = applyFateToBattle(blessing, base, getImperiumBoss(1));
     assert.equal(out.playerSkills.passives.length, 1);
     assert.equal(out.playerSkills.passives[0].source, 'imperium-fate');
-    const curse = IMPERIUM_FATES.find((f) => f.boss && (f.boss.atkMult || f.boss.defMult));
+    const curse = IMPERIUM_FATES.find(
+      (f) => f.boss && (f.boss.atkMult || f.boss.defMult)
+    );
     const out2 = applyFateToBattle(curse, base, getImperiumBoss(1));
     const expected = { ...getImperiumBoss(1).stats };
-    if (curse.boss.atkMult) expected.atk = Math.round(expected.atk * curse.boss.atkMult);
-    if (curse.boss.defMult) expected.def = Math.round(expected.def * curse.boss.defMult);
+    if (curse.boss.atkMult)
+      expected.atk = Math.round(expected.atk * curse.boss.atkMult);
+    if (curse.boss.defMult)
+      expected.def = Math.round(expected.def * curse.boss.defMult);
     assert.deepEqual(out2.enemy.stats, expected);
   });
 
@@ -384,7 +421,10 @@ describe('imperium full-hp snapshot', () => {
     store.player.current_hp = 1234;
     const now = Date.now();
     await svc.start('ufull1', 1, { nowMs: now, random: () => 0 });
-    const lose = await svc.pick('ufull1', 'A', { nowMs: now, random: () => 0.5 });
+    const lose = await svc.pick('ufull1', 'A', {
+      nowMs: now,
+      random: () => 0.5,
+    });
     assert.equal(lose.won, false);
     assert.equal(store.player.current_hp, 1234);
   });
@@ -395,7 +435,10 @@ describe('imperium full-hp snapshot', () => {
     store.player.current_hp = 1;
     const now = Date.now();
     await svc.start('ufull2', 1, { nowMs: now, random: () => 0 });
-    const win = await svc.pick('ufull2', 'A', { nowMs: now, random: () => 0.5 });
+    const win = await svc.pick('ufull2', 'A', {
+      nowMs: now,
+      random: () => 0.5,
+    });
     assert.equal(win.won, true);
     // one-shot kill tanpa damage balasan -> HP akhir battle == HP awal battle
     assert.equal(win.playerHp, store.player.max_hp);
@@ -407,12 +450,18 @@ describe('imperium full-hp snapshot', () => {
     await svc.status('ufull3');
     const now = Date.now();
     await svc.start('ufull3', 1, { nowMs: now, random: () => 0 });
-    const lose = await svc.pick('ufull3', 'A', { nowMs: now, random: () => 0.5 });
+    const lose = await svc.pick('ufull3', 'A', {
+      nowMs: now,
+      random: () => 0.5,
+    });
     assert.equal(lose.won, false);
     assert.equal(lose.playerHp, 0);
     // profil tidak tersentuh; retry langsung tanpa heal
     assert.equal(store.player.current_hp, store.player.max_hp);
-    const retry = await svc.start('ufull3', 1, { nowMs: now, random: () => 0.7 });
+    const retry = await svc.start('ufull3', 1, {
+      nowMs: now,
+      random: () => 0.7,
+    });
     assert.equal(retry.diff, 1);
     assert.deepEqual(retry.slots, ['A', 'B', 'C']);
   });
@@ -509,9 +558,20 @@ describe('imperium battle via existing engine', () => {
     for (const d of [1, 2, 3, 4, 5]) {
       const boss = getImperiumBoss(d);
       const skills = battleSkillsFromEffects([]);
-      const { enemy, enemySkills } = applyFateToBattle(IMPERIUM_FATES[0], skills, boss);
+      const { enemy, enemySkills } = applyFateToBattle(
+        IMPERIUM_FATES[0],
+        skills,
+        boss
+      );
       const state = createBattle({
-        playerStats: { maxHp: 50000, currentHp: 50000, atk: 500, def: 100, critRate: 0.25, critDmg: 1.5 },
+        playerStats: {
+          maxHp: 50000,
+          currentHp: 50000,
+          atk: 500,
+          def: 100,
+          critRate: 0.25,
+          critDmg: 1.5,
+        },
         enemy,
         playerSkills: skills,
         enemySkills,
@@ -525,8 +585,15 @@ describe('imperium battle via existing engine', () => {
   it('23-24. boss affix & player buff valid untuk engine', () => {
     for (const f of IMPERIUM_FATES) {
       assert.ok(f.player || f.boss, `fate ${f.id} tanpa efek`);
-      const { playerSkills, enemySkills } = applyFateToBattle(f, { active: null, passives: [] }, getImperiumBoss(5));
-      for (const p of [...playerSkills.passives, ...(enemySkills?.passives ?? [])]) {
+      const { playerSkills, enemySkills } = applyFateToBattle(
+        f,
+        { active: null, passives: [] },
+        getImperiumBoss(5)
+      );
+      for (const p of [
+        ...playerSkills.passives,
+        ...(enemySkills?.passives ?? []),
+      ]) {
         assert.ok(['attack', 'defend', 'battle_start'].includes(p.trigger));
         assert.ok(p.modifiers && typeof p.modifiers === 'object');
       }
@@ -546,7 +613,10 @@ describe('imperium reward atomic (fakes)', () => {
     assert.deepEqual(r.rewards, FAKE_REWARDS[1]);
     assert.equal(store.coin, FAKE_REWARDS[1].coin);
     assert.equal(store.cerelia, FAKE_REWARDS[1].cerelia);
-    await assertCode(svc.start('u26', 1, { nowMs: now, random: () => 0 }), 'ALREADY_CLEARED');
+    await assertCode(
+      svc.start('u26', 1, { nowMs: now, random: () => 0 }),
+      'ALREADY_CLEARED'
+    );
     assert.equal(store.coin, FAKE_REWARDS[1].coin);
   });
 
@@ -568,13 +638,17 @@ const dbDescribe = DB_URL ? describe : describe.skip;
 
 dbDescribe('imperium integration (local pg)', async () => {
   const { createSchema } = await import('#storage/definitions.js');
-  const { rpgPlayerModel } = await import('#features/rpg/models/rpg-player.model.js');
-  const { rpgCoinModel } = await import('#features/rpg/models/rpg-coin.model.js');
-  const { imperiumModel } = await import('#features/rpg/models/imperium.model.js');
+  const { rpgPlayerModel } =
+    await import('#features/rpg/models/rpg-player.model.js');
+  const { rpgCoinModel } =
+    await import('#features/rpg/models/rpg-coin.model.js');
+  const { imperiumModel } =
+    await import('#features/rpg/models/imperium.model.js');
   const { userModel } = await import('#storage/models/user.js');
 
   let seq = 0;
-  const uid = (tag) => `imperium-t-${Date.now()}-${seq++}-${tag}@s.whatsapp.net`;
+  const uid = (tag) =>
+    `imperium-t-${Date.now()}-${seq++}-${tag}@s.whatsapp.net`;
   const dbBosses = (strongDiff = -1) => ({
     1: strongDiff === 1 ? strongBoss(1) : weakBoss(1),
     2: strongDiff === 2 ? strongBoss(2) : weakBoss(2),
@@ -590,7 +664,8 @@ dbDescribe('imperium integration (local pg)', async () => {
     bosses: dbBosses(strongDiff),
     rewards: FAKE_REWARDS,
   });
-  const mkSvc = (strongDiff = -1) => createImperiumService({ config: dbConfig(strongDiff) });
+  const mkSvc = (strongDiff = -1) =>
+    createImperiumService({ config: dbConfig(strongDiff) });
 
   async function prepUser(tag, level = 16) {
     const id = uid(tag);
@@ -630,7 +705,10 @@ dbDescribe('imperium integration (local pg)', async () => {
     await clearDiffDb(svc, id, 1, now);
     const after = await rpgCoinModel.getBalance(id);
     assert.equal(after - before, FAKE_REWARDS[1].coin);
-    await assertCode(svc.start(id, 1, { nowMs: now, random: () => 0 }), 'ALREADY_CLEARED');
+    await assertCode(
+      svc.start(id, 1, { nowMs: now, random: () => 0 }),
+      'ALREADY_CLEARED'
+    );
     assert.equal(await rpgCoinModel.getBalance(id), after);
   });
 
@@ -647,17 +725,30 @@ dbDescribe('imperium integration (local pg)', async () => {
     const sA = await svc.status(id, { nowMs: weekA });
     assert.equal(sA.diffs[4].unlocked, true);
     const sB = await svc.status(id, { nowMs: weekB });
-    assert.deepEqual(sB.diffs.map((d) => d.cleared), [false, false, false, false, false]);
-    assert.deepEqual(sB.diffs.map((d) => d.unlocked), [true, true, true, false, false]);
+    assert.deepEqual(
+      sB.diffs.map((d) => d.cleared),
+      [false, false, false, false, false]
+    );
+    assert.deepEqual(
+      sB.diffs.map((d) => d.unlocked),
+      [true, true, true, false, false]
+    );
     const before = await rpgCoinModel.getBalance(id);
     const rB = await clearDiffDb(svc, id, 1, weekB);
     assert.equal(rB.won, true);
-    assert.equal((await rpgCoinModel.getBalance(id)) - before, FAKE_REWARDS[1].coin);
+    assert.equal(
+      (await rpgCoinModel.getBalance(id)) - before,
+      FAKE_REWARDS[1].coin
+    );
   });
 
   it('20. weekly card dapat diganti tanpa ubah logic', async () => {
     const svc = createImperiumService({
-      config: { ...dbConfig(), weeklyCardId: 'girgas', weeklyCard: getMainCard('girgas') },
+      config: {
+        ...dbConfig(),
+        weeklyCardId: 'girgas',
+        weeklyCard: getMainCard('girgas'),
+      },
     });
     const id = await prepUser('weekly');
     const s = await svc.status(id);
@@ -698,7 +789,10 @@ dbDescribe('imperium integration (local pg)', async () => {
     ]);
     const wins = results.filter((r) => r.status === 'fulfilled' && r.value.won);
     assert.equal(wins.length, 1);
-    assert.equal((await rpgCoinModel.getBalance(id)) - before, FAKE_REWARDS[1].coin);
+    assert.equal(
+      (await rpgCoinModel.getBalance(id)) - before,
+      FAKE_REWARDS[1].coin
+    );
   });
 
   it('battle db mulai full maxHp walau HP profile rendah', async () => {
@@ -735,7 +829,8 @@ dbDescribe('imperium integration (local pg)', async () => {
 // ---------- REGRESI (existing tidak tersentuh) ----------
 
 describe('imperium regression', async () => {
-  const { isBossFloor, enemyForFloor } = await import('#features/rpg/config/orbital-lift-config.js');
+  const { isBossFloor, enemyForFloor } =
+    await import('#features/rpg/config/orbital-lift-config.js');
   const { getDomain } = await import('#features/rpg/config/domain-config.js');
   const cardCfg = await import('#features/rpg/config/card-config.js');
 
