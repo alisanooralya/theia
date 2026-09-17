@@ -4,7 +4,8 @@ import { getHealth, MAX_HEALTH } from '#commands/modules/group/warn.js';
 import { logger } from '#helpers/logger.js';
 import { LOW_RE, shouldReview } from './content-safety-config.js';
 
-const TOXIC_DAMAGE = 5;
+const LOW_TOXIC_DAMAGE = 5;
+const HIGH_TOXIC_DAMAGE = 10;
 
 const deps = {
   sql,
@@ -66,24 +67,19 @@ export default {
         logger.warn({ err, jid: s.jid }, '[AntiToxic] Delete failed');
       }
 
-      if (severity === 'low') {
-        logger.info(
-          { jid: s.jid, sender: s.sender, category },
-          '[AntiToxic] Low severity message removed'
-        );
-        return false;
-      }
-
       if (!deleted) {
         logger.info(
-          { jid: s.jid, sender: s.sender, category },
-          '[AntiToxic] High severity but delete failed, skipping penalty'
+          { jid: s.jid, sender: s.sender, category, severity },
+          '[AntiToxic] Delete failed, skipping penalty'
         );
         return false;
       }
 
+      const damage =
+        severity === 'low' ? LOW_TOXIC_DAMAGE : HIGH_TOXIC_DAMAGE;
+
       await deps.sql`
-        INSERT INTO warns (jid, group_jid, reason, damage) VALUES (${s.sender}, ${s.jid}, 'Toxic', ${TOXIC_DAMAGE})
+        INSERT INTO warns (jid, group_jid, reason, damage) VALUES (${s.sender}, ${s.jid}, 'Toxic', ${damage})
       `;
 
       const health = await deps.getHealth(s.sender, s.jid);
@@ -101,13 +97,13 @@ export default {
         });
       } else {
         await sock.sendMessage(s.jid, {
-          text: `🚫 @${s.sender.split('@')[0]} kata toxic tidak diizinkan! (-${TOXIC_DAMAGE})\n❤️ Health: ${health}/${MAX_HEALTH}`,
+          text: `🚫 @${s.sender.split('@')[0]} kata toxic tidak diizinkan! (-${damage})\n❤️ Health: ${health}/${MAX_HEALTH}`,
           mentions: [s.sender],
         });
       }
 
       logger.info(
-        { jid: s.jid, sender: s.sender, category },
+        { jid: s.jid, sender: s.sender, category, severity, damage },
         '[AntiToxic] Toxic message removed'
       );
     } catch (err) {
