@@ -117,7 +117,7 @@ export const MAIN_CARDS = Object.freeze({
     'girgas',
     'Girgas',
     'Attacker',
-    { hp: 213, atk: 116, def: 10 },
+    { hp: 213, atk: 118, def: 10 },
     { hp: 24, atk: 11.8, def: 0.4 },
     skill(
       'Lollipop Crash',
