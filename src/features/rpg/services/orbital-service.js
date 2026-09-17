@@ -19,7 +19,6 @@ import {
   ORBITAL_COST_NORMAL,
   ORBITAL_ENEMY,
   ORBITAL_MAX_FLOOR,
-  ORBITAL_RECORDS,
   ORBITAL_REWARD_BOSS,
   ORBITAL_REWARD_NORMAL,
   ORBITAL_SIGNAL_MAX,
@@ -28,7 +27,6 @@ import {
   costForFloor,
   enemyForFloor,
   isBossFloor,
-  recordForFloor,
 } from '../config/orbital-lift-config.js';
 
 function rollInt(min, max, random = Math.random) {
@@ -81,10 +79,6 @@ export function createOrbitalService({
     await orbitalRepo.ensure(userId, client);
   }
 
-  async function recordOwned(userId, recordId, client) {
-    return (await inventoryRepo.getQuantity(userId, recordId, client)) > 0;
-  }
-
   return {
     async status(userId, { nowMs = Date.now() } = {}) {
       await ensureAll(userId, db);
@@ -105,7 +99,6 @@ export function createOrbitalService({
         signal: accrued.value,
         signalMax: ORBITAL_SIGNAL_MAX,
         nextSignalInMs: accrued.nextInMs,
-        nextRecord: done ? null : recordForFloor(floor),
       };
     },
 
@@ -170,7 +163,6 @@ export function createOrbitalService({
         await playerRepo.setCurrentHp(userId, end.player.hp, t);
 
         let rewards = null;
-        let record = null;
         let newFloor = floor;
         if (won) {
           const coinBase = rollInt(
@@ -193,13 +185,6 @@ export function createOrbitalService({
           await inventoryRepo.add(userId, 'cerelia', cerelia, t);
           rewards = { coin, exp, cerelia };
           newFloor = floor + 1;
-          if (boss) {
-            const unlocked = recordForFloor(floor);
-            if (unlocked && !(await recordOwned(userId, unlocked.id, t))) {
-              await inventoryRepo.add(userId, unlocked.id, 1, t);
-            }
-            record = unlocked;
-          }
         }
 
         await orbitalRepo.save(
@@ -221,37 +206,8 @@ export function createOrbitalService({
           playerHp: end.player.hp,
           enemyHp: end.enemy.hp,
           rewards,
-          record,
         };
       });
-    },
-
-    async records(userId) {
-      await ensureAll(userId, db);
-      const owned = [];
-      for (const record of ORBITAL_RECORDS) {
-        if (await recordOwned(userId, record.id, db)) owned.push(record);
-      }
-      return owned;
-    },
-
-    async readRecord(userId, recordId) {
-      const record =
-        ORBITAL_RECORDS.find(
-          (entry) => entry.id === String(recordId ?? '').toLowerCase()
-        ) ?? null;
-      if (!record) {
-        const err = new RangeError('Record tidak ditemukan.');
-        err.code = 'UNKNOWN_RECORD';
-        throw err;
-      }
-      await ensureAll(userId, db);
-      if (!(await recordOwned(userId, record.id, db))) {
-        const err = new RangeError('Kamu belum memiliki Record ini.');
-        err.code = 'LOCKED_RECORD';
-        throw err;
-      }
-      return record;
     },
   };
 }

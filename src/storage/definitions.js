@@ -362,6 +362,9 @@ const STATIC_SCHEMA = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_crime_bounties_active_owner ON crime_bounties(owner_id) WHERE status = 'active'`,
   `CREATE INDEX IF NOT EXISTS idx_crime_bounties_status_expires ON crime_bounties(status, expires_at)`,
   `CREATE INDEX IF NOT EXISTS idx_crime_bounties_active_coin ON crime_bounties(bounty_coin DESC) WHERE status = 'active'`,
+
+  // Orbital Records dihapus dari game: bersihkan sisa item record milik user.
+  `DELETE FROM rpg_inventory WHERE item_id LIKE 'orbital_record_%'`,
 ];
 
 export async function createSchema() {
