@@ -1,7 +1,7 @@
 export const BOUNTY_CONFIG = Object.freeze({
   minBountyPercent: 0.2,
   maxBountyPercent: 0.3,
-  durationMs: 24 * 60 * 60 * 1000,
+  durationMs: 4 * 60 * 60 * 1000,
   hunterCooldownMs: 15 * 60 * 1000,
   maxRounds: 50,
   boardLimit: 20,
