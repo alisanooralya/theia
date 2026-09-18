@@ -362,31 +362,6 @@ const STATIC_SCHEMA = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_crime_bounties_active_owner ON crime_bounties(owner_id) WHERE status = 'active'`,
   `CREATE INDEX IF NOT EXISTS idx_crime_bounties_status_expires ON crime_bounties(status, expires_at)`,
   `CREATE INDEX IF NOT EXISTS idx_crime_bounties_active_coin ON crime_bounties(bounty_coin DESC) WHERE status = 'active'`,
-
-  `
-  CREATE TABLE IF NOT EXISTS imperium_progress (
-    user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
-    week_id     TEXT    NOT NULL CHECK (week_id <> ''),
-    cleared     INTEGER NOT NULL DEFAULT 0 CHECK (cleared >= 0),
-    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
-    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
-    PRIMARY KEY (user_id, week_id)
-  )
-  `,
-
-  `
-  CREATE TABLE IF NOT EXISTS imperium_pending (
-    user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
-    week_id     TEXT    NOT NULL CHECK (week_id <> ''),
-    diff        INTEGER NOT NULL CHECK (diff BETWEEN 1 AND 5),
-    choices     TEXT    NOT NULL DEFAULT '[]',
-    created_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
-    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
-  )
-  `,
-
-  // Orbital Records dihapus dari game: bersihkan sisa item record milik user.
-  `DELETE FROM rpg_inventory WHERE item_id LIKE 'orbital_record_%'`,
 ];
 
 export async function createSchema() {
