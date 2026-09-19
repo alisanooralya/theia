@@ -73,10 +73,12 @@ export { shopService, createShopService } from './services/shop-service.js';
 export {
   GACHA_CONFIG,
   GACHA_DUPLICATE_COMPENSATION,
+  GACHA_PITY,
   allowedPullCounts,
   gachaCost,
   rollPull,
   rollMainCard,
+  rollCardFrom,
   rollShopItem,
   rollItemQuantity,
 } from './config/gacha-config.js';

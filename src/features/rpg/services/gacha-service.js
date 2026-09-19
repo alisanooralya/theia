@@ -3,9 +3,11 @@ import { sql } from '#storage/connection.js';
 import {
   GACHA_CONFIG,
   GACHA_DUPLICATE_COMPENSATION,
+  GACHA_PITY,
   gachaCost,
   rollPull,
   rollMainCard,
+  rollCardFrom,
   rollShopItem,
   rollItemQuantity,
 } from '../config/gacha-config.js';
@@ -74,55 +76,112 @@ export function createGachaService({
         await coins.spendCoin(userId, total, tx);
 
         const owned = await ownedMainIds(userId, tx);
+        const pityState = await requests.lockPity(userId, tx);
+        let pityCount = Math.max(0, Number(pityState?.pity_count) || 0);
+        let forceNew = Boolean(pityState?.force_new);
+        const allMainIds = Object.keys(MAIN_CARDS);
         const results = [];
         for (let i = 0; i < count; i += 1) {
-          const outcome = rollPull(random);
-          if (outcome === 'main') {
-            const cardId = rollMainCard(random);
-            const cardName = MAIN_CARDS[cardId]?.name ?? cardId;
-            if (owned.has(cardId)) {
-              // Duplicate: no second copy, grant consolation instead of zonk.
-              await invSvc.addItem(
-                userId,
-                GACHA_DUPLICATE_COMPENSATION.itemId,
-                GACHA_DUPLICATE_COMPENSATION.quantity,
-                tx
-              );
+          pityCount += 1;
+          let guaranteed = null;
+          if (forceNew) {
+            guaranteed = 'new';
+          } else if (pityCount >= GACHA_PITY.guaranteedPulls) {
+            guaranteed = 'pity';
+          }
+
+          let cardId = null;
+          let isNew = false;
+          if (guaranteed === 'new') {
+            // Guarantee after a duplicate: must be a card the user lacks.
+            forceNew = false;
+            const unowned = allMainIds.filter((id) => !owned.has(id));
+            if (unowned.length) {
+              cardId = rollCardFrom(unowned, random);
+              isNew = true;
+            }
+          } else if (guaranteed === 'pity') {
+            // Pity guarantee resolved: 50:50 duplicate vs new, cycle restarts.
+            pityCount = 0;
+            if (random() < GACHA_PITY.newCardChance) {
+              const unowned = allMainIds.filter((id) => !owned.has(id));
+              if (unowned.length) {
+                cardId = rollCardFrom(unowned, random);
+                isNew = true;
+              }
+            }
+          } else {
+            const outcome = rollPull(random);
+            if (outcome === 'shopItem') {
+              const itemId = rollShopItem(random);
+              const quantity = rollItemQuantity(random);
+              await invSvc.addItem(userId, itemId, quantity, tx);
+              const def = getShopItem(itemId);
               results.push({
                 index: i + 1,
-                type: 'duplicate',
-                cardId,
-                cardName,
-                compensation: { ...GACHA_DUPLICATE_COMPENSATION },
+                type: 'shopItem',
+                itemId,
+                itemName: def ? def.name : itemId,
+                emoji: def?.emoji ?? '📦',
+                quantity,
               });
               continue;
             }
-            const granted = await cardSvc.grantCard(userId, cardId, tx);
-            owned.add(cardId);
-            results.push({
-              index: i + 1,
-              type: 'main',
-              cardId,
-              cardName: granted.card.definition.name,
-            });
-          } else if (outcome === 'shopItem') {
-            const itemId = rollShopItem(random);
-            const quantity = rollItemQuantity(random);
-            await invSvc.addItem(userId, itemId, quantity, tx);
-            const def = getShopItem(itemId);
-            results.push({
-              index: i + 1,
-              type: 'shopItem',
-              itemId,
-              itemName: def ? def.name : itemId,
-              emoji: def?.emoji ?? '📦',
-              quantity,
-            });
-          } else {
-            results.push({ index: i + 1, type: 'zonk' });
+            if (outcome !== 'main') {
+              results.push({ index: i + 1, type: 'zonk' });
+              continue;
+            }
+            cardId = rollMainCard(random);
+            isNew = !owned.has(cardId);
           }
+
+          if (guaranteed && !cardId) {
+            // Fallback when the preferred pool is empty (e.g. all cards owned).
+            const ownedIds = [...owned];
+            if (ownedIds.length) {
+              cardId = rollCardFrom(ownedIds, random);
+            } else {
+              const unowned = allMainIds.filter((id) => !owned.has(id));
+              if (unowned.length) {
+                cardId = rollCardFrom(unowned, random);
+                isNew = true;
+              }
+            }
+          }
+
+          const cardName = MAIN_CARDS[cardId]?.name ?? cardId;
+          if (!isNew) {
+            // Duplicate: no second copy, grant consolation instead of zonk.
+            // Next pull is guaranteed to be a card the user does not own yet.
+            if (guaranteed !== 'new') forceNew = true;
+            await invSvc.addItem(
+              userId,
+              GACHA_DUPLICATE_COMPENSATION.itemId,
+              GACHA_DUPLICATE_COMPENSATION.quantity,
+              tx
+            );
+            const result = {
+              index: i + 1,
+              type: 'duplicate',
+              cardId,
+              cardName,
+              compensation: { ...GACHA_DUPLICATE_COMPENSATION },
+            };
+            results.push(result);
+            continue;
+          }
+          const granted = await cardSvc.grantCard(userId, cardId, tx);
+          owned.add(cardId);
+          pityCount = 0;
+          results.push({
+            index: i + 1,
+            type: 'main',
+            cardId,
+            cardName: granted.card.definition.name,
+          });
         }
 
+        await requests.savePity(userId, pityCount, forceNew, tx);
         await requests.saveResults(key, results, tx);
         return { requestKey: key, count, total, results, duplicate: false };
       });

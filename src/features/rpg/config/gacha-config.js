@@ -13,6 +13,11 @@ export const GACHA_DUPLICATE_COMPENSATION = Object.freeze({
   quantity: 50,
 });
 
+export const GACHA_PITY = Object.freeze({
+  guaranteedPulls: 100,
+  newCardChance: 0.5,
+});
+
 const rateTotal =
   GACHA_CONFIG.rates.mainCard +
   GACHA_CONFIG.rates.zonk +
@@ -43,6 +48,11 @@ export function rollPull(random = Math.random) {
 export function rollMainCard(random = Math.random) {
   const ids = Object.keys(MAIN_CARDS);
   if (!ids.length) throw new RangeError('no main cards configured');
+  return ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
+}
+
+export function rollCardFrom(ids, random = Math.random) {
+  if (!ids.length) throw new RangeError('no cards to roll from');
   return ids[Math.min(ids.length - 1, Math.floor(random() * ids.length))];
 }
 

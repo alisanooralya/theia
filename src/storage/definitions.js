@@ -136,6 +136,15 @@ const STATIC_SCHEMA = [
   `,
 
   `
+  CREATE TABLE IF NOT EXISTS rpg_gacha_pity (
+    user_id     TEXT    PRIMARY KEY REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    pity_count  INTEGER NOT NULL DEFAULT 0 CHECK (pity_count >= 0),
+    force_new   INTEGER NOT NULL DEFAULT 0 CHECK (force_new IN (0, 1)),
+    updated_at  INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `
   CREATE TABLE IF NOT EXISTS rpg_domain_runs (
     request_key TEXT    PRIMARY KEY,
     user_id     TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
