@@ -7,8 +7,11 @@ export const CONTENT_SAFETY_CONFIG = {
 
 export const LOW_KEYWORDS = [
   'jir',
+  'jirr',
   'njir',
+  'njirr',
   'bjir',
+  'bjirr',
   'wanjir',
   'wanjirr',
   'buset',
