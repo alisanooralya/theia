@@ -40,15 +40,14 @@ async function sendAnnouncement(jid, wantClosed) {
       await sock.sendMessage(jid, { text: DEFAULT_CLOSE_TEXT });
       return;
     }
-    await sock.sendMessage(jid, { text: pick.text });
     const audio = await loadVoiceAudio(pick.voiceFile);
-    if (audio) {
-      await sock.sendMessage(jid, {
-        audio,
-        mimetype: 'audio/ogg; codecs=opus',
-        ptt: true,
-      });
-    }
+    const text = '🌙 *Grup Ditutup*\n\n' + pick.text;
+    await sock.sendMessage(jid, { text: pick.text });
+    await sock.sendMessage(jid, {
+      audio,
+      mimetype: 'audio/ogg; codecs=opus',
+      ptt: true,
+    });
   } catch (err) {
     logger.warn({ err: err.message, jid }, '[AutoOpenClose] send failed');
   }
@@ -105,7 +104,16 @@ async function loadVoiceAudio(voiceFile) {
       ff(voiceFile)
         .on('error', reject)
         .on('end', resolve)
-        .addOutputOptions(['-c:a', 'libopus', '-b:a', '48k', '-ar', '48000', '-ac', '1'])
+        .addOutputOptions([
+          '-c:a',
+          'libopus',
+          '-b:a',
+          '48k',
+          '-ar',
+          '48000',
+          '-ac',
+          '1',
+        ])
         .toFormat('ogg')
         .save(tmpOut);
     });
@@ -113,7 +121,10 @@ async function loadVoiceAudio(voiceFile) {
     audioCache.set(voiceFile, buffer);
     return buffer;
   } catch (err) {
-    logger.warn({ err: err.message, voiceFile }, '[AutoOpenClose] convert failed');
+    logger.warn(
+      { err: err.message, voiceFile },
+      '[AutoOpenClose] convert failed'
+    );
     return null;
   } finally {
     await unlink(tmpOut).catch(() => {});
