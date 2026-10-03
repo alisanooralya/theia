@@ -12,6 +12,8 @@ export const LOW_KEYWORDS = [
   'njirr',
   'bjir',
   'bjirr',
+  'bejir',
+  'bejirr',
   'wanjir',
   'wanjirr',
   'buset',

@@ -44,41 +44,33 @@ async function sendLinkPreview(
 }
 
 const WELCOME_IMAGE = './temp/welcome.jpg';
-const WELCOME_TEKS = `✦ ─── 𓂃 ࣪˖ ִֶָ☾ ─── ✦
+const WELCOME_TEKS = `╭───────── ୨୧ ─────────╮
+𝑮𝑬𝑵𝑺𝑯𝑰𝑵
+𝑻𝑬𝑨 𝑷𝑨𝑹𝑻𝒀
+𝑴𝑬𝑴𝑩𝑬𝑹 𝑪𝑨𝑹𝑫
+╰───────── ୨୧ ─────────╯
 
-   THE GENSHIN TEA PARTY
-        INTRODUCTION
+         𝜗𝜚 %name 𝜗𝜚
 
-✦ ─── 𓂃 ࣪˖ ִֶָ☾ ─── ✦
+𝑵𝒂𝒎𝒆  ┊
+𝑹𝒐𝒍𝒆  ┊
+𝑴𝒂𝒊𝒏  ┊
+𝑨𝑹 / 𝑾𝑳  ┊
+𝑺𝒆𝒓𝒗𝒆𝒓  ┊
 
-%name 🫶
+    ───── ୨୧ ─────
 
-✦ Nama :
-✦ UID :
-✦ Server :
-✦ AR / WL : (Jangan boong ya.)
-✦ Main Karakter :
+❝ 𝑾𝒆𝒍𝒄𝒐𝒎𝒆 𝒕𝒐 𝒕𝒉𝒆
+𝑮𝒆𝒏𝒔𝒉𝒊𝒏 𝑻𝒆𝒂 𝑷𝒂𝒓𝒕𝒚. ❞
 
-─── 𓂃 ࣪˖ ִֶָ☾ 𓂃 ࣪˖ ִֶָ ───
+𝑴𝒂𝒚 𝒚𝒐𝒖 𝒇𝒊𝒏𝒅
+𝒇𝒓𝒊𝒆𝒏𝒅𝒔, 𝒇𝒖𝒏,
+𝒂𝒏𝒅 𝒎𝒂𝒏𝒚 𝒘𝒂𝒓𝒎 𝒄𝒖𝒑𝒔 𝒐𝒇 𝒕𝒆𝒂. ☕
 
-✦ Aktivitas Favorit :
+    ───── ୨୧ ─────
 
-☐ Co-op              ☐ Explore
-☐ Build Character ☐ Spiral Abyss
-☐ Lore               ☐ Serenitea Pot
-☐ Foto
-
-↳ Tandai dengan (✅)
-
-✦ Pesan / Salam Kenal :
-❝ ...❞
-
-─── 𓂃 ࣪˖ ִֶָ☾ 𓂃 ࣪˖ ִֶָ ───
-
-✦ Jangan lupa join MARGA yaa! 
-𝄞𝐆𝐓𝐏 ✧
-
-✦ ─── 𓂃 ࣪˖ ִֶָ☾ ─── ✦`;
+      𝑮𝑻𝑷 𝑴𝒂𝒓𝒈𝒂
+          𝜗𝜚`;
 
 export async function onGroupParticipantsUpdate(
   { id, participants, action },
