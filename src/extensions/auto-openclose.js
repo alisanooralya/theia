@@ -42,7 +42,7 @@ async function sendAnnouncement(jid, wantClosed) {
     }
     const audio = await loadVoiceAudio(pick.voiceFile);
     const text = '🌙 *Grup Ditutup*\n\n' + pick.text;
-    await sock.sendMessage(jid, { text: pick.text });
+    await sock.sendMessage(jid, { text });
     await sock.sendMessage(jid, {
       audio,
       mimetype: 'audio/ogg; codecs=opus',
