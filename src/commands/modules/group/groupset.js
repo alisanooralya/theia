@@ -9,6 +9,7 @@ export default {
   cooldown: 5_000,
   groupOnly: true,
   adminOnly: true,
+  allowPrivateAdmin: true,
   bypassMute: true,
 
   async execute(ctx) {

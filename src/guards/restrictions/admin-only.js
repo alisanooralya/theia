@@ -12,6 +12,7 @@ export async function checkAdmin(ctx, command) {
   if (!command.adminOnly) return true;
 
   if (!ctx.isGroup) {
+    if (ctx.isOwner() && command.allowPrivateAdmin) return true;
     await ctx.reply('Command ini hanya bisa dipakai di grup.');
     return false;
   }

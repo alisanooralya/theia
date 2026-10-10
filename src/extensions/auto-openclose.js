@@ -15,12 +15,15 @@ const VOICES_TEXT = path.join(VOICES_DIR, 'text.txt');
 const TEMP_DIR = path.join(process.cwd(), 'temp');
 const DEFAULT_CLOSE_TEXT =
   '🌙 *Grup Ditutup*\n\nSelamat malam semuanya! Semoga istirahatmu nyenyak dan besok siap melanjutkan petualangan. Selamat tidur! 😴✨';
+const STATE_PREFIX = 'auto_openclose';
+const MAX_ATTEMPTS = 3;
+const RETRY_BACKOFF_MS = 60_000;
 let timer = null;
-let lastCloseKey = null;
-let lastOpenKey = null;
 let running = false;
 let voiceCache = null;
 const audioCache = new Map();
+const completed = new Map();
+const failures = new Map();
 
 function wibMinutes() {
   const now = new Date();
@@ -28,6 +31,50 @@ function wibMinutes() {
   const dayKey = wib.toISOString().slice(0, 10);
   const minutes = wib.getUTCHours() * 60 + wib.getUTCMinutes();
   return { minutes, dayKey };
+}
+
+function stateKey(phase, jid) {
+  return `${STATE_PREFIX}:${phase}:${jid}`;
+}
+
+function failureKey(phase, jid) {
+  return `${phase}:${jid}`;
+}
+
+async function loadCompleted(phase, dayKey) {
+  const done = new Set();
+  const prefix = `${STATE_PREFIX}:${phase}:`;
+  try {
+    const rows =
+      await sql`
+        SELECT key, value FROM bot_state
+        WHERE key LIKE ${`${prefix}%`}
+      `;
+    for (const { key, value } of rows) {
+      if (value === dayKey) done.add(key.slice(prefix.length));
+    }
+  } catch (err) {
+    logger.warn({ err: err.message }, '[AutoOpenClose] load state failed');
+  }
+  return done;
+}
+
+async function markCompleted(phase, jid, dayKey) {
+  const key = stateKey(phase, jid);
+  try {
+    await sql`
+      INSERT INTO bot_state (key, value, updated_at)
+      VALUES (${key}, ${dayKey}, (EXTRACT(epoch FROM NOW())::BIGINT))
+      ON CONFLICT (key) DO UPDATE SET
+        value = EXCLUDED.value,
+        updated_at = (EXTRACT(epoch FROM NOW())::BIGINT)
+    `;
+  } catch (err) {
+    logger.warn(
+      { err: err.message, key },
+      '[AutoOpenClose] save state failed'
+    );
+  }
 }
 
 async function sendAnnouncement(jid, wantClosed) {
@@ -150,20 +197,50 @@ async function applyState(jid, wantClosed) {
   }
 }
 
-async function runForGroups(wantClosed) {
+async function runForGroups(wantClosed, dayKey) {
   const sock = getSocket();
-  if (!sock) return false;
+  if (!sock) return;
+
+  const phase = wantClosed ? 'close' : 'open';
+  const cacheKey = `${phase}:${dayKey}`;
+
+  let done = completed.get(cacheKey);
+  if (!done) {
+    done = await loadCompleted(phase, dayKey);
+    completed.set(cacheKey, done);
+  }
+
   try {
     const groups = await sql`SELECT jid FROM groups WHERE openclose = 1`;
-    let allOk = true;
+    const now = Date.now();
+
     for (const { jid } of groups) {
+      if (done.has(jid)) continue;
+
+      const fKey = failureKey(phase, jid);
+      const failure = failures.get(fKey);
+      if (failure?.dayKey === dayKey) {
+        if (failure.count >= MAX_ATTEMPTS) continue;
+        if (now - failure.lastTryAt < RETRY_BACKOFF_MS) continue;
+      }
+
       const ok = await applyState(jid, wantClosed);
-      if (!ok) allOk = false;
+      if (ok) {
+        failures.delete(fKey);
+        done.add(jid);
+        await markCompleted(phase, jid, dayKey);
+        continue;
+      }
+
+      const count = failure?.dayKey === dayKey ? failure.count + 1 : 1;
+      failures.set(fKey, { dayKey, count, lastTryAt: Date.now() });
+      logger.warn(
+        { jid, phase, attempt: count, max: MAX_ATTEMPTS },
+        '[AutoOpenClose] group apply failed'
+      );
     }
-    return allOk;
   } catch (err) {
     logger.warn({ err: err.message }, '[AutoOpenClose] runForGroups failed');
-    return false;
   }
 }
 
@@ -176,18 +253,13 @@ export default {
       running = true;
       try {
         const { minutes, dayKey } = wibMinutes();
+        for (const key of completed.keys()) {
+          if (!key.endsWith(`:${dayKey}`)) completed.delete(key);
+        }
         if (minutes >= CLOSE_MIN) {
-          if (lastCloseKey === dayKey) return;
-          const ok = await runForGroups(true);
-          if (ok) {
-            lastCloseKey = dayKey;
-          }
+          await runForGroups(true, dayKey);
         } else if (minutes >= OPEN_MIN) {
-          if (lastOpenKey === dayKey) return;
-          const ok = await runForGroups(false);
-          if (ok) {
-            lastOpenKey = dayKey;
-          }
+          await runForGroups(false, dayKey);
         }
       } catch (err) {
         logger.warn({ err: err.message }, '[AutoOpenClose] tick failed');
@@ -200,10 +272,10 @@ export default {
   destroy() {
     if (timer) clearInterval(timer);
     timer = null;
-    lastCloseKey = null;
-    lastOpenKey = null;
     running = false;
     voiceCache = null;
     audioCache.clear();
+    completed.clear();
+    failures.clear();
   },
 };
