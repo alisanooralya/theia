@@ -7,6 +7,7 @@ export const closeCommand = {
   groupOnly: true,
   adminOnly: true,
   requireBotAdmin: true,
+  bypassMute: true,
 
   async execute(ctx) {
     try {
@@ -29,6 +30,7 @@ export const openCommand = {
   groupOnly: true,
   adminOnly: true,
   requireBotAdmin: true,
+  bypassMute: true,
 
   async execute(ctx) {
     try {
