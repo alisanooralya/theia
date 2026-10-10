@@ -45,8 +45,7 @@ async function loadCompleted(phase, dayKey) {
   const done = new Set();
   const prefix = `${STATE_PREFIX}:${phase}:`;
   try {
-    const rows =
-      await sql`
+    const rows = await sql`
         SELECT key, value FROM bot_state
         WHERE key LIKE ${`${prefix}%`}
       `;
@@ -70,10 +69,7 @@ async function markCompleted(phase, jid, dayKey) {
         updated_at = (EXTRACT(epoch FROM NOW())::BIGINT)
     `;
   } catch (err) {
-    logger.warn(
-      { err: err.message, key },
-      '[AutoOpenClose] save state failed'
-    );
+    logger.warn({ err: err.message, key }, '[AutoOpenClose] save state failed');
   }
 }
 
