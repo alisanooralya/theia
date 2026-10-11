@@ -1,5 +1,6 @@
 import { userModel } from '#storage/models/index.js';
 import { phoneToJid } from '#helpers/identifier.js';
+import { sql } from '#storage/connection.js';
 
 export default {
   name: 'ban',
@@ -14,10 +15,8 @@ export default {
       ctx.args[0] === 'list' || ctx.msg.text?.includes('listban');
 
     if (isListban) {
-      const { db } = await import('#storage/connection.js');
-      const banned = db
-        .prepare('SELECT jid, push_name FROM users WHERE banned = 1')
-        .all();
+      const banned =
+        await sql`SELECT jid, push_name FROM users WHERE banned = 1`;
       if (!banned.length) return ctx.reply('✅ Tidak ada user yang dibanned.');
       const list = banned
         .map((u, i) => `${i + 1}. ${u.push_name || u.jid.split('@')[0]}`)
