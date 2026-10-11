@@ -43,6 +43,7 @@ export const CONTEXTUAL_KEYWORDS = [
 
 export const REVIEW_KEYWORDS = [
   'pea',
+  'asu',
   "pe'",
   'goblok',
   'goblog',
