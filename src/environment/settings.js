@@ -14,6 +14,7 @@ const SETTINGS = Object.freeze({
   respondToSelf: !!config.respondToSelf,
   ignoreBots: config.ignoreBots !== false,
   autoread: !!config.autoread,
+  respondScope: config.respondScope ?? 'all',
 
   pairingNumber: String(config.pairingNumber || '').replace(/\D/g, '') || null,
 

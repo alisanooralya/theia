@@ -19,4 +19,8 @@ export default {
   respondToSelf: false,
   ignoreBots: false,
   autoread: true,
+
+  // 'all' | 'group' | 'private'
+  // Batasi lokasi bot merespons. Owner dan admin grup tetap lolos.
+  respondScope: 'all',
 };
