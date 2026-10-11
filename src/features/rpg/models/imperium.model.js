@@ -43,10 +43,6 @@ class ImperiumModel {
     return { ...row, payload: parseJson(row.payload, {}) };
   }
 
-  /**
-   * Compare-and-set: baris hanya boleh maju dari `chamber` yang diharapkan,
-   * jadi double tap pada tombol A/B/C tidak bisa melewati Chamber dua kali.
-   */
   async advanceChamber(id, fromChamber, toChamber, payload, client = sql) {
     const rows = await client`
       UPDATE rpg_imperium_runs
@@ -119,11 +115,6 @@ class ImperiumModel {
     return rows[0] ?? null;
   }
 
-  /**
-   * Reward gate. PK (user_id, week_index, difficulty) membuat satu Diff hanya
-   * bisa diklaim sekali per minggu; INSERT kedua kali tidak mengubah apa pun
-   * dan mengembalikan null sehingga request paralel aman.
-   */
   async claimClear(
     userId,
     weekIndex,

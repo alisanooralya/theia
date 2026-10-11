@@ -1,6 +1,6 @@
 import { MAIN_CARDS } from './card-config.js';
 
-export const IMPERIUM_MIN_LEVEL = 16;
+export const IMPERIUM_MIN_LEVEL = 18;
 export const IMPERIUM_DIFF_LIST = Object.freeze([1, 2, 3, 4, 5]);
 export const IMPERIUM_OPTION_KEYS = Object.freeze(['A', 'B', 'C']);
 export const IMPERIUM_QUESTION_CHAMBERS = Object.freeze([1, 2]);

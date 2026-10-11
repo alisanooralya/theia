@@ -17,11 +17,6 @@ export default {
     clearInterval(this._interval);
   },
 
-  /**
-   * Reset mingguan Imperium tidak butuh job clock: identitas minggu dihitung
-   * dari timestamp, jadi restart aman. Job ini hanya membersihkan run basi
-   * dan progress minggu lama supaya tabel tidak tumbuh tanpa batas.
-   */
   async _run(nowMs = Date.now()) {
     try {
       const expired = await imperiumModel.expireStaleRuns(

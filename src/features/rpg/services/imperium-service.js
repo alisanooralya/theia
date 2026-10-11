@@ -43,10 +43,6 @@ function normalizeOption(raw) {
   return IMPERIUM_OPTION_KEYS.includes(key) ? key : null;
 }
 
-/**
- * Konsekuensi dari Chamber 1 dan 2 dikumpulkan di sini lalu baru dipakai
- * saat Chamber 3. Run baru selalu memanggil ini dari array kosong.
- */
 export function collectConsequences(answers = []) {
   const collected = [];
   for (const answer of answers) {
@@ -70,19 +66,10 @@ export function consequenceSummary(consequences = []) {
   };
 }
 
-/**
- * Blessing dan Curse diterjemahkan jadi passive pemain dengan format yang
- * sama seperti skill Card, jadi Battle Engine existing tetap jadi satu-satunya
- * sumber kebenaran combat.
- */
 export function consequencesToPassives(consequences = []) {
   return consequences.map((def) => ({ ...def.passive }));
 }
 
-/**
- * Modifier boss berasal dari kartu mingguan + jawaban pemain: setiap Critical
- * Mistake strengthening boss, jawaban sempurna memperkuat DEF boss.
- */
 export function bossModifiers({ theme, criticalCount = 0, correctCount = 0 } = {}) {
   const gimmick = theme?.bossGimmick ?? {
     atkPct: 1,
@@ -133,8 +120,6 @@ export function pickQuestion(theme, chamber, random = Math.random) {
   return picked[0];
 }
 
-/** Pertanyaan disimpan penuh di payload run supaya tema yang berganti di
- *  tengah minggu tidak bisa mengganti Chamber 2 pada run yang sedang jalan. */
 function publicQuestion(question) {
   return {
     id: question.id,
@@ -206,11 +191,6 @@ export function createImperiumService({
     return players.ensure(userId);
   }
 
-  /**
-   * Reward hanya boleh masuk satu kali per Diff per minggu. Advisory lock
-   * menyerialkan request paralel untuk user yang sama, dan PK pada tabel
-   * progress menolak INSERT kedua.
-   */
   async function claimWeeklyReward(userId, difficulty, weekIndex, random) {
     const rewards = {
       exp: rollReward(difficulty.rewards.exp, random),
@@ -252,8 +232,6 @@ export function createImperiumService({
   }
 
   async function resolveBossBattle(runId, userId, difficulty, payload, random) {
-    // Tema diambil dari cardId yang tersimpan saat run mulai, bukan dari
-    // tanggal sekarang, supaya gimmick boss selalu cocok dengan Weekly Card.
     const theme = themeForCard(payload.cardId);
     const answers = payload.answers ?? [];
     const stats = payload.stats ?? {};
@@ -269,7 +247,6 @@ export function createImperiumService({
     const playerSkills = battleSkillsFromEffects(activeEffects);
     const passives = consequencesToPassives(consequences);
 
-    // Battle selalu mulai dari maxHp snapshot, bukan currentHp Profile.
     const startHp = final.maxHp;
     const state = createBattle({
       playerStats: {
@@ -411,7 +388,6 @@ export function createImperiumService({
 
       await coins.ensure(userId);
       await runs.expireStaleRuns(Math.floor(nowMs / 1000));
-      // Retry = run baru total: run aktif lama di difficulty yang sama dibuang.
       await runs.abandonActive(userId, entry.diff);
 
       const questions = {
@@ -469,11 +445,6 @@ export function createImperiumService({
       return true;
     },
 
-    /**
-     * Satu pintu untuk A/B/C. Perpindahan chamber memakai compare-and-set di
-     * database, jadi tap ganda atau callback lama tidak bisa menjawab Chamber 1
-     * dua kali maupun melewati Chamber 2.
-     */
     async answerChamber(runId, userId, optionInput, { nowMs = now(), random = Math.random } = {}) {
       const optionKey = normalizeOption(optionInput);
       if (!optionKey) throw fail('Pilihan tidak valid. Gunakan A, B, atau C.', 'BAD_OPTION');
