@@ -11,39 +11,30 @@ const PREFIX = SETTINGS.prefix;
 
 function diffLine(entry, minLevel) {
   const flag = entry.unlocked ? (entry.isCleared ? '✅' : '🔓') : '🔒';
-  const reward =
-    `EXP ${entry.rewards.exp.min}-${entry.rewards.exp.max} • ` +
-    `Coin ${F.formatNumber(entry.rewards.coin.min)}-${F.formatNumber(entry.rewards.coin.max)} • ` +
-    `Cerelia ${entry.rewards.cerelia.min}-${entry.rewards.cerelia.max}`;
   const lines = [
     `${flag} ${entry.emoji} *Diff ${entry.diff} — ${entry.name}*`,
     `   ${entry.description}`,
     `   Boss: ${entry.boss} (HP ${F.formatNumber(entry.bossHp)})`,
-    `   Reward: ${reward}`,
   ];
   if (entry.blockedBy?.length) {
     lines.push(`   _Butuh clear Diff ${entry.blockedBy.join(', ')} minggu ini._`);
   }
-  if (!entry.levelOk) {
-    lines.push(`   _Butuh RPG Level ${minLevel}._`);
-  }
   if (entry.isCleared) {
     lines.push('   _Sudah clear minggu ini — replay tidak memberi reward._');
   }
-  return lines;
+  return lines.join('\n');
 }
 
 export function formatImperiumStatus(status) {
   const lines = [
-    '*LABYRINTH IMPERIUM*',
-    '',
     status.levelOk
-      ? `Level ${status.level} • siap masuk Labyrinth.`
+      ? ''
       : `⚠️ Butuh RPG Level ${status.minLevel}. Kamu Level ${status.level}.`,
     '',
     '*Weekly Featured Card*',
     `🃏 *${status.weeklyCardName}* (${status.weeklyCardId ?? '-'})`,
     `_${status.weeklyTheme.tagline}_`,
+    '',
     `Gimmick boss: ${status.weeklyTheme.bossGimmick.label}`,
     `Minggu ke-${status.weekIndex} • progres direset tiap minggu.`,
     '',
@@ -52,7 +43,6 @@ export function formatImperiumStatus(status) {
   for (const entry of status.difficulties) {
     lines.push(diffLine(entry, status.minLevel));
   }
-  lines.push('', `_Ketik \`${PREFIX}imperium <diff>\` untuk mulai._`);
   return lines.join('\n');
 }
 
@@ -60,12 +50,11 @@ function answerCommand(runId, key) {
   return `${PREFIX}imperium answer ${runId} ${key}`;
 }
 
-export function formatQuestion(runId, question, theme, diff) {
+export function formatQuestion(runId, question, diff) {
   return [
     `*IMPERIUM — DIFF ${diff}*`,
-    `_${theme.title}_`,
-    '',
     `*Chamber ${question.chamber} / 3*`,
+    '',
     `💬 ${question.lore}`,
     '',
     question.prompt,
@@ -141,19 +130,16 @@ export function formatBattleResult(result) {
 }
 
 async function sendQuestion(ctx, run) {
-  const text = formatQuestion(run.runId, run.question, run.theme, run.diff);
+  const text = formatQuestion(run.runId, run.question, run.diff);
   try {
     const builder = new Button(ctx.sock)
-      .setTitle('LABYRINTH IMPERIUM')
+      .setTitle('*LABYRINTH IMPERIUM*')
       .setSubtitle(`Diff ${run.diff} — Chamber ${run.question.chamber}/3`)
       .setBody(text)
       .setFooter('Tap satu jawaban untuk melanjutkan Labyrinth')
       .addSelection('Pilih jawaban');
 
-    builder.makeSection(
-      'Jawaban',
-      run.question.options.map((o) => o.key).join(' / ')
-    );
+    builder.makeSection('Jawaban');
     for (const o of run.question.options) {
       builder.makeRow(
         '',
@@ -175,16 +161,13 @@ async function sendChamberResult(ctx, result) {
 
   try {
     const builder = new Button(ctx.sock)
-      .setTitle('LABYRINTH IMPERIUM')
+      .setTitle('*LABYRINTH IMPERIUM*')
       .setSubtitle(`Chamber ${result.chamber}/${result.chamberCount}`)
       .setBody(text)
       .setFooter('Tap jawaban untuk Chamber berikutnya')
       .addSelection('Pilih jawaban');
 
-    builder.makeSection(
-      'Jawaban',
-      result.question.options.map((o) => o.key).join(' / ')
-    );
+    builder.makeSection('Jawaban');
     for (const o of result.question.options) {
       builder.makeRow('', `${o.key}. ${o.text}`, '', answerCommand(result.runId, o.key));
     }
@@ -202,16 +185,13 @@ async function sendStatus(ctx, status) {
 
   try {
     const builder = new Button(ctx.sock)
-      .setTitle('LABYRINTH IMPERIUM')
+      .setTitle('*LABYRINTH IMPERIUM*')
       .setSubtitle(`Weekly Card: ${status.weeklyCardName}`)
       .setBody(text)
       .setFooter('Tap difficulty untuk mulai run')
       .addSelection('Pilih Difficulty');
 
-    builder.makeSection(
-      'Difficulty terbuka',
-      `Level ${status.level} • minggu ${status.weekIndex}`
-    );
+    builder.makeSection('Difficulty terbuka');
     for (const d of open) {
       builder.makeRow(
         d.isCleared ? '✅ clear' : '',
@@ -290,7 +270,7 @@ export default {
   name: 'imperium',
   aliases: ['impr', 'labyrinth'],
   category: 'rpg',
-  description: 'Endgame Labyrinth: 3 Chamber, pilihan A/B/C, lalu boss battle',
+  description: 'Endgame Labyrinth Imperium',
   cooldown: 30_000,
   manualCooldown: true,
 
