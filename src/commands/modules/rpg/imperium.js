@@ -3,13 +3,14 @@ import { Button } from '#messages/builder.js';
 import SETTINGS from '#environment/settings.js';
 import { imperiumService } from '#features/rpg/services/imperium-service.js';
 import {
+  IMPERIUM_CHAMBER_COUNT,
   IMPERIUM_DIFF_LIST,
   IMPERIUM_OPTION_KEYS,
 } from '#features/rpg/config/imperium-config.js';
 
 const PREFIX = SETTINGS.prefix;
 
-function diffLine(entry, minLevel) {
+function diffLine(entry) {
   const flag = entry.unlocked ? (entry.isCleared ? '✅' : '🔓') : '🔒';
   const lines = [
     `${flag} ${entry.emoji} *Diff ${entry.diff} — ${entry.name}*`,
@@ -41,7 +42,7 @@ export function formatImperiumStatus(status) {
     '*Difficulty*',
   ];
   for (const entry of status.difficulties) {
-    lines.push(diffLine(entry, status.minLevel));
+    lines.push(diffLine(entry));
   }
   return lines.join('\n');
 }
@@ -50,16 +51,23 @@ function answerCommand(runId, key) {
   return `${PREFIX}imperium answer ${runId} ${key}`;
 }
 
-export function formatQuestion(runId, question, diff) {
+function questionBlock(question, chamber, chamberCount) {
   return [
-    `*IMPERIUM — DIFF ${diff}*`,
-    `*Chamber ${question.chamber} / 3*`,
+    `*Chamber ${chamber} / ${chamberCount}*`,
     '',
     `💬 ${question.lore}`,
     '',
     question.prompt,
     '',
     ...question.options.map((o) => `${o.key}. ${o.text}`),
+  ];
+}
+
+export function formatQuestion(runId, question, diff) {
+  return [
+    `*IMPERIUM — DIFF ${diff}*`,
+    '',
+    ...questionBlock(question, question.chamber, IMPERIUM_CHAMBER_COUNT),
     '',
     '_Pilih A, B, atau C._',
   ].join('\n');
@@ -74,14 +82,25 @@ export function formatConsequence(consequence) {
 }
 
 export function formatChamberResult(result) {
-  return [
+  const lines = [
     formatConsequence(result.consequence),
     '',
     `Blessing: ${result.consequences.blessings.join(', ') || '-'}`,
     `Curse: ${result.consequences.curses.join(', ') || '-'}`,
-    '',
-    `*Chamber ${result.chamber} / ${result.chamberCount}*`,
-  ].join('\n');
+  ];
+
+  if (result.question) {
+    lines.push(
+      '',
+      ...questionBlock(result.question, result.chamber, result.chamberCount),
+      '',
+      '_Pilih A, B, atau C._'
+    );
+  } else {
+    lines.push('', `*Chamber ${result.chamber} / ${result.chamberCount}*`);
+  }
+
+  return lines.join('\n');
 }
 
 export function formatBattleResult(result) {
