@@ -304,7 +304,7 @@ export default {
   aliases: ['impr', 'labyrinth'],
   category: 'rpg',
   description: 'Endgame Labyrinth Imperium',
-  cooldown: 30_000,
+  cooldown: 5_000,
   manualCooldown: true,
 
   async execute(ctx) {
