@@ -18,9 +18,6 @@ export const bannedCache = new NodeCache({
   maxKeys: 5000,
 });
 
-// ID pesan masuk yang sudah diproses. Baileys kadang mengantar pesan
-// yang sama lebih dari sekali (reconnect/sync multi-device); tanpa ini
-// satu command bisa dieksekusi berulang (mis. chat terkirim 2-3x).
 export const processedMsgCache = new NodeCache({
   stdTTL: PROCESSED_MSG_TTL,
   checkperiod: 60,

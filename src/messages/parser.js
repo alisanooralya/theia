@@ -46,7 +46,6 @@ export async function parseMessage(raw, sock) {
     }
   }
 
-  // Canonical identity: selalu prefer nomor HP kalau tersedia, apapun konteksnya
   const sender = phoneCandidate ?? lidCandidate;
   const senderLid = lidCandidate;
   const senderAlt = sender === phoneCandidate ? lidCandidate : null;
@@ -149,8 +148,6 @@ function extractText(message, type, content) {
   }
 }
 
-// Balasan native flow (Button/list dari builder.js) membawa id pilihan di
-// paramsJson, bukan di field teks biasa.
 function extractNativeFlowId(content) {
   const params = content?.nativeFlowResponseMessage?.paramsJson;
   if (!params) return '';

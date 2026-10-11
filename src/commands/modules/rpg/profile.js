@@ -21,7 +21,6 @@ export default {
         return;
       }
 
-      // Look up art by cardId (stable); fall back to legacy name lookup.
       const artKey = (data.main.cardId ?? data.main.name ?? '').toLowerCase();
       const artPath = cardArtPath(artKey);
       const image = await renderProfileCard({

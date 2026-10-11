@@ -81,8 +81,6 @@ function snapStats(stats, label) {
       throw new RangeError(`${label} needs numeric ${key}`);
   }
   s.critRate = Number.isFinite(s.critRate) ? s.critRate : 0;
-  // Default critDmg 1.5 matches boss convention (domain/orbital) and stays
-  // close to player base 1.3; previously 2.0 spiked crits on missing values.
   s.critDmg = Number.isFinite(s.critDmg) ? s.critDmg : 1.5;
   return Object.freeze({ ...s });
 }
@@ -245,8 +243,6 @@ function collectMods(side, trigger, ctx = null) {
 function applyTriggerEffects(state, owner, trigger) {
   const side = owner === 'player' ? state.player : state.enemy;
   const foe = owner === 'player' ? state.enemy : state.player;
-  // Battle-start stat modifiers (e.g. HP passive -> bigger Max HP pool).
-  // Applied once at createBattle; stats objects are frozen so replace them.
   if (trigger === 'battle_start') {
     let mult = 1;
     let flat = 0;
@@ -439,12 +435,6 @@ export function battleSkillsFromEffects(activeEffects = []) {
   const passives = [];
   for (const entry of activeEffects) {
     if (entry.source === 'main-active') {
-      // Any pct stat (atk/def/hp) contributes to the skill damage
-      // multiplier; any add stat contributes flat bonus. Previously only
-      // atk was read, so Daisy (def-scaling active) silently hit for 1.0x.
-      // defIgnore is armor penetration instead: instant on the skill hit,
-      // or a timed basic-attack buff when durationSec is set (virtual time
-      // via cooldownRounds, same as cooldowns).
       let pct = 0;
       let flat = 0;
       let defIgnore = 0;
@@ -534,8 +524,6 @@ function translateStatEffect(entry, fx) {
         },
       };
     case 'hp':
-      // HP passive = bigger Max HP pool at battle start (distinct from DEF
-      // guard). Previously hp collapsed into guardMult, identical to def.
       return fx.mode === 'pct'
         ? {
             ...base,

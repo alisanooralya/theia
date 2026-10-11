@@ -93,7 +93,6 @@ export function createGachaService({
           let cardId = null;
           let isNew = false;
           if (guaranteed === 'new') {
-            // Guarantee after a duplicate: must be a card the user lacks.
             forceNew = false;
             const unowned = allMainIds.filter((id) => !owned.has(id));
             if (unowned.length) {
@@ -101,7 +100,6 @@ export function createGachaService({
               isNew = true;
             }
           } else if (guaranteed === 'pity') {
-            // Pity guarantee resolved: 50:50 duplicate vs new, cycle restarts.
             pityCount = 0;
             if (random() < GACHA_PITY.newCardChance) {
               const unowned = allMainIds.filter((id) => !owned.has(id));
@@ -136,7 +134,6 @@ export function createGachaService({
           }
 
           if (guaranteed && !cardId) {
-            // Fallback when the preferred pool is empty (e.g. all cards owned).
             const ownedIds = [...owned];
             if (ownedIds.length) {
               cardId = rollCardFrom(ownedIds, random);
@@ -151,8 +148,6 @@ export function createGachaService({
 
           const cardName = MAIN_CARDS[cardId]?.name ?? cardId;
           if (!isNew) {
-            // Duplicate: no second copy, grant consolation instead of zonk.
-            // Next pull is guaranteed to be a card the user does not own yet.
             if (guaranteed !== 'new') forceNew = true;
             await invSvc.addItem(
               userId,

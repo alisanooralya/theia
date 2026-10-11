@@ -19,7 +19,6 @@ export function senderCandidates(ctx) {
     .map(normJid);
 }
 
-// Returns null saat metadata gagal agar pemanggil bisa membalas pesan sendiri.
 export async function isGroupAdmin(ctx) {
   if (!ctx.isGroup) return false;
   try {

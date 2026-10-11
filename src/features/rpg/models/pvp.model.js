@@ -12,11 +12,6 @@ class PvpModel {
     { confirmMsgId = null, expiresAt = 0 } = {},
     client = sql
   ) {
-    // One live battle per player regardless of role. The partial unique
-    // indexes only cover same-role duplicates (challenger↔challenger,
-    // target↔target), so A→B + C→A would both insert. Serialize creators
-    // per participant with advisory locks (stable order: no deadlock) and
-    // re-check both columns before inserting.
     const txRunner = client?.begin ? client : sql;
     try {
       return await txRunner.begin(async (tx) => {
@@ -64,8 +59,6 @@ class PvpModel {
       SET status = 'expired', updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
       WHERE status = 'pending' AND expires_at > 0 AND expires_at <= ${nowSec}
     `;
-    // Accepted but never started (e.g. crash between accept and run):
-    // started_at stays 0 so the running-rule below would never catch it.
     await client`
       UPDATE rpg_pvp_sessions
       SET status = 'expired', updated_at = (EXTRACT(EPOCH FROM NOW()))::BIGINT
@@ -88,9 +81,6 @@ class PvpModel {
     client = sql,
     runGraceSec = 180
   ) {
-    // Refresh expires_at so the accepted session cannot be reaped between
-    // accept and start; accepted-never-started rows still expire via
-    // expireStale once the refreshed deadline passes.
     const rows = await client`
       UPDATE rpg_pvp_sessions
       SET status = 'accepted',

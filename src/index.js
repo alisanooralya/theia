@@ -10,7 +10,7 @@ import { setupShutdown } from '#helpers/shutdown.js';
 try {
   dns.setDefaultResultOrder('ipv4first');
 } catch {
-  // Node < 20
+  // Ignore.
 }
 
 const isMain =

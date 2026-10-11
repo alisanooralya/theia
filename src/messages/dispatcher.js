@@ -33,7 +33,6 @@ export async function dispatch(parsed, sock) {
 
   const ctx = buildContext(parsed, sock);
 
-  // Command dengan `manualCooldown` menentukan sendiri kapan cooldown dipasang.
   ctx.applyCooldown = () => applyCooldown(ctx, command);
   ctx.clearCooldown = () => clearCooldown(ctx, command);
 

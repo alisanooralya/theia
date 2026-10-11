@@ -10,7 +10,7 @@ const TEMP_DIR = path.join(process.cwd(), 'temp');
 try {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 } catch {
-  // best-effort: direktori temp mungkin sudah ada
+  // ignore
 }
 
 function getRandom(ext) {

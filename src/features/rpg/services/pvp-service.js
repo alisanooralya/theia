@@ -101,9 +101,6 @@ export function createPvpService({
   }
 
   async function acceptBySession(id) {
-    // Give the battle a fresh deadline so the accepted session cannot be
-    // reaped between accept and start; never-started rows still expire
-    // once this grace passes (see pvpModel.expireStale).
     const graceSec = Math.floor(config.battleTtlMs / 1000) + 60;
     return pvpRepo.accept(id, Math.floor(Date.now() / 1000), sql, graceSec);
   }
@@ -153,8 +150,6 @@ export function createPvpService({
       battleId: id,
     });
 
-    // Both sides auto-cast their active skill whenever it is off cooldown;
-    // without this the active skills would never fire in a full-sim duel.
     const end = simulateBattle(state, autoSkillAction, random);
     const draw = end.status === 'DRAW';
     const challengerWon = end.status === 'WIN';
@@ -210,11 +205,8 @@ export function createPvpService({
         challenger,
         target,
         rounds: end.round,
-        // Post-heal values so the displayed HP matches what is stored.
         challengerHp: !draw && winner === challenger ? healed : challengerHp,
         targetHp: !draw && winner === target ? healed : targetHp,
-        // Battle-start snapshot so the UI timeline anchors to the same
-        // numbers the engine actually simulated from.
         startHp: {
           challenger: cFinal.currentHp,
           target: tFinal.currentHp,
@@ -226,9 +218,6 @@ export function createPvpService({
         exp: draw ? 0 : { win: config.expWin, lose: config.expLose },
         log: end.log,
       };
-      // The session may have been cancelled mid-battle (e.g. target
-      // declined in the same instant); rolling back keeps HP, coins and
-      // EXP consistent instead of rewarding a dead session.
       const finished = await pvpRepo.finish(id, result, tx);
       if (!finished) throw new RangeError('Sesi PvP sudah tidak aktif.');
       return result;

@@ -21,6 +21,5 @@ export default {
   autoread: true,
 
   // 'all' | 'group' | 'private'
-  // Batasi lokasi bot merespons. Owner dan admin grup tetap lolos.
-  respondScope: 'all',
+  respondScope: 'group',
 };

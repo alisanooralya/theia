@@ -89,7 +89,6 @@ export function createSendQueue(sendFn, { rateLimitMs = RATE_LIMIT_MS } = {}) {
         continue;
       }
 
-      // Rate limit is per-chat, so a reply in one group doesn't delay others.
       const now = Date.now();
       const lastForJid = lastSentAt.get(task.jid) ?? 0;
       const wait = Math.max(0, lastForJid + rateLimitMs - now);

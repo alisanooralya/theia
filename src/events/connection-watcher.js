@@ -48,7 +48,7 @@ export async function onConnectionUpdate(update, restart, sock) {
     try {
       await fsp.mkdir('./temp', { recursive: true });
     } catch {
-      // best-effort: direktori temp mungkin sudah ada
+      // ignore
     }
     resolveOwnerLids(sock).catch(() => {});
     return;
@@ -87,7 +87,7 @@ export async function onConnectionUpdate(update, restart, sock) {
               force: true,
             });
           } catch {
-            // best-effort: session mungkin sudah tidak ada
+            // ignore
           }
           if (reconnectTimer) clearTimeout(reconnectTimer);
           reconnectTimer = setTimeout(restart, 2000);
@@ -97,7 +97,7 @@ export async function onConnectionUpdate(update, restart, sock) {
         try {
           await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true });
         } catch {
-          // best-effort: session mungkin sudah tidak ada
+          // ignore
         }
         return process.exit(1);
 
@@ -108,7 +108,7 @@ export async function onConnectionUpdate(update, restart, sock) {
         try {
           await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true });
         } catch {
-          // best-effort: session mungkin sudah tidak ada
+          // ignore
         }
         return process.exit(1);
 
@@ -117,7 +117,7 @@ export async function onConnectionUpdate(update, restart, sock) {
         try {
           await fsp.rm(SETTINGS.sessionPath, { recursive: true, force: true });
         } catch {
-          // best-effort: session mungkin sudah tidak ada
+          // ignore
         }
         return process.exit(1);
 
