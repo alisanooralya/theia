@@ -116,3 +116,42 @@ export {
 export { PVP_CONFIG, PVP_SNAPSHOT_DELAY_MS } from './config/pvp-config.js';
 export { pvpModel, makeSessionId } from './models/pvp.model.js';
 export { pvpService, createPvpService } from './services/pvp-service.js';
+export {
+  IMPERIUM_MIN_LEVEL,
+  IMPERIUM_DIFF_LIST,
+  IMPERIUM_DIFFICULTIES,
+  IMPERIUM_CHAMBER_COUNT,
+  IMPERIUM_BOSS_CHAMBER,
+  IMPERIUM_OPTION_KEYS,
+  IMPERIUM_OUTCOMES,
+  IMPERIUM_OUTCOME_META,
+  IMPERIUM_EFFECTS,
+  IMPERIUM_THEMES,
+  IMPERIUM_WEEKLY,
+  IMPERIUM_QUESTIONS_PER_CHAMBER,
+  IMPERIUM_MAX_ROUNDS,
+  IMPERIUM_RUN_TTL_SEC,
+  IMPERIUM_ATTEMPT_COOLDOWN_MS,
+  getDifficulty,
+  getDifficulties,
+  weekIndexFor,
+  weekStartMsFor,
+  rotationCards,
+  weeklyCardIdFor,
+  weeklyThemeForNow,
+  themeForCard,
+  rollReward as rollImperiumReward,
+} from './config/imperium-config.js';
+export { imperiumModel, makeRunId } from './models/imperium.model.js';
+export {
+  imperiumService,
+  createImperiumService,
+  collectConsequences,
+  consequenceSummary,
+  consequencesToPassives,
+  bossModifiers,
+  applyBossModifiers,
+  isDifficultyUnlocked,
+  pickQuestion,
+  describeOutcome,
+} from './services/imperium-service.js';

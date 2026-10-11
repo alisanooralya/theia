@@ -368,6 +368,38 @@ const STATIC_SCHEMA = [
   )
   `,
 
+  `
+  CREATE TABLE IF NOT EXISTS rpg_imperium_runs (
+    id            TEXT    PRIMARY KEY,
+    user_id       TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    week_index    BIGINT  NOT NULL,
+    difficulty    INTEGER NOT NULL CHECK (difficulty BETWEEN 1 AND 5),
+    chamber       INTEGER NOT NULL DEFAULT 1 CHECK (chamber BETWEEN 1 AND 3),
+    status        TEXT    NOT NULL DEFAULT 'active'
+                  CHECK (status IN ('active','won','lost','abandoned')),
+    payload       TEXT    NOT NULL DEFAULT '{}',
+    expires_at    INTEGER NOT NULL DEFAULT 0,
+    created_at    INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT),
+    updated_at    INTEGER NOT NULL DEFAULT (EXTRACT(epoch FROM NOW())::BIGINT)
+  )
+  `,
+
+  `CREATE INDEX IF NOT EXISTS idx_imperium_runs_user ON rpg_imperium_runs(user_id, status, created_at DESC)`,
+
+  `
+  CREATE TABLE IF NOT EXISTS rpg_imperium_progress (
+    user_id       TEXT    NOT NULL REFERENCES rpg_players(user_id) ON DELETE CASCADE,
+    week_index    BIGINT  NOT NULL,
+    difficulty    INTEGER NOT NULL CHECK (difficulty BETWEEN 1 AND 5),
+    clears        INTEGER NOT NULL DEFAULT 1 CHECK (clears >= 1),
+    rewards       TEXT    NOT NULL DEFAULT '{}',
+    cleared_at    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, week_index, difficulty)
+  )
+  `,
+
+  `CREATE INDEX IF NOT EXISTS idx_imperium_progress_week ON rpg_imperium_progress(week_index, user_id)`,
+
   `CREATE UNIQUE INDEX IF NOT EXISTS uq_crime_bounties_active_owner ON crime_bounties(owner_id) WHERE status = 'active'`,
   `CREATE INDEX IF NOT EXISTS idx_crime_bounties_status_expires ON crime_bounties(status, expires_at)`,
   `CREATE INDEX IF NOT EXISTS idx_crime_bounties_active_coin ON crime_bounties(bounty_coin DESC) WHERE status = 'active'`,
