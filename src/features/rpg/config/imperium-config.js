@@ -658,12 +658,9 @@ export const IMPERIUM_THEMES = Object.freeze({
             IMPERIUM_OUTCOMES.correct,
             ['blessing_iron_ward']
           ),
-          option(
-            'B',
-            'Semangat',
-            IMPERIUM_OUTCOMES.tolerable,
-            ['tolerable_cracked_ward']
-          ),
+          option('B', 'Semangat', IMPERIUM_OUTCOMES.tolerable, [
+            'tolerable_cracked_ward',
+          ]),
           option(
             'C',
             'Takut pada apa yang ada di balik pintu',
@@ -931,24 +928,15 @@ export const IMPERIUM_FALLBACK_THEME = theme(
       'Boss menanyakan alasanmu masuk. Jawaban mana yang paling tepat?',
       'Boss menghakimi alasan, bukan kebenaran.',
       [
-        option(
-          'A',
-          'Jawab jujur dan ringkas',
-          IMPERIUM_OUTCOMES.correct,
-          ['blessing_deadly_tempo']
-        ),
-        option(
-          'B',
-          'Diam saja sampai dia bosan',
-          IMPERIUM_OUTCOMES.critical,
-          ['critical_dull_fortune']
-        ),
-        option(
-          'C',
-          'Berbohong sebagian',
-          IMPERIUM_OUTCOMES.tolerable,
-          ['tolerable_cracked_ward']
-        ),
+        option('A', 'Jawab jujur dan ringkas', IMPERIUM_OUTCOMES.correct, [
+          'blessing_deadly_tempo',
+        ]),
+        option('B', 'Diam saja sampai dia bosan', IMPERIUM_OUTCOMES.critical, [
+          'critical_dull_fortune',
+        ]),
+        option('C', 'Berbohong sebagian', IMPERIUM_OUTCOMES.tolerable, [
+          'tolerable_cracked_ward',
+        ]),
       ]
     ),
     question(
@@ -980,7 +968,15 @@ export const IMPERIUM_FALLBACK_THEME = theme(
   ]
 );
 
-function difficulty(diff, name, emoji, description, requires, bossDef, rewards) {
+function difficulty(
+  diff,
+  name,
+  emoji,
+  description,
+  requires,
+  bossDef,
+  rewards
+) {
   if (!IMPERIUM_DIFF_LIST.includes(diff)) {
     throw new RangeError(`imperium difficulty out of range: ${diff}`);
   }

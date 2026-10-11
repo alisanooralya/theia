@@ -60,9 +60,7 @@ export function consequenceSummary(consequences = []) {
     blessings: consequences
       .filter((c) => c.kind === 'blessing')
       .map((c) => c.label),
-    curses: consequences
-      .filter((c) => c.kind === 'curse')
-      .map((c) => c.label),
+    curses: consequences.filter((c) => c.kind === 'curse').map((c) => c.label),
   };
 }
 
@@ -70,7 +68,11 @@ export function consequencesToPassives(consequences = []) {
   return consequences.map((def) => ({ ...def.passive }));
 }
 
-export function bossModifiers({ theme, criticalCount = 0, correctCount = 0 } = {}) {
+export function bossModifiers({
+  theme,
+  criticalCount = 0,
+  correctCount = 0,
+} = {}) {
   const gimmick = theme?.bossGimmick ?? {
     atkPct: 1,
     defPct: 1,
@@ -359,7 +361,11 @@ export function createImperiumService({
       };
     },
 
-    async startRun(userId, diffInput, { nowMs = now(), random = Math.random } = {}) {
+    async startRun(
+      userId,
+      diffInput,
+      { nowMs = now(), random = Math.random } = {}
+    ) {
       const entry = getDifficulty(diffInput);
       if (!entry) {
         throw fail(`Difficulty Imperium tidak valid: ${diffInput}`, 'BAD_DIFF');
@@ -445,9 +451,15 @@ export function createImperiumService({
       return true;
     },
 
-    async answerChamber(runId, userId, optionInput, { nowMs = now(), random = Math.random } = {}) {
+    async answerChamber(
+      runId,
+      userId,
+      optionInput,
+      { nowMs = now(), random = Math.random } = {}
+    ) {
       const optionKey = normalizeOption(optionInput);
-      if (!optionKey) throw fail('Pilihan tidak valid. Gunakan A, B, atau C.', 'BAD_OPTION');
+      if (!optionKey)
+        throw fail('Pilihan tidak valid. Gunakan A, B, atau C.', 'BAD_OPTION');
 
       const run = await runs.findRun(runId);
       if (!run) throw fail('Run Imperium tidak ditemukan.', 'NO_RUN');
@@ -457,7 +469,10 @@ export function createImperiumService({
       if (run.status !== 'active') {
         throw fail('Run Imperium ini sudah selesai.', 'CLOSED');
       }
-      if (Number(run.expires_at) > 0 && run.expires_at <= Math.floor(nowMs / 1000)) {
+      if (
+        Number(run.expires_at) > 0 &&
+        run.expires_at <= Math.floor(nowMs / 1000)
+      ) {
         await runs.finishRun(runId, 'abandoned', run.payload);
         throw fail('Run Imperium kedaluwarsa. Mulai ulang.', 'EXPIRED');
       }
@@ -469,7 +484,8 @@ export function createImperiumService({
 
       const payload = run.payload ?? {};
       const question = payload.questions?.[chamber];
-      if (!question) throw fail('Pertanyaan Chamber tidak ditemukan.', 'NO_QUESTION');
+      if (!question)
+        throw fail('Pertanyaan Chamber tidak ditemukan.', 'NO_QUESTION');
 
       const source = weeklyThemeForNow(nowMs).theme;
       const full = source.questions.find((q) => q.id === question.id);
@@ -495,10 +511,12 @@ export function createImperiumService({
       const stats = {
         correct: answers.filter((a) => a.outcome === IMPERIUM_OUTCOMES.correct)
           .length,
-        tolerable: answers.filter((a) => a.outcome === IMPERIUM_OUTCOMES.tolerable)
-          .length,
-        critical: answers.filter((a) => a.outcome === IMPERIUM_OUTCOMES.critical)
-          .length,
+        tolerable: answers.filter(
+          (a) => a.outcome === IMPERIUM_OUTCOMES.tolerable
+        ).length,
+        critical: answers.filter(
+          (a) => a.outcome === IMPERIUM_OUTCOMES.critical
+        ).length,
       };
       const nextPayload = {
         ...payload,
@@ -545,11 +563,10 @@ export function createImperiumService({
         nextPayload,
         random
       );
-      await runs.finishRun(
-        runId,
-        battle.status === 'WIN' ? 'won' : 'lost',
-        { ...nextPayload, result: battle.summary }
-      );
+      await runs.finishRun(runId, battle.status === 'WIN' ? 'won' : 'lost', {
+        ...nextPayload,
+        result: battle.summary,
+      });
 
       return {
         kind: 'battle',

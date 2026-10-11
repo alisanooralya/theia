@@ -16,9 +16,12 @@ function diffLine(entry) {
     `${flag} ${entry.emoji} *Diff ${entry.diff} — ${entry.name}*`,
     `   ${entry.description}`,
     `   Boss: ${entry.boss} (HP ${F.formatNumber(entry.bossHp)})`,
+    '',
   ];
   if (entry.blockedBy?.length) {
-    lines.push(`   _Butuh clear Diff ${entry.blockedBy.join(', ')} minggu ini._`);
+    lines.push(
+      `   _Butuh clear Diff ${entry.blockedBy.join(', ')} minggu ini._`
+    );
   }
   if (entry.isCleared) {
     lines.push('   _Sudah clear minggu ini — replay tidak memberi reward._');
@@ -28,10 +31,12 @@ function diffLine(entry) {
 
 export function formatImperiumStatus(status) {
   const lines = [
-    status.levelOk
-      ? ''
-      : `⚠️ Butuh RPG Level ${status.minLevel}. Kamu Level ${status.level}.`,
-    '',
+    ...(!status.levelOk
+      ? [
+          `⚠️ Butuh RPG Level ${status.minLevel}. Kamu Level ${status.level}.`,
+          '',
+        ]
+      : []),
     '*Weekly Featured Card*',
     `🃏 *${status.weeklyCardName}* (${status.weeklyCardId ?? '-'})`,
     `_${status.weeklyTheme.tagline}_`,
@@ -74,7 +79,11 @@ export function formatQuestion(runId, question, diff) {
 }
 
 export function formatConsequence(consequence) {
-  const mark = consequence.isCorrect ? '✨' : consequence.outcome === 'critical' ? '☠️' : '⚠️';
+  const mark = consequence.isCorrect
+    ? '✨'
+    : consequence.outcome === 'critical'
+      ? '☠️'
+      : '⚠️';
   const effects = consequence.effects
     .map((e) => `${e.kind === 'blessing' ? '+' : '-'} ${e.label}`)
     .join(', ');
@@ -138,9 +147,7 @@ export function formatBattleResult(result) {
 
   lines.push(
     '',
-    result.status === 'LOSE'
-      ? '💀 *IMPERIUM FAILED*'
-      : '🤝 *IMPERIUM DRAW*',
+    result.status === 'LOSE' ? '💀 *IMPERIUM FAILED*' : '🤝 *IMPERIUM DRAW*',
     '',
     'Run berakhir. Tidak ada reward.',
     `Coba lagi dengan \`${PREFIX}imperium <diff>\` — Chamber 1 dan 2 diundi ulang.`
@@ -188,7 +195,12 @@ async function sendChamberResult(ctx, result) {
 
     builder.makeSection('Jawaban');
     for (const o of result.question.options) {
-      builder.makeRow('', `${o.key}. ${o.text}`, '', answerCommand(result.runId, o.key));
+      builder.makeRow(
+        '',
+        `${o.key}. ${o.text}`,
+        '',
+        answerCommand(result.runId, o.key)
+      );
     }
 
     return await builder.send(ctx.jid);
@@ -264,7 +276,9 @@ export async function executeImperium(ctx, { service = imperiumService } = {}) {
     if (!runId) return ctx.fail(`Usage: \`${PREFIX}imperium abort <run>\``);
     const ok = await service.abandonRun(runId, ctx.sender);
     return ctx.reply(
-      ok ? '🚪 Run Imperium dibatalkan.' : 'Run tidak ditemukan atau bukan milikmu.'
+      ok
+        ? '🚪 Run Imperium dibatalkan.'
+        : 'Run tidak ditemukan atau bukan milikmu.'
     );
   }
 

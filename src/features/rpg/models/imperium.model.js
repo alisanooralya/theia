@@ -115,13 +115,7 @@ class ImperiumModel {
     return rows[0] ?? null;
   }
 
-  async claimClear(
-    userId,
-    weekIndex,
-    difficulty,
-    rewards,
-    client = sql
-  ) {
+  async claimClear(userId, weekIndex, difficulty, rewards, client = sql) {
     const rows = await client`
       INSERT INTO rpg_imperium_progress
         (user_id, week_index, difficulty, clears, rewards, cleared_at)
