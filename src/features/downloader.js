@@ -30,7 +30,7 @@ function parseDuration(raw) {
 }
 
 class DownloaderService {
-  async toBuffer(url, { timeout = 30_000 } = {}) {
+  async toBuffer(url, { timeout = 60_000 } = {}) {
     try {
       const { data } = await axios.get(url, {
         responseType: 'arraybuffer',
@@ -61,7 +61,7 @@ class DownloaderService {
     try {
       const { data: res } = await axios.get(TIKTOK_API, {
         params: { apikey: key, url },
-        timeout: 30_000,
+        timeout: 60_000,
       });
       data = res;
     } catch (err) {
@@ -138,7 +138,7 @@ class DownloaderService {
     try {
       const { data: res } = await axios.get(YOUTUBE_API, {
         params: { apikey: key, url },
-        timeout: 30_000,
+        timeout: 60_000,
       });
       data = res;
     } catch (err) {
